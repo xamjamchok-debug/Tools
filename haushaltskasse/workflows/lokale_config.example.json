@@ -1,0 +1,12 @@
+{
+  "_hinweis": "Kopiere diese Datei nach haushaltskasse/data/lokale_config.json und trage deine echten Werte ein. data/ ist gitignored – nichts davon landet im Repo.",
+  "eigene_ibans": [
+    "DE00000000000000000001",
+    "DE00000000000000000002"
+  ],
+  "halter_regex": "mustermann|max|erika",
+  "kinder_regex": "kind eins|kind zwei|kind drei",
+  "persoenliche_regeln": [
+    {"muster": "kind eins|kind zwei|kind drei", "kategorie": "Kinder", "unterkategorie": "Taschengeld/Sparen"}
+  ]
+}
