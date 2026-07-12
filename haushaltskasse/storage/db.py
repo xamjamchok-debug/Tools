@@ -17,6 +17,25 @@ _STORAGE_DIR = Path(__file__).resolve().parent
 SCHEMA_PATH = _STORAGE_DIR / "schema.sql"
 
 
+def _load_dotenv() -> None:
+    """Lädt die `.env` aus der Projektwurzel in os.environ (nur fehlende Keys überschreiben nichts).
+
+    So funktionieren alle Einstiegspunkte (Dashboard, Beladung, Gegenbuchung) mit einem
+    einzigen Befehl, ohne HAUSHALT_DATABASE_URL vorher manuell exportieren zu müssen.
+    """
+    env = _STORAGE_DIR.parent.parent / ".env"   # haushaltskasse/storage -> Repo-Wurzel
+    if not env.exists():
+        return
+    for zeile in env.read_text(encoding="utf-8").splitlines():
+        zeile = zeile.strip()
+        if zeile and not zeile.startswith("#") and "=" in zeile:
+            schluessel, wert = zeile.split("=", 1)
+            os.environ.setdefault(schluessel.strip(), wert.strip().strip('"').strip("'"))
+
+
+_load_dotenv()
+
+
 def _dsn() -> str:
     dsn = os.getenv("HAUSHALT_DATABASE_URL")
     if not dsn:

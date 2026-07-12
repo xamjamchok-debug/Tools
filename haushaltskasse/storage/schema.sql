@@ -26,8 +26,19 @@ CREATE TABLE IF NOT EXISTS kategorien (
     name                      TEXT NOT NULL UNIQUE,
     monatliche_ruecklage_cent BIGINT NOT NULL DEFAULT 0,
     ist_nebenbuch             BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Rolle im Haushalts-Saldo:
+    --   'ruecklage' = echter Rücklagen-Topf, wird vom freien Saldo ABGEZOGEN (Standard).
+    --   'forderung' = Person schuldet der Kasse (Natalie/Jörg) -> wird ADDIERT (+).
+    --   'ausgabe'   = reine Ausgaben-Kategorie ohne Topf-Charakter.
+    zaehlt_als                TEXT NOT NULL DEFAULT 'ruecklage'
+                              CHECK (zaehlt_als IN ('ruecklage','forderung','ausgabe')),
+    -- Default-Unterkategorie: wird beim Kategorisieren verwendet, wenn keine Unterkategorie
+    -- gewählt wird ("wenn ich nicht zuordnen möchte"). NULL = keine.
+    default_unterkategorie_id INTEGER REFERENCES unterkategorien(id),
     aktiv                     BOOLEAN NOT NULL DEFAULT TRUE
 );
+ALTER TABLE kategorien ADD COLUMN IF NOT EXISTS zaehlt_als TEXT NOT NULL DEFAULT 'ruecklage';
+ALTER TABLE kategorien ADD COLUMN IF NOT EXISTS default_unterkategorie_id INTEGER REFERENCES unterkategorien(id);
 
 -- ---------------------------------------------------------------------------
 -- Unterkategorien = reine Auswertungsdimension INNERHALB einer Kategorie.
@@ -56,11 +67,16 @@ CREATE TABLE IF NOT EXISTS vermoegensposten (
     name        TEXT NOT NULL UNIQUE,
     wert_cent   BIGINT NOT NULL DEFAULT 0,               -- + Vermögen / - Schuld
     art         TEXT NOT NULL DEFAULT 'vermoegen' CHECK (art IN ('vermoegen','schuld')),
+    -- TRUE  = zählt im Haushalts-Saldo (ETF, Merkzettel, Großeltern-geparkt, Forderungen).
+    -- FALSE = langfristige Vermögens-/Kreditebene (Kredit Großeltern −135.000, Riester,
+    --         KfW, Deutsche-Bank, Auto/PV) — NICHT im Haushalts-Saldo, separater Block.
+    im_haushaltssaldo BOOLEAN NOT NULL DEFAULT TRUE,
     sortierung  INTEGER NOT NULL DEFAULT 100,
     notiz       TEXT,
     aktiv       BOOLEAN NOT NULL DEFAULT TRUE,
     erstellt_am TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE vermoegensposten ADD COLUMN IF NOT EXISTS im_haushaltssaldo BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- ---------------------------------------------------------------------------
 -- Buchungen: alle Bewegungen. buchungsart trennt die drei Fälle:
@@ -83,6 +99,10 @@ CREATE TABLE IF NOT EXISTS buchungen (
     unterkategorie_id INTEGER REFERENCES unterkategorien(id),
     kat_pinned        BOOLEAN NOT NULL DEFAULT FALSE,      -- Kategorie manuell fixiert
     unterkat_pinned   BOOLEAN NOT NULL DEFAULT FALSE,      -- Unterkat. manuell fixiert (Reapply lässt sie in Ruhe)
+    -- Verknüpfung Verzehr-Gegenbuchung -> Realbuchung. Eine 'ruecklage'-Buchung mit
+    -- spiegel_von_id ist der automatische Spiegel einer Realbuchung (wird NIE von Hand
+    -- bearbeitet). Ändert sich die Kategorie der Realbuchung, wird der Spiegel neu erzeugt.
+    spiegel_von_id    INTEGER REFERENCES buchungen(id) ON DELETE CASCADE,
     empfaenger        TEXT,
     verwendungszweck  TEXT,
     quelle_import     TEXT,                                -- dkb / comdirect / amazon / manuell
@@ -90,9 +110,11 @@ CREATE TABLE IF NOT EXISTS buchungen (
     bemerkung         TEXT,
     erstellt_am       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS idx_buchungen_datum ON buchungen(datum_wert);
-CREATE INDEX IF NOT EXISTS idx_buchungen_kat   ON buchungen(kategorie_id);
-CREATE INDEX IF NOT EXISTS idx_buchungen_empf  ON buchungen(empfaenger);
+ALTER TABLE buchungen ADD COLUMN IF NOT EXISTS spiegel_von_id INTEGER REFERENCES buchungen(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_buchungen_datum   ON buchungen(datum_wert);
+CREATE INDEX IF NOT EXISTS idx_buchungen_kat     ON buchungen(kategorie_id);
+CREATE INDEX IF NOT EXISTS idx_buchungen_empf    ON buchungen(empfaenger);
+CREATE INDEX IF NOT EXISTS idx_buchungen_spiegel ON buchungen(spiegel_von_id);
 
 -- ---------------------------------------------------------------------------
 -- Lernende Mapping-Regeln: Muster -> Kategorie (+ optional Unterkategorie).

@@ -18,6 +18,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from ..storage.db import connect
+from ..workflows.gegenbuchung import sync_eine
 from . import queries as q
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -111,6 +112,14 @@ def view_reports(request: Request, von: str = q.STICHTAG, bis: str = ""):
         "top": top, "von": von, "bis": bis})
 
 
+@app.get("/config", response_class=HTMLResponse)
+def view_config(request: Request):
+    with db() as conn, conn.cursor() as cur:
+        baum = q.config_baum(cur)
+    return TEMPLATES.TemplateResponse(request, "config.html",
+                                      {"request": request, "tab": "config", "baum": baum})
+
+
 @app.get("/api/unterkategorien/{kategorie_id}")
 def api_unterkategorien(kategorie_id: int):
     with db() as conn, conn.cursor() as cur:
@@ -129,12 +138,21 @@ class Zuordnung(BaseModel):
 @app.post("/api/buchung/{buchung_id}/kategorie")
 def set_kategorie(buchung_id: int, z: Zuordnung):
     with db() as conn, conn.cursor() as cur:
+        ukat = z.unterkategorie_id
+        # Keine Unterkategorie gewählt -> Default-Unterkategorie der Kategorie verwenden.
+        if ukat is None and z.kategorie_id is not None:
+            cur.execute("SELECT default_unterkategorie_id FROM kategorien WHERE id=%s", (z.kategorie_id,))
+            row = cur.fetchone()
+            if row and row[0]:
+                ukat = row[0]
         cur.execute("""
             UPDATE buchungen
             SET kategorie_id=%s, unterkategorie_id=%s,
                 kat_pinned=TRUE, unterkat_pinned = (%s IS NOT NULL)
             WHERE id=%s
-        """, (z.kategorie_id, z.unterkategorie_id, z.unterkategorie_id, buchung_id))
+        """, (z.kategorie_id, ukat, z.unterkategorie_id, buchung_id))
+        # Gegenbuchung folgt der neuen Kategorie (alter Spiegel weg, neuer im richtigen Topf).
+        sync_eine(cur, buchung_id)
     return {"ok": True}
 
 
@@ -156,6 +174,53 @@ def set_ukat_ruecklage(unterkategorie_id: int, b: Betrag):
         cur.execute("UPDATE unterkategorien SET monatliche_ruecklage_cent=%s WHERE id=%s",
                     (_parse_euro(b.betrag), unterkategorie_id))
     return {"ok": True, "cent": _parse_euro(b.betrag)}
+
+
+class Rolle(BaseModel):
+    zaehlt_als: str    # 'ruecklage' | 'forderung' | 'ausgabe'
+
+
+@app.post("/api/kategorie/{kategorie_id}/rolle")
+def set_kat_rolle(kategorie_id: int, r: Rolle):
+    if r.zaehlt_als not in ("ruecklage", "forderung", "ausgabe"):
+        return JSONResponse({"ok": False, "fehler": "ungültige Rolle"}, status_code=400)
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE kategorien SET zaehlt_als=%s WHERE id=%s", (r.zaehlt_als, kategorie_id))
+    return {"ok": True}
+
+
+class DefaultUkat(BaseModel):
+    unterkategorie_id: int | None = None
+
+
+@app.post("/api/kategorie/{kategorie_id}/default_ukat")
+def set_kat_default_ukat(kategorie_id: int, d: DefaultUkat):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE kategorien SET default_unterkategorie_id=%s WHERE id=%s",
+                    (d.unterkategorie_id, kategorie_id))
+    return {"ok": True}
+
+
+class UkatName(BaseModel):
+    name: str
+
+
+@app.post("/api/unterkategorie/{unterkategorie_id}/rename")
+def rename_unterkategorie(unterkategorie_id: int, u: UkatName):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE unterkategorien SET name=%s WHERE id=%s", (u.name.strip(), unterkategorie_id))
+    return {"ok": True}
+
+
+@app.post("/api/unterkategorie/{unterkategorie_id}/delete")
+def delete_unterkategorie(unterkategorie_id: int):
+    with db() as conn, conn.cursor() as cur:
+        # Referenzen lösen, dann löschen (kein FK-Konflikt).
+        cur.execute("UPDATE buchungen SET unterkategorie_id=NULL WHERE unterkategorie_id=%s", (unterkategorie_id,))
+        cur.execute("UPDATE kategorien SET default_unterkategorie_id=NULL WHERE default_unterkategorie_id=%s", (unterkategorie_id,))
+        cur.execute("UPDATE mapping_regeln SET unterkategorie_id=NULL WHERE unterkategorie_id=%s", (unterkategorie_id,))
+        cur.execute("DELETE FROM unterkategorien WHERE id=%s", (unterkategorie_id,))
+    return {"ok": True}
 
 
 class NeueUnterkategorie(BaseModel):
@@ -210,4 +275,10 @@ def delete_posten(posten_id: int):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=3000)
+    import os
+    # Standard: im Heimnetz erreichbar (0.0.0.0) -> Handy/Laptop via http://<PC-IP>:3000.
+    # Nur-lokal:  HAUSHALT_DASHBOARD_HOST=127.0.0.1 setzen.
+    host = os.getenv("HAUSHALT_DASHBOARD_HOST", "0.0.0.0")
+    port = int(os.getenv("HAUSHALT_DASHBOARD_PORT", "3000"))
+    print(f"[dashboard] http://localhost:{port}  (im WLAN: http://<PC-IP>:{port})")
+    uvicorn.run(app, host=host, port=port)

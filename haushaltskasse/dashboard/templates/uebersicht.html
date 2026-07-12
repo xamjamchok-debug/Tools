@@ -2,18 +2,22 @@
 {% block titel %} · Übersicht{% endblock %}
 {% block content %}
 <h1>Übersicht</h1>
-<p class="sub">Vermögensbilanz — reale Konten, Rücklagen-Nebenbücher und externe Posten.</p>
+<p class="sub">Freier Haushalts-Saldo: reale Konten + Posten − Rücklagen-Töpfe + Forderungen.</p>
 
 <div class="grid kpis">
-  <div class="card kpi"><div class="label">Kontovermögen (real)</div>
-    <div class="val">{{ u.konten_summe_cent|euro }}</div></div>
+  <div class="card kpi"><div class="label">Freier Haushalts-Saldo</div>
+    <div class="val {{ 'pos' if u.saldo_cent>=0 else 'neg' }}">{{ u.saldo_cent|euro }}</div></div>
+  <div class="card kpi"><div class="label">Konten (real)</div>
+    <div class="val">{{ u.konten_cent|euro }}</div></div>
   <div class="card kpi"><div class="label">Rücklagen gebunden</div>
     <div class="val">{{ u.ruecklagen_cent|euro }}</div></div>
-  <div class="card kpi"><div class="label">Verfügbar (frei)</div>
-    <div class="val {{ 'pos' if u.verfuegbar_cent>=0 else 'neg' }}">{{ u.verfuegbar_cent|euro }}</div></div>
-  <div class="card kpi"><div class="label">Gesamtvermögen inkl. Posten</div>
-    <div class="val {{ 'pos' if u.gesamt_cent>=0 else 'neg' }}">{{ u.gesamt_cent|euro }}</div></div>
+  <div class="card kpi"><div class="label">Forderungen (Natalie/Jörg)</div>
+    <div class="val">{{ u.forderung_cent|euro }}</div></div>
 </div>
+
+<p class="small muted">Rechnung: Konten {{ u.konten_cent|euro }} + Posten {{ u.posten_cent|euro }}
+  + Forderungen {{ u.forderung_cent|euro }} − Rücklagen {{ u.ruecklagen_cent|euro }}
+  = <b>{{ u.saldo_cent|euro }}</b>. &nbsp; Langfristig separat: {{ u.langfrist_cent|euro }}.</p>
 
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
   <div>
@@ -24,15 +28,34 @@
       <tr><td>{{ k.name }}</td><td><span class="tag">{{ k.typ }}</span></td>
         <td class="num {{ 'pos' if k.saldo_cent>=0 else 'neg' }}">{{ k.saldo_cent|euro }}</td></tr>
       {% endfor %}
-      <tr><td colspan="2"><b>Summe Konten</b></td><td class="num"><b>{{ u.konten_summe_cent|euro }}</b></td></tr>
+      <tr><td colspan="2"><b>Summe Konten</b></td><td class="num"><b>{{ u.konten_cent|euro }}</b></td></tr>
+    </table></div>
+
+    <h2 style="margin-top:24px">Rücklagen-Töpfe (aktueller Stand)</h2>
+    <div class="card scroll"><table>
+      <tr><th>Topf</th><th class="num">Stand</th></tr>
+      {% for t in u.ruecklagen_toepfe %}
+      <tr><td>{{ t.name }}</td>
+        <td class="num {{ 'pos' if t.ist_cent>=0 else 'neg' }}">{{ t.ist_cent|euro }}</td></tr>
+      {% endfor %}
+      <tr><td><b>Summe Rücklagen (gebunden)</b></td><td class="num"><b>{{ u.ruecklagen_cent|euro }}</b></td></tr>
+    </table></div>
+
+    <h2 style="margin-top:24px">Forderungen</h2>
+    <div class="card scroll"><table>
+      {% for f in u.forderungen %}
+      <tr><td>{{ f.name }} <span class="small muted">schuldet der Kasse</span></td>
+        <td class="num {{ 'pos' if f.ist_cent>=0 else 'neg' }}">{{ f.ist_cent|euro }}</td></tr>
+      {% endfor %}
+      <tr><td><b>Summe Forderungen</b></td><td class="num"><b>{{ u.forderung_cent|euro }}</b></td></tr>
     </table></div>
   </div>
 
   <div>
-    <h2>Externe Posten (Vermögen / Schulden)</h2>
-    <div class="card scroll"><table id="posten">
+    <h2>Posten im Saldo</h2>
+    <div class="card scroll"><table id="posten-saldo">
       <tr><th>Posten</th><th>Art</th><th class="num">Wert</th><th></th></tr>
-      {% for p in u.posten %}
+      {% for p in u.posten_saldo %}
       <tr data-id="{{ p.id }}">
         <td>{{ p.name }}{% if p.notiz %}<div class="small muted">{{ p.notiz }}</div>{% endif %}</td>
         <td><span class="tag">{{ p.art }}</span></td>
@@ -42,22 +65,39 @@
         <td class="num"><button class="ghost" onclick="delPosten({{ p.id }})">✕</button></td>
       </tr>
       {% endfor %}
-      <tr><td colspan="2"><b>Summe Posten</b></td><td class="num"><b>{{ u.posten_summe_cent|euro }}</b></td><td></td></tr>
+      <tr><td colspan="2"><b>Summe Posten im Saldo</b></td><td class="num"><b>{{ u.posten_cent|euro }}</b></td><td></td></tr>
     </table>
     <div class="toolbar" style="margin-top:12px">
-      <input id="np-name" placeholder="Name (z. B. Kredit an Großeltern)" style="flex:1;min-width:180px">
+      <input id="np-name" placeholder="Name" style="flex:1;min-width:160px">
       <input id="np-betrag" placeholder="Betrag €" class="ruecklage-inp">
       <select id="np-art"><option value="vermoegen">Vermögen</option><option value="schuld">Schuld</option></select>
       <button onclick="addPosten()">+ Posten</button>
     </div>
-    <p class="small muted">Wert direkt in der Tabelle bearbeiten (Enter bestätigt). Schulden als negativen Betrag eingeben.</p>
+    <p class="small muted">Wert direkt bearbeiten (Enter bestätigt). Schulden als negativen Betrag.</p>
+    </div>
+
+    <h2 style="margin-top:24px">Langfristig (nicht im Haushalts-Saldo)</h2>
+    <div class="card scroll"><table id="posten-langfrist">
+      <tr><th>Posten</th><th>Art</th><th class="num">Wert</th></tr>
+      {% for p in u.posten_langfrist %}
+      <tr data-id="{{ p.id }}">
+        <td>{{ p.name }}{% if p.notiz %}<div class="small muted">{{ p.notiz }}</div>{% endif %}</td>
+        <td><span class="tag">{{ p.art }}</span></td>
+        <td class="num {{ 'pos' if p.wert_cent>=0 else 'neg' }}">
+          <span class="wert" contenteditable data-id="{{ p.id }}"
+                data-name="{{ p.name }}" data-art="{{ p.art }}">{{ (p.wert_cent/100)|round(2) }}</span></td>
+      </tr>
+      {% endfor %}
+      <tr><td colspan="2"><b>Summe langfristig</b></td><td class="num"><b>{{ u.langfrist_cent|euro }}</b></td></tr>
+    </table>
+    <p class="small muted">Kredit Großeltern, Riester, KfW, Deutsche Bank — Vermögensebene, zählt nicht im freien Saldo.</p>
     </div>
   </div>
 </div>
 {% endblock %}
 
 {% block script %}
-document.querySelectorAll('#posten .wert').forEach(el=>{
+document.querySelectorAll('#posten-saldo .wert, #posten-langfrist .wert').forEach(el=>{
   el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); }});
   el.addEventListener('blur', async ()=>{
     await postJSON('/api/vermoegensposten',

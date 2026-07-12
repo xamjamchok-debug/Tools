@@ -21,6 +21,39 @@ def kennzahlen(cur) -> dict:
     return {"real_cent": real, "ruecklagen_cent": rueck, "verfuegbar_cent": real - rueck}
 
 
+def haushaltssaldo(cur) -> dict:
+    """Freier Haushalts-Saldo (die FB-„Übersicht"-Zahl, Ziel ≈ −14.579 vor Amazon).
+
+        Saldo = Σ reale Konten
+              + Σ Posten mit im_haushaltssaldo (ETF, Merkzettel, Großeltern-geparkt, …)
+              + Σ Forderungs-Töpfe (Natalie/Jörg, zaehlt_als='forderung')
+              − Σ Rücklagen-Töpfe (zaehlt_als='ruecklage')
+
+    Langfristige Posten (Kredit Großeltern −135.000, Riester, KfW, Deutsche Bank) stehen
+    getrennt und zählen NICHT im Saldo. Reserve-/Forderungs-Stände sind Netto (inkl.
+    Auto-Gegenbuchungen der Realausgaben) -> topf-verzehrende Ausgaben sind saldo-neutral.
+    """
+    cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE konto_id IS NOT NULL")
+    konten = cur.fetchone()[0]
+    cur.execute("SELECT COALESCE(SUM(wert_cent),0) FROM vermoegensposten WHERE aktiv AND im_haushaltssaldo")
+    posten = cur.fetchone()[0]
+    cur.execute("SELECT COALESCE(SUM(wert_cent),0) FROM vermoegensposten WHERE aktiv AND NOT im_haushaltssaldo")
+    langfrist = cur.fetchone()[0]
+    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b
+                   JOIN kategorien k ON k.id=b.kategorie_id
+                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='ruecklage'""")
+    ruecklagen = cur.fetchone()[0]
+    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b
+                   JOIN kategorien k ON k.id=b.kategorie_id
+                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='forderung'""")
+    forderung = cur.fetchone()[0]
+    return {
+        "konten_cent": konten, "posten_cent": posten, "langfrist_cent": langfrist,
+        "ruecklagen_cent": ruecklagen, "forderung_cent": forderung,
+        "saldo_cent": konten + posten - ruecklagen + forderung,
+    }
+
+
 def konten_salden(cur) -> list[dict]:
     """Echtes Kontovermögen je reales Konto (Summe aller Bewegungen inkl. Startsaldo)."""
     cur.execute("""
@@ -42,22 +75,38 @@ def vermoegensposten(cur) -> list[dict]:
 
 
 def uebersicht(cur) -> dict:
-    """Alles fürs Übersichts-Tab: Konten, Rücklagen-Summe, externe Posten, Gesamtvermögen."""
+    """Alles fürs Übersichts-Tab, auf Basis des freien Haushalts-Saldos (haushaltssaldo()).
+
+    Blöcke: reale Konten · Rücklagen-Töpfe (aktueller Netto-Stand) · Forderungen
+    (Natalie/Jörg) · Posten im Saldo (ETF, Merkzettel, Anlage Großeltern) · langfristige
+    Posten (Kredit Großeltern, Riester, KfW, Deutsche Bank — separat, NICHT im Saldo).
+    """
+    hs = haushaltssaldo(cur)
     konten = konten_salden(cur)
-    posten = vermoegensposten(cur)
-    kz = kennzahlen(cur)
-    konten_summe = sum(k["saldo_cent"] for k in konten)
-    posten_summe = sum(p["wert_cent"] for p in posten)
-    return {
-        "konten": konten,
-        "konten_summe_cent": konten_summe,
-        "posten": posten,
-        "posten_summe_cent": posten_summe,
-        "ruecklagen_cent": kz["ruecklagen_cent"],
-        "verfuegbar_cent": kz["verfuegbar_cent"],
-        # Gesamtvermögen = Bar-/Kontovermögen + externe Posten (Schulden sind negativ hinterlegt)
-        "gesamt_cent": konten_summe + posten_summe,
-    }
+
+    cur.execute("""SELECT id, name, wert_cent, art, notiz, im_haushaltssaldo
+                   FROM vermoegensposten WHERE aktiv ORDER BY im_haushaltssaldo DESC, name""")
+    posten_saldo, posten_langfrist = [], []
+    for i, n, w, a, z, im in cur.fetchall():
+        (posten_saldo if im else posten_langfrist).append(
+            {"id": i, "name": n, "wert_cent": w, "art": a, "notiz": z})
+
+    # Töpfe mit aktuellem Netto-Stand (inkl. Auto-Gegenbuchungen), getrennt nach Rolle.
+    cur.execute("""
+        SELECT k.name, k.zaehlt_als,
+               COALESCE((SELECT SUM(b.betrag_cent) FROM buchungen b
+                         WHERE b.kategorie_id=k.id AND b.buchungsart='ruecklage'),0) AS ist
+        FROM kategorien k
+        WHERE k.aktiv AND k.zaehlt_als IN ('ruecklage','forderung')
+        ORDER BY k.zaehlt_als, k.name""")
+    ruecklagen_toepfe, forderungen = [], []
+    for n, za, ist in cur.fetchall():
+        (forderungen if za == "forderung" else ruecklagen_toepfe).append(
+            {"name": n, "ist_cent": ist})
+
+    return {**hs, "konten": konten,
+            "posten_saldo": posten_saldo, "posten_langfrist": posten_langfrist,
+            "ruecklagen_toepfe": ruecklagen_toepfe, "forderungen": forderungen}
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +237,23 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
             "unterkategorie_id", "unterkategorie", "empfaenger", "verwendungszweck", "kat_pinned"]
     rows = [dict(zip(cols, r)) for r in cur.fetchall()]
     return rows, gesamt
+
+
+def config_baum(cur) -> list[dict]:
+    """Pflegemaske: alle Nebenbücher mit Rolle (zaehlt_als), Soll, Default-Unterkategorie
+    und ihren Unterkategorien (Name + Soll)."""
+    cur.execute("""SELECT id, name, zaehlt_als, monatliche_ruecklage_cent, default_unterkategorie_id
+                   FROM kategorien WHERE aktiv ORDER BY name""")
+    kats = [{"id": i, "name": n, "zaehlt_als": z, "soll_cent": s, "default_ukat_id": d,
+             "unterkategorien": []} for i, n, z, s, d in cur.fetchall()]
+    by_id = {k["id"]: k for k in kats}
+    cur.execute("""SELECT id, kategorie_id, name, monatliche_ruecklage_cent, quelle
+                   FROM unterkategorien ORDER BY name""")
+    for i, kid, n, s, qu in cur.fetchall():
+        if kid in by_id:
+            by_id[kid]["unterkategorien"].append(
+                {"id": i, "name": n, "soll_cent": s, "quelle": qu})
+    return kats
 
 
 def kategorien_mit_unterkategorien(cur) -> list[dict]:
