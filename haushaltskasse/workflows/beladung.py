@@ -26,6 +26,8 @@ from pathlib import Path
 
 from ..storage.db import connect, kennzahlen
 from . import parser
+from .abgrenzung import bestimme_buchungsart
+from .kategorisierung import kategorisiere
 from .laden import _kategorie_id, _konto_id, _lade_maps, _unterkategorie_id
 from .lokale_config import lade_lokale_config
 from .migration_fb import _lade_fuchsbaukasse
@@ -64,22 +66,35 @@ def _kontostand_cent(pfad: Path) -> int | None:
 # Fuchsbaukasse: DKB-Giro (real) + Kto-Blätter (ruecklage)
 # ---------------------------------------------------------------------------
 def belade_fuchsbaukasse(cur, konten, kategorien, plan: list[dict]) -> None:
+    cfg = lade_lokale_config()
     dkb, kto = _lade_fuchsbaukasse()
 
-    # DKB-Giro real
+    # DKB-Giro real: Abgrenzung (Umbuchung/Wertpapier/Zinsen) + Erstkategorisierung wie bei den Auszügen.
     start, ab = _vor_ab(dkb)
     dkb_id = konten["DKB-Giro"]
     _startsaldo(cur, "real", start, konto_id=dkb_id, bemerkung="Startsaldo DKB-Giro per 31.12.2024 (aus Fuchsbaukasse)")
+    ukat_dkb: dict = {}
+    n_kat = 0
     for b in ab:
+        b.setdefault("vorgang", "")
+        b.setdefault("iban_gegen", "")
+        art = bestimme_buchungsart(b, cfg["eigene_ibans"], cfg["halter"], cfg["kinder"])
+        kat_id = ukat_id = None
+        if art == "real":
+            kat, unter = kategorisiere(b, cfg["persoenliche_regeln"])
+            if kat:
+                kat_id = _kategorie_id(cur, kategorien, kat)
+                ukat_id = _unterkategorie_id(cur, ukat_dkb, kat_id, unter)
+                n_kat += 1
         cur.execute(
-            "INSERT INTO buchungen (buchungsart, datum_wert, betrag_cent, konto_id, empfaenger, "
-            "verwendungszweck, quelle_import, import_hash) "
-            "VALUES ('real',%s,%s,%s,%s,%s,'fb-dkb',%s) ON CONFLICT (import_hash) DO NOTHING",
-            (b["datum"], b["betrag_cent"], dkb_id, b.get("empfaenger", ""),
-             b.get("verwendungszweck", ""), b["import_hash"]),
+            "INSERT INTO buchungen (buchungsart, datum_wert, betrag_cent, konto_id, kategorie_id, "
+            "unterkategorie_id, empfaenger, verwendungszweck, quelle_import, import_hash) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'fb-dkb',%s) ON CONFLICT (import_hash) DO NOTHING",
+            (art, b["datum"], b["betrag_cent"], dkb_id, kat_id, ukat_id,
+             b.get("empfaenger", ""), b.get("verwendungszweck", ""), b["import_hash"]),
         )
     plan.append({"ziel": "DKB-Giro (real)", "start": start, "einzel": len(ab),
-                 "gesamt": start + sum(b["betrag_cent"] for b in ab)})
+                 "gesamt": start + sum(b["betrag_cent"] for b in ab), "kat": n_kat})
 
     # Kto-Blätter -> Rücklagen
     ukat_cache: dict = {}

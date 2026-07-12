@@ -84,11 +84,15 @@ def parse_dkb_sheet(ws) -> list[dict]:
             continue
         empf = str(r[4] or r[3] or "").strip()
         zweck = str(r[5] or "").strip()
+        vorgang = str(r[6] or "").strip()   # Typ (z. B. 'Überweisung', 'Kartenzahlung')
+        iban = str(r[7] or "").strip()      # Gegen-IBAN
         out.append({
             "datum": datum.isoformat(),
             "betrag_cent": betrag,
             "empfaenger": empf[:200],
             "verwendungszweck": zweck[:500],
+            "vorgang": vorgang[:100],
+            "iban_gegen": iban,
             "import_hash": _hash("fb-dkb", i, datum, betrag, empf[:40]),
         })
     return out

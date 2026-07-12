@@ -34,6 +34,8 @@ STARTER_RULES: list[tuple[str, str, str]] = [
     (r"envivas|krankenvers", "TK", "Krankenversicherung"),
     (r"apotheke", "TK", "Apotheke"),
     (r"zurich|lebensvers|haftpflicht|hausrat|geb[aä]udevers|rlv", "Vers", "Versicherung"),
+    # Telefon / Mobilfunk / Festnetz / Internet
+    (r"telekom|telefonica|vodafone|\bo2\b|1&1|1und1|congstar", "Telefon", "Mobilfunk/Festnetz"),
     # Medien / Abos
     (r"general-anzeiger|tagesspiegel|\bfaz\b|spiegel|netflix|spotify|youtube|audible|adobe|1\+1 mail", "Telefon", "Abo/Medien"),
     # Amazon / Konsum
