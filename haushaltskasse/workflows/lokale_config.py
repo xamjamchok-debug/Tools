@@ -29,5 +29,6 @@ def lade_lokale_config() -> dict:
         "halter": re.compile(cfg["halter_regex"], re.I) if cfg.get("halter_regex") else None,
         "kinder": re.compile(cfg["kinder_regex"], re.I) if cfg.get("kinder_regex") else None,
         "persoenliche_regeln": persoenlich,
+        "ruecklagen": cfg.get("ruecklagen", {}),  # {Kategoriename: Euro/Monat}
         "_vorhanden": _PFAD.exists(),
     }

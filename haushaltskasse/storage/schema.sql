@@ -52,7 +52,9 @@ CREATE TABLE IF NOT EXISTS unterkategorien (
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS buchungen (
     id                INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    buchungsart       TEXT NOT NULL CHECK (buchungsart IN ('real','ruecklage','umbuchung')),
+    -- real/ruecklage/umbuchung wie oben, plus wertpapier (Depot) und zinsen (Kontoabschluss).
+    -- wertpapier/zinsen zaehlen nicht als Haushaltsausgabe (siehe kennzahlen()).
+    buchungsart       TEXT NOT NULL CHECK (buchungsart IN ('real','ruecklage','umbuchung','wertpapier','zinsen')),
     datum_wert        DATE NOT NULL,                       -- Wertstellung
     datum_buchung     DATE,                                -- Buchungstag, falls vorhanden
     betrag_cent       BIGINT NOT NULL,                     -- + Einnahme / - Ausgabe

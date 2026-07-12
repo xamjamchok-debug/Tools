@@ -8,5 +8,11 @@
   "kinder_regex": "kind eins|kind zwei|kind drei",
   "persoenliche_regeln": [
     {"muster": "kind eins|kind zwei|kind drei", "kategorie": "Kinder", "unterkategorie": "Taschengeld/Sparen"}
-  ]
+  ],
+  "ruecklagen": {
+    "Auto": 100,
+    "Urlaub": 100,
+    "Nebenkosten": 100,
+    "Haushaltskasse": 100
+  }
 }

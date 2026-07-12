@@ -8,6 +8,7 @@ Schema anlegen:  python -m haushaltskasse.storage.db
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 import psycopg
@@ -73,19 +74,13 @@ def kennzahlen(conn: psycopg.Connection | None = None) -> dict:
 
 
 def _split_statements(script: str) -> list[str]:
-    """Zerlegt das Schema-Skript an ';' in einzelne Statements (kommentar- und leerzeilensicher).
+    """Zerlegt das Schema-Skript an ';' in einzelne Statements.
 
-    Das Schema enthält keine Semikolons in String-Literalen oder Funktionskörpern,
-    daher genügt ein einfaches Split.
+    Zeilenkommentare (ab '--') werden VOR dem Split entfernt, damit ein Semikolon
+    in einem Kommentar kein Statement zerreißt. Das Schema hat keine '--' in String-Literalen.
     """
-    out = []
-    for raw in script.split(";"):
-        # Kommentarzeilen entfernen, damit keine leeren Statements übrig bleiben
-        lines = [l for l in raw.splitlines() if not l.strip().startswith("--")]
-        stmt = "\n".join(lines).strip()
-        if stmt:
-            out.append(stmt)
-    return out
+    ohne_kommentar = "\n".join(re.sub(r"--.*$", "", zeile) for zeile in script.splitlines())
+    return [s.strip() for s in ohne_kommentar.split(";") if s.strip()]
 
 
 if __name__ == "__main__":
