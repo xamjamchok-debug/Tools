@@ -51,15 +51,18 @@ def init_db(conn: psycopg.Connection | None = None) -> None:
 def kennzahlen(conn: psycopg.Connection | None = None) -> dict:
     """Kern-Kennzahlen in Euro: Realsaldo, Summe Rücklagen, verfügbarer Saldo.
 
-    Realsaldo       = Summe aller 'real'-Buchungen (Konten).
+    Realsaldo       = Summe ALLER Buchungen auf realen Konten (konto_id gesetzt) —
+                      inkl. Startsaldo, Umbuchungen, Wertpapiere, Zinsen. Das ist das
+                      tatsächlich auf den Konten liegende Vermögen (Rücklagen sind
+                      virtuell und haben konto_id = NULL, zählen hier nicht mit).
     Summe Rücklagen = Summe aller 'ruecklage'-Buchungen (Zuführung - Verzehr ± Korrektur).
-    Verfügbar       = Realsaldo - Summe Rücklagen.  Umbuchungen zählen nicht (netto 0).
+    Verfügbar       = Realsaldo - Summe Rücklagen (was nicht in Töpfen gebunden ist).
     """
     own = conn is None
     conn = conn or connect()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE buchungsart='real'")
+            cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE konto_id IS NOT NULL")
             real = cur.fetchone()[0]
             cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE buchungsart='ruecklage'")
             ruecklagen = cur.fetchone()[0]
