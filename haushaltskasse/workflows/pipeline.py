@@ -14,7 +14,7 @@ from .abgrenzung import bestimme_buchungsart
 from .kategorisierung import kategorisiere
 from .lokale_config import lade_lokale_config
 
-INPUT = Path(__file__).resolve().parent.parent.parent / "input"
+INPUT = Path(__file__).resolve().parent.parent / "input"
 
 
 def _dispatch(pfad: Path) -> list[dict]:
