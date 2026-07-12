@@ -11,3 +11,4 @@ venv/
 # Lokale Finanzdaten — niemals ins Repo (Privacy)
 haushaltskasse/data/
 **/data/inbox/
+input/
