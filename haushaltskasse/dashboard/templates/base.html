@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haushaltskasse{% block titel %}{% endblock %}</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --text:#181b20; --muted:#6b7280; --border:#e4e7eb;
+    --accent:#2563eb; --accent-soft:#eff4ff; --pos:#15803d; --neg:#dc2626; --head:#f0f2f5;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0f1115; --card:#171a1f; --text:#e6e8eb; --muted:#9aa1ab; --border:#2a2f37;
+      --accent:#4b8bff; --accent-soft:#182233; --pos:#4ade80; --neg:#f87171; --head:#1d2128; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  header{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  nav{max-width:1180px;margin:0 auto;display:flex;gap:2px;align-items:center;padding:0 16px}
+  nav .brand{font-weight:700;margin-right:20px;padding:14px 0;letter-spacing:-.02em}
+  nav a{padding:14px 14px;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
+  nav a.active{color:var(--text);border-bottom-color:var(--accent)}
+  nav a:hover{color:var(--text)}
+  main{max-width:1180px;margin:24px auto;padding:0 16px}
+  h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:26px 0 10px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .grid{display:grid;gap:14px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:8px}
+  .kpi .label{color:var(--muted);font-size:13px;font-weight:500}
+  .kpi .val{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:var(--head)}
+  td.num,th.num{text-align:right}
+  tr:last-child td{border-bottom:none}
+  .pos{color:var(--pos)} .neg{color:var(--neg)}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  .pill{display:inline-block;padding:1px 8px;border-radius:999px;background:var(--accent-soft);
+    color:var(--accent);font-size:12px;font-weight:600}
+  .tag{display:inline-block;padding:1px 7px;border-radius:6px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+  input,select,button{font:inherit;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:6px 9px}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  button{cursor:pointer;background:var(--accent);color:#fff;border:none;font-weight:600}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--border)}
+  .ruecklage-inp{width:96px;text-align:right}
+  .bar{height:8px;border-radius:5px;background:var(--border);overflow:hidden}
+  .bar > i{display:block;height:100%;background:var(--accent)}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .scroll{overflow-x:auto}
+  .flash{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--pos);
+    color:#022c14;padding:8px 16px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+  .flash.show{opacity:1}
+</style>
+</head>
+<body>
+<header><nav>
+  <span class="brand">🦊 Haushaltskasse</span>
+  <a href="/"          class="{{ 'active' if tab=='uebersicht' else '' }}">Übersicht</a>
+  <a href="/ruecklagen" class="{{ 'active' if tab=='ruecklagen' else '' }}">Rücklagen</a>
+  <a href="/buchungen"  class="{{ 'active' if tab=='buchungen' else '' }}">Buchungen</a>
+  <a href="/reports"    class="{{ 'active' if tab=='reports' else '' }}">Reports</a>
+</nav></header>
+<main>{% block content %}{% endblock %}</main>
+<div class="flash" id="flash"></div>
+<script>
+async function postJSON(url, body){
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body||{})});
+  if(!r.ok){ flash('Fehler: '+r.status, true); throw new Error(r.status); }
+  return r.json();
+}
+let flashT;
+function flash(msg, err){
+  const f=document.getElementById('flash'); f.textContent=msg;
+  f.style.background = err ? 'var(--neg)' : 'var(--pos)';
+  f.classList.add('show'); clearTimeout(flashT);
+  flashT=setTimeout(()=>f.classList.remove('show'), 1600);
+}
+{% block script %}{% endblock %}
+</script>
+</body>
+</html>

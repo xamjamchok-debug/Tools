@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titel %} · Reports{% endblock %}
+{% block content %}
+<h1>Reports</h1>
+<p class="sub">Ausgaben und Einnahmen ab dem gewählten Stichtag (Einzelbuchungs-Historie, ohne Startsalden).</p>
+
+<form class="toolbar" method="get">
+  <label class="small">von <input type="date" name="von" value="{{ von }}"></label>
+  <label class="small">bis <input type="date" name="bis" value="{{ bis }}"></label>
+  <button type="submit">Anwenden</button>
+</form>
+
+{% set max_aus = (ausgaben | map(attribute='ausgaben_cent') | map('abs') | list | max) or 1 %}
+<h2>Ausgaben je Kategorie</h2>
+<div class="card scroll"><table>
+  <tr><th>Kategorie</th><th style="width:38%">Anteil</th><th class="num">Ausgaben</th><th class="num">Einnahmen</th><th class="num">Anzahl</th></tr>
+  {% for r in ausgaben %}
+  <tr>
+    <td>{{ r.kategorie }}</td>
+    <td><div class="bar"><i style="width:{{ (100 * (r.ausgaben_cent|abs) / max_aus)|round(1) }}%"></i></div></td>
+    <td class="num neg">{{ r.ausgaben_cent|euro }}</td>
+    <td class="num {{ 'pos' if r.einnahmen_cent else 'muted' }}">{{ r.einnahmen_cent|euro }}</td>
+    <td class="num muted">{{ r.n }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+  <div>
+    <h2>Monatsverlauf</h2>
+    {% set max_m = (verlauf | map(attribute='ausgaben_cent') | map('abs') | list | max) or 1 %}
+    <div class="card scroll"><table>
+      <tr><th>Monat</th><th style="width:40%"></th><th class="num">Ausgaben</th><th class="num">Einnahmen</th></tr>
+      {% for m in verlauf %}
+      <tr><td class="small">{{ m.monat }}</td>
+        <td><div class="bar"><i style="width:{{ (100 * (m.ausgaben_cent|abs) / max_m)|round(1) }}%"></i></div></td>
+        <td class="num neg">{{ m.ausgaben_cent|euro }}</td>
+        <td class="num {{ 'pos' if m.einnahmen_cent else 'muted' }}">{{ m.einnahmen_cent|euro }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+
+  <div>
+    <h2>Top-Empfänger (Ausgaben)</h2>
+    <div class="card scroll"><table>
+      <tr><th>Empfänger</th><th class="num">Summe</th><th class="num">Anzahl</th></tr>
+      {% for t in top %}
+      <tr><td>{{ t.empfaenger[:42] }}</td>
+        <td class="num neg">{{ t.summe_cent|euro }}</td>
+        <td class="num muted">{{ t.n }}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}

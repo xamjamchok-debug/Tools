@@ -35,12 +35,31 @@ CREATE TABLE IF NOT EXISTS kategorien (
 -- Umbenennen/Umdefinieren wirkt über apply_regeln() rückwirkend auf die Historie.
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS unterkategorien (
-    id           INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    kategorie_id INTEGER NOT NULL REFERENCES kategorien(id) ON DELETE CASCADE,
-    name         TEXT NOT NULL,
-    quelle       TEXT NOT NULL DEFAULT 'manuell' CHECK (quelle IN ('ki','manuell')),
-    erstellt_am  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    id                        INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    kategorie_id              INTEGER NOT NULL REFERENCES kategorien(id) ON DELETE CASCADE,
+    name                      TEXT NOT NULL,
+    monatliche_ruecklage_cent BIGINT NOT NULL DEFAULT 0,   -- Soll-Rückstellung je Unterkategorie
+    quelle                    TEXT NOT NULL DEFAULT 'manuell' CHECK (quelle IN ('ki','manuell')),
+    erstellt_am               TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (kategorie_id, name)
+);
+-- Nachrüstung für bestehende DBs (Spalte kam später dazu):
+ALTER TABLE unterkategorien ADD COLUMN IF NOT EXISTS monatliche_ruecklage_cent BIGINT NOT NULL DEFAULT 0;
+
+-- ---------------------------------------------------------------------------
+-- Vermögensposten: externe Werte, die NICHT aus Buchungen ableitbar sind
+-- (Depot-/ETF-Marktwert, Kredite KfW/Deutsche Bank, Riester-Steuerschuld,
+-- Kredit an Großeltern). Werden in der Übersicht mitgerechnet, im Dashboard gepflegt.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS vermoegensposten (
+    id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name        TEXT NOT NULL UNIQUE,
+    wert_cent   BIGINT NOT NULL DEFAULT 0,               -- + Vermögen / - Schuld
+    art         TEXT NOT NULL DEFAULT 'vermoegen' CHECK (art IN ('vermoegen','schuld')),
+    sortierung  INTEGER NOT NULL DEFAULT 100,
+    notiz       TEXT,
+    aktiv       BOOLEAN NOT NULL DEFAULT TRUE,
+    erstellt_am TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ---------------------------------------------------------------------------

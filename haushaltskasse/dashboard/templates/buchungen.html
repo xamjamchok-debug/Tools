@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block titel %} · Buchungen{% endblock %}
+{% block content %}
+<h1>Buchungen</h1>
+<p class="sub">Zuordnung zu Kategorie/Unterkategorie ändern — die Auswahl wird sofort gespeichert und fixiert (bleibt bei Reimport erhalten).</p>
+
+<form class="toolbar" method="get">
+  <select name="konto"><option value="">Alle Konten</option>
+    {% for k in konten %}<option value="{{ k }}" {{ 'selected' if f.konto==k }}>{{ k }}</option>{% endfor %}</select>
+  <select name="kategorie_id"><option value="">Alle Kategorien</option>
+    {% for k in kats %}<option value="{{ k.id }}" {{ 'selected' if f.kategorie_id==k.id|string }}>{{ k.name }}</option>{% endfor %}</select>
+  <input name="suche" value="{{ f.suche }}" placeholder="Suche Empfänger/Zweck" style="min-width:200px">
+  <label class="small" style="display:flex;align-items:center;gap:6px">
+    <input type="checkbox" name="offen" value="1" {{ 'checked' if f.offen=='1' }} style="width:auto"> nur offene</label>
+  <button type="submit">Filtern</button>
+  <a class="tag" href="/buchungen">zurücksetzen</a>
+  <span class="muted small" style="margin-left:auto">{{ gesamt }} Treffer</span>
+</form>
+
+<div class="card scroll"><table>
+  <tr><th>Datum</th><th>Konto</th><th>Empfänger / Zweck</th><th class="num">Betrag</th>
+      <th>Kategorie</th><th>Unterkategorie</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td class="small">{{ r.datum }}</td>
+    <td class="small">{{ r.konto or '' }}{% if r.buchungsart!='real' %}<div><span class="tag">{{ r.buchungsart }}</span></div>{% endif %}</td>
+    <td>{{ r.empfaenger or '—' }}
+      {% if r.verwendungszweck %}<div class="small muted">{{ r.verwendungszweck[:70] }}</div>{% endif %}</td>
+    <td class="num {{ 'pos' if r.betrag_cent>=0 else 'neg' }}">{{ r.betrag_cent|euro }}</td>
+    <td><select class="kat" data-buchung="{{ r.id }}" onchange="onKat(this,{{ r.id }})">
+      <option value="">—</option>
+      {% for k in kats %}<option value="{{ k.id }}" {{ 'selected' if k.id==r.kategorie_id }}>{{ k.name }}</option>{% endfor %}
+    </select>{% if r.kat_pinned %} <span class="pill" title="manuell fixiert">📌</span>{% endif %}</td>
+    <td><select class="ukat" data-buchung="{{ r.id }}" onchange="onUkat(this,{{ r.id }})">
+      <option value="">—</option>
+      {% for k in kats if k.id==r.kategorie_id %}{% for u in k.unterkategorien %}
+        <option value="{{ u.id }}" {{ 'selected' if u.id==r.unterkategorie_id }}>{{ u.name }}</option>
+      {% endfor %}{% endfor %}
+    </select></td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+<div class="toolbar" style="margin-top:14px;justify-content:center">
+  {% if seite>1 %}<a class="tag" href="?konto={{ f.konto }}&kategorie_id={{ f.kategorie_id }}&suche={{ f.suche }}&offen={{ f.offen }}&seite={{ seite-1 }}">‹ zurück</a>{% endif %}
+  <span class="muted small">Seite {{ seite }}</span>
+  {% if rows|length==200 %}<a class="tag" href="?konto={{ f.konto }}&kategorie_id={{ f.kategorie_id }}&suche={{ f.suche }}&offen={{ f.offen }}&seite={{ seite+1 }}">weiter ›</a>{% endif %}
+</div>
+{% endblock %}
+
+{% block script %}
+const KATS = {{ kats|tojson }};
+function fillUkat(sel, katId, selectedId){
+  sel.innerHTML = '<option value="">—</option>';
+  const k = KATS.find(k=>k.id==katId);
+  if(k) k.unterkategorien.forEach(u=>{
+    const o=document.createElement('option'); o.value=u.id; o.textContent=u.name;
+    if(u.id==selectedId) o.selected=true; sel.appendChild(o);
+  });
+}
+async function onKat(sel, id){
+  const katId = sel.value ? +sel.value : null;
+  const ukat = document.querySelector('select.ukat[data-buchung="'+id+'"]');
+  fillUkat(ukat, katId, null);
+  await postJSON('/api/buchung/'+id+'/kategorie', {kategorie_id:katId, unterkategorie_id:null});
+  flash('gespeichert');
+}
+async function onUkat(sel, id){
+  const katSel = document.querySelector('select.kat[data-buchung="'+id+'"]');
+  const katId = katSel.value ? +katSel.value : null;
+  const ukatId = sel.value ? +sel.value : null;
+  await postJSON('/api/buchung/'+id+'/kategorie', {kategorie_id:katId, unterkategorie_id:ukatId});
+  flash('gespeichert');
+}
+{% endblock %}

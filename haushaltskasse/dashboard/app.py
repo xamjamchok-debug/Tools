@@ -1,0 +1,213 @@
+"""FastAPI-Dashboard der Haushaltskasse.
+
+Start:  python -m haushaltskasse.dashboard.app       (Port 3000)
+        http://localhost:3000
+
+Vier Tabs: Übersicht · Rücklagen · Buchungen · Reports. Die DB ist die Quelle der Wahrheit;
+Umkategorisieren, Rücklagen-Soll und Vermögensposten werden hier direkt bearbeitet.
+"""
+from __future__ import annotations
+
+from contextlib import contextmanager
+from pathlib import Path
+
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+
+from ..storage.db import connect
+from . import queries as q
+
+TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+app = FastAPI(title="Haushaltskasse")
+
+
+# ---------------------------------------------------------------------------
+# Helfer
+# ---------------------------------------------------------------------------
+@contextmanager
+def db():
+    conn = connect()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def _euro(cent) -> str:
+    """Cent -> '1.234,56 €' (deutsche Schreibweise)."""
+    cent = cent or 0
+    s = f"{cent / 100:,.2f}"                       # 1,234.56
+    return s.replace(",", "␟").replace(".", ",").replace("␟", ".") + " €"
+
+
+def _parse_euro(text) -> int:
+    """'240', '240,50', '1.234,56 €' -> Cent (int)."""
+    if text is None:
+        return 0
+    s = str(text).replace("€", "").replace(" ", "").strip()
+    if not s:
+        return 0
+    s = s.replace(".", "").replace(",", ".")       # deutsche -> englische Notation
+    return round(float(s) * 100)
+
+
+TEMPLATES.env.filters["euro"] = _euro
+
+
+# ---------------------------------------------------------------------------
+# Views (GET)
+# ---------------------------------------------------------------------------
+@app.get("/", response_class=HTMLResponse)
+def view_uebersicht(request: Request):
+    with db() as conn, conn.cursor() as cur:
+        ctx = {"request": request, "tab": "uebersicht", "u": q.uebersicht(cur)}
+    return TEMPLATES.TemplateResponse(request, "uebersicht.html", ctx)
+
+
+@app.get("/ruecklagen", response_class=HTMLResponse)
+def view_ruecklagen(request: Request):
+    with db() as conn, conn.cursor() as cur:
+        baum = q.ruecklagen_baum(cur)
+    soll_summe = sum(k["soll_cent"] for k in baum) + sum(
+        u["soll_cent"] for k in baum for u in k["unterkategorien"])
+    return TEMPLATES.TemplateResponse(
+        request, "ruecklagen.html",
+        {"request": request, "tab": "ruecklagen", "baum": baum, "soll_summe_cent": soll_summe})
+
+
+@app.get("/buchungen", response_class=HTMLResponse)
+def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
+                   offen: str = "", suche: str = "", seite: int = 1):
+    limit, offset = 200, (max(seite, 1) - 1) * 200
+    kid = int(kategorie_id) if kategorie_id.isdigit() else None
+    with db() as conn, conn.cursor() as cur:
+        rows, gesamt = q.buchungen(cur, konto=konto or None, kategorie_id=kid,
+                                   nur_offen=(offen == "1"), suche=suche or None,
+                                   limit=limit, offset=offset)
+        kats = q.kategorien_mit_unterkategorien(cur)
+        cur.execute("SELECT name FROM konten ORDER BY name")
+        konten = [r[0] for r in cur.fetchall()]
+    return TEMPLATES.TemplateResponse(request, "buchungen.html", {
+        "request": request, "tab": "buchungen", "rows": rows, "gesamt": gesamt,
+        "kats": kats, "konten": konten, "seite": max(seite, 1),
+        "f": {"konto": konto, "kategorie_id": kategorie_id, "offen": offen, "suche": suche}})
+
+
+@app.get("/reports", response_class=HTMLResponse)
+def view_reports(request: Request, von: str = q.STICHTAG, bis: str = ""):
+    with db() as conn, conn.cursor() as cur:
+        ausgaben = q.ausgaben_je_kategorie(cur, von=von, bis=bis or None)
+        verlauf = q.monatsverlauf(cur, von=von)
+        top = q.top_empfaenger(cur, von=von)
+    return TEMPLATES.TemplateResponse(request, "reports.html", {
+        "request": request, "tab": "reports", "ausgaben": ausgaben, "verlauf": verlauf,
+        "top": top, "von": von, "bis": bis})
+
+
+@app.get("/api/unterkategorien/{kategorie_id}")
+def api_unterkategorien(kategorie_id: int):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, name FROM unterkategorien WHERE kategorie_id=%s ORDER BY name", (kategorie_id,))
+        return [{"id": i, "name": n} for i, n in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Editieren (POST/JSON) — DB ist die Quelle der Wahrheit
+# ---------------------------------------------------------------------------
+class Zuordnung(BaseModel):
+    kategorie_id: int | None = None
+    unterkategorie_id: int | None = None
+
+
+@app.post("/api/buchung/{buchung_id}/kategorie")
+def set_kategorie(buchung_id: int, z: Zuordnung):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("""
+            UPDATE buchungen
+            SET kategorie_id=%s, unterkategorie_id=%s,
+                kat_pinned=TRUE, unterkat_pinned = (%s IS NOT NULL)
+            WHERE id=%s
+        """, (z.kategorie_id, z.unterkategorie_id, z.unterkategorie_id, buchung_id))
+    return {"ok": True}
+
+
+class Betrag(BaseModel):
+    betrag: str      # Euro-Eingabe, z. B. "240" oder "240,50"
+
+
+@app.post("/api/kategorie/{kategorie_id}/ruecklage")
+def set_kat_ruecklage(kategorie_id: int, b: Betrag):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE kategorien SET monatliche_ruecklage_cent=%s WHERE id=%s",
+                    (_parse_euro(b.betrag), kategorie_id))
+    return {"ok": True, "cent": _parse_euro(b.betrag)}
+
+
+@app.post("/api/unterkategorie/{unterkategorie_id}/ruecklage")
+def set_ukat_ruecklage(unterkategorie_id: int, b: Betrag):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE unterkategorien SET monatliche_ruecklage_cent=%s WHERE id=%s",
+                    (_parse_euro(b.betrag), unterkategorie_id))
+    return {"ok": True, "cent": _parse_euro(b.betrag)}
+
+
+class NeueUnterkategorie(BaseModel):
+    kategorie_id: int
+    name: str
+
+
+@app.post("/api/unterkategorie")
+def neue_unterkategorie(nu: NeueUnterkategorie):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("""INSERT INTO unterkategorien (kategorie_id, name, quelle) VALUES (%s,%s,'manuell')
+                       ON CONFLICT (kategorie_id, name) DO NOTHING RETURNING id""",
+                    (nu.kategorie_id, nu.name.strip()))
+        row = cur.fetchone()
+        if not row:
+            cur.execute("SELECT id FROM unterkategorien WHERE kategorie_id=%s AND name=%s",
+                        (nu.kategorie_id, nu.name.strip()))
+            row = cur.fetchone()
+    return {"ok": True, "id": row[0]}
+
+
+class Posten(BaseModel):
+    id: int | None = None
+    name: str
+    betrag: str
+    art: str = "vermoegen"    # 'vermoegen' | 'schuld'
+    notiz: str | None = None
+
+
+@app.post("/api/vermoegensposten")
+def upsert_posten(p: Posten):
+    cent = _parse_euro(p.betrag)
+    with db() as conn, conn.cursor() as cur:
+        if p.id:
+            cur.execute("UPDATE vermoegensposten SET name=%s, wert_cent=%s, art=%s, notiz=%s WHERE id=%s",
+                        (p.name.strip(), cent, p.art, p.notiz, p.id))
+            pid = p.id
+        else:
+            cur.execute("""INSERT INTO vermoegensposten (name, wert_cent, art, notiz) VALUES (%s,%s,%s,%s)
+                           ON CONFLICT (name) DO UPDATE SET wert_cent=EXCLUDED.wert_cent, art=EXCLUDED.art,
+                           notiz=EXCLUDED.notiz RETURNING id""",
+                        (p.name.strip(), cent, p.art, p.notiz))
+            pid = cur.fetchone()[0]
+    return {"ok": True, "id": pid, "cent": cent}
+
+
+@app.post("/api/vermoegensposten/{posten_id}/delete")
+def delete_posten(posten_id: int):
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE vermoegensposten SET aktiv=FALSE WHERE id=%s", (posten_id,))
+    return {"ok": True}
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=3000)

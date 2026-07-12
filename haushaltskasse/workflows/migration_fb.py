@@ -143,7 +143,7 @@ def _lade_fuchsbaukasse() -> tuple[list[dict], dict[str, list[dict]]]:
 def _verifikation(dkb: list[dict], kto: dict[str, list[dict]]) -> None:
     print("\n--- Verifikation (Summen) ---")
     s = sum(b["betrag_cent"] for b in dkb) / 100
-    print(f"  DKB-Giro (real): {len(dkb):5d} Buchungen  Summe {s:>12,.2f} €   (Übersicht: 10.085,08)")
+    print(f"  DKB-Giro (real): {len(dkb):5d} Buchungen  Summe {s:>12,.2f} €   (Soll: FB-Übersichtsblatt)")
     gesamt_rueck = 0
     for kat, buchungen in sorted(kto.items()):
         s = sum(b["betrag_cent"] for b in buchungen)

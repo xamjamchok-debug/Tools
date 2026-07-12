@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titel %} · Rücklagen{% endblock %}
+{% block content %}
+<h1>Rücklagen</h1>
+<p class="sub">Monatliche Soll-Rückstellung je Kategorie und Unterkategorie (editierbar) gegenüber dem Ist-Saldo im Topf.</p>
+
+<div class="grid kpis">
+  <div class="card kpi"><div class="label">Monatliche Soll-Rückstellung (gesamt)</div>
+    <div class="val">{{ soll_summe_cent|euro }}</div></div>
+</div>
+
+<div class="card scroll" style="margin-top:10px"><table>
+  <tr><th>Kategorie / Unterkategorie</th><th class="num">Soll&nbsp;/&nbsp;Monat</th><th class="num">Ist-Saldo (Topf)</th></tr>
+  {% for k in baum %}
+  <tr>
+    <td><b>{{ k.name }}</b></td>
+    <td class="num"><input class="ruecklage-inp" value="{{ (k.soll_cent/100)|round(2) }}"
+        onchange="saveSoll('kategorie', {{ k.id }}, this)"> €</td>
+    <td class="num {{ 'pos' if k.ist_cent>=0 else 'neg' }}">{{ k.ist_cent|euro }}</td>
+  </tr>
+    {% for u in k.unterkategorien %}
+    <tr>
+      <td style="padding-left:26px" class="muted">↳ {{ u.name }}</td>
+      <td class="num"><input class="ruecklage-inp" value="{{ (u.soll_cent/100)|round(2) }}"
+          onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
+      <td class="num small {{ 'pos' if u.ist_cent>=0 else 'neg' }}">{{ u.ist_cent|euro }}</td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+</table></div>
+<p class="small muted" style="margin-top:10px">Der Ist-Saldo je Unterkategorie zeigt die Netto-Bewegung
+(Zuführung minus Verzehr) der dort verbuchten Beträge; der Kategorie-Ist ist der aktuelle Topf-Stand.</p>
+{% endblock %}
+
+{% block script %}
+async function saveSoll(ebene, id, inp){
+  await postJSON('/api/'+ebene+'/'+id+'/ruecklage', {betrag: inp.value});
+  flash('gespeichert');
+}
+{% endblock %}
