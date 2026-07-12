@@ -1,55 +1,67 @@
-"""SQLite-Zugriffsschicht der Haushaltskasse.
+"""PostgreSQL-Zugriffsschicht der Haushaltskasse (Azure Database for PostgreSQL).
 
-Aufruf zum Initialisieren:  python -m haushaltskasse.storage.db
-Die DB-Datei liegt unter haushaltskasse/data/haushaltskasse.db (gitignored, bleibt lokal).
+Verbindung kommt aus der Umgebungsvariable HAUSHALT_DATABASE_URL, z. B.:
+    postgresql://adminuser:PASSWORT@servername.postgres.database.azure.com:5432/haushaltskasse?sslmode=require
+
+Schema anlegen:  python -m haushaltskasse.storage.db
 """
 from __future__ import annotations
 
-import sqlite3
+import os
 from pathlib import Path
 
+import psycopg
+
 _STORAGE_DIR = Path(__file__).resolve().parent
-_DATA_DIR = _STORAGE_DIR.parent / "data"
-DB_PATH = _DATA_DIR / "haushaltskasse.db"
 SCHEMA_PATH = _STORAGE_DIR / "schema.sql"
 
 
-def connect() -> sqlite3.Connection:
-    """Öffnet eine Verbindung mit aktivierten Foreign Keys und Row-Zugriff per Name."""
-    _DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+def _dsn() -> str:
+    dsn = os.getenv("HAUSHALT_DATABASE_URL")
+    if not dsn:
+        raise EnvironmentError(
+            "HAUSHALT_DATABASE_URL nicht gesetzt — Postgres-Connection-String in .env eintragen "
+            "(Format s. .env.example)."
+        )
+    return dsn
 
 
-def init_db(conn: sqlite3.Connection | None = None) -> None:
+def connect() -> psycopg.Connection:
+    """Öffnet eine Verbindung zur Azure-Postgres-Datenbank (SSL wird über den DSN erzwungen)."""
+    return psycopg.connect(_dsn())
+
+
+def init_db(conn: psycopg.Connection | None = None) -> None:
     """Legt alle Tabellen idempotent an (CREATE TABLE IF NOT EXISTS)."""
     own = conn is None
     conn = conn or connect()
-    conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
-    conn.commit()
-    if own:
-        conn.close()
+    try:
+        script = SCHEMA_PATH.read_text(encoding="utf-8")
+        with conn.cursor() as cur:
+            # psycopg3 führt pro execute() ein Statement aus → Skript in Statements aufteilen.
+            for stmt in _split_statements(script):
+                cur.execute(stmt)
+        conn.commit()
+    finally:
+        if own:
+            conn.close()
 
 
-def kennzahlen(conn: sqlite3.Connection | None = None) -> dict:
-    """Liefert die Kern-Kennzahlen: Realsaldo, Summe Rücklagen, verfügbarer Saldo (in Euro).
+def kennzahlen(conn: psycopg.Connection | None = None) -> dict:
+    """Kern-Kennzahlen in Euro: Realsaldo, Summe Rücklagen, verfügbarer Saldo.
 
-    Realsaldo        = Summe aller 'real'-Buchungen (Konten).
-    Summe Rücklagen  = Summe aller 'ruecklage'-Buchungen (Zuführung - Verzehr ± Korrektur).
-    Verfügbar        = Realsaldo - Summe Rücklagen.
-    Umbuchungen zählen nicht (netto 0).
+    Realsaldo       = Summe aller 'real'-Buchungen (Konten).
+    Summe Rücklagen = Summe aller 'ruecklage'-Buchungen (Zuführung - Verzehr ± Korrektur).
+    Verfügbar       = Realsaldo - Summe Rücklagen.  Umbuchungen zählen nicht (netto 0).
     """
     own = conn is None
     conn = conn or connect()
     try:
-        real = conn.execute(
-            "SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE buchungsart='real'"
-        ).fetchone()[0]
-        ruecklagen = conn.execute(
-            "SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE buchungsart='ruecklage'"
-        ).fetchone()[0]
+        with conn.cursor() as cur:
+            cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE buchungsart='real'")
+            real = cur.fetchone()[0]
+            cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE buchungsart='ruecklage'")
+            ruecklagen = cur.fetchone()[0]
         return {
             "realsaldo": round(real / 100, 2),
             "summe_ruecklagen": round(ruecklagen / 100, 2),
@@ -60,7 +72,23 @@ def kennzahlen(conn: sqlite3.Connection | None = None) -> dict:
             conn.close()
 
 
+def _split_statements(script: str) -> list[str]:
+    """Zerlegt das Schema-Skript an ';' in einzelne Statements (kommentar- und leerzeilensicher).
+
+    Das Schema enthält keine Semikolons in String-Literalen oder Funktionskörpern,
+    daher genügt ein einfaches Split.
+    """
+    out = []
+    for raw in script.split(";"):
+        # Kommentarzeilen entfernen, damit keine leeren Statements übrig bleiben
+        lines = [l for l in raw.splitlines() if not l.strip().startswith("--")]
+        stmt = "\n".join(lines).strip()
+        if stmt:
+            out.append(stmt)
+    return out
+
+
 if __name__ == "__main__":
     init_db()
-    print(f"[db] Schema angelegt/aktualisiert: {DB_PATH}")
+    print("[db] Schema angelegt/aktualisiert in der Azure-Postgres-Datenbank.")
     print(f"[db] Kennzahlen: {kennzahlen()}")
