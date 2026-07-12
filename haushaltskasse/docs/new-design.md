@@ -1,5 +1,8 @@
 # Neues Design — Haushaltskasse
 
+> ⚠️ **Teilweise überholt.** Aktueller, verbindlicher Stand: `design-2026-07.md`.
+> Dieses Dokument bleibt als Entscheidungshistorie (Optionsvergleich A–D) erhalten.
+>
 > Stand: 2026-04-24. Analyse abgeschlossen (current-analysis.md). Anforderungen in memory/project_ziele.md.
 
 ---

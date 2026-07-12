@@ -7,3 +7,7 @@ venv/
 *.db
 *.sqlite
 .DS_Store
+
+# Lokale Finanzdaten — niemals ins Repo (Privacy)
+haushaltskasse/data/
+**/data/inbox/
