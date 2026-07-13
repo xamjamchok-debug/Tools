@@ -69,6 +69,28 @@
   je Zeitraum getrennt zeigen, in den konsolidierten Saldo einrechnen. (Teil von U3, hier als
   eigener Merkpunkt, damit es nicht untergeht.)
 
+### Nachbau aus alter Excel + Analyse (neu 2026-07-13)
+- **N1** **Verlauf-, Schulden- & Fuchsbau-Blatt nachbauen** — je ein Dashboard-Bereich:
+  *Verlauf* (Salden-Zeitreihe je Nebenbuch über die Zeit), *Schulden* (Kreditübersicht:
+  KfW, Deutsche Bank, Großeltern …), *Fuchsbau* (Immobilie/Finanzierung). Vorlage: alte Excel-Blätter.
+- **N2** **Verlauf etc. pro Jahr fortschreiben** — jahresweise Fortschreibung/Snapshots je Nebenbuch,
+  über Config gesteuert (im alten `config`-Blatt lagen die Jahresspalten nebeneinander). Hängt mit **Z1**
+  (Standardzeitraum) und **U5** (Stichtag-Delta) zusammen.
+- **N3** **Diagramme** — grafische Auswertungen (Verlauf-Zeitreihe, Ausgaben je Kategorie,
+  Monatsvergleich/Pivot). Skill `dataviz` beachten; Charts self-contained (CSP-konform, inline).
+- **N4** **Stichtage für Merkzettel** — Merkzettel-/Vermögensposten mit Stichtag/Fälligkeit
+  (z. B. „fällig am …"), Anzeige/Sortierung danach. Baut auf **U1** (Merkzettel-Box) und **U4** (Stichtag) auf.
+- **N5** **Logik für Großeltern nachbauen** — separater Pflegekonto-Bereich (Eltern Bullay/Zell) +
+  Kredit Großeltern (−135.000) mit getrennter Buchführung, wie im alten Modell (Pflegekonto/Querverrechnung).
+
+### Betrieb / Daten
+- **O1** **Backup** — regelmäßige DB-Sicherung (`pg_dump` bzw. Azure-Backup der Postgres) mit
+  dokumentiertem Rückspielweg; ggf. automatisiert (Cron/Action).
+- **O2** **Export nach Excel** — Buchungen/Reports/Salden als `.xlsx` exportieren (openpyxl),
+  Download-Button je Ansicht.
+- **O3** **Anonymisierte Show-Site** — öffentliche Demo mit anonymisierten/synthetischen Daten
+  (keine echten Beträge/Namen/IBANs), zum Zeigen ohne Datenschutzrisiko. Separater Datensatz/Instanz.
+
 ### Sonstiges
 - **I1** **Import neuer Umsätze** über die Weboberfläche (DKB/comdirect/Amazon-CSV hochladen →
   `workflows/pipeline.py` läuft, dedupe, kategorisieren). Merker: `parse_amazon_visa` noch auf .xls

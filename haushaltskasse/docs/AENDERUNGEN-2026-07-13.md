@@ -35,3 +35,11 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 26 | Zeitraum | **Standardzeitraum ändern** (Default-Zeitraum konfigurierbar) | Statt fix `STICHTAG` 01.01.2025–heute: sinnvoller Default (laufendes Jahr / letzte N Monate), evtl. in Config einstellbar | 📋 offen |
 | 27 | Rücklagen | **Zufluss/Abfluss vermutlich falsch** (Spalten prüfen & fixen) | `ruecklagen_baum` Zufluss/Abfluss-Logik prüfen; hängt mit Nr. 15 „Salden Kappes" zusammen | 🐞 offen |
 | 28 | Rücklagen | **Untertöpfe richtig befüllen** (nicht alles in „Allgemein") | Zuführungen sinnvoll auf Unterkategorie-Töpfe verteilen (Verteillogik/manuell) statt Sammel-„Allgemein"; Modell A vervollständigen | 📋 offen |
+| 29 | Nachbau | **Verlauf-, Schulden- & Fuchsbau-Blatt nachbauen** (aus alter Excel) | Je ein Dashboard-Bereich: Verlauf (Salden-Zeitreihe je Nebenbuch), Schulden (Kreditübersicht), Fuchsbau (Immobilie/Finanzierung) | 📋 offen |
+| 30 | Zeitraum/Config | **Verlauf etc. pro Jahr fortschreiben** | Jahresweise Fortschreibung/Snapshots je Nebenbuch, über Config gesteuert (Jahresspalten wie im alten config-Blatt) | 📋 offen |
+| 31 | Analyse | **Diagramme** | Grafische Auswertungen (Verlauf, Ausgaben je Kat, Monatsvergleich); Skill `dataviz`, self-contained (CSP) | 📋 offen |
+| 32 | Übersicht | **Stichtage für Merkzettel** | Merkzettel-/Vermögensposten mit Stichtag/Fälligkeit versehen (baut auf U1/U4 auf) | 📋 offen |
+| 33 | Betrieb | **Backup** | Regelmäßige DB-Sicherung (pg_dump / Azure-Backup) + dokumentierter Rückspielweg | 📋 offen |
+| 34 | Export | **Export nach Excel** | Buchungen/Reports/Salden als `.xlsx` (openpyxl) exportieren | 📋 offen |
+| 35 | Datenmodell | **Logik für Großeltern nachbauen** (Pflegekonto/Kredit) | Separater Pflegekonto-Bereich + Kredit Großeltern (−135.000), getrennte Buchführung wie im alten Modell | 📋 offen |
+| 36 | Demo | **Anonymisierte Show-Site** | Öffentliche Demo mit anonymisierten/synthetischen Daten (keine echten Beträge/Namen/IBANs) | 📋 offen |
