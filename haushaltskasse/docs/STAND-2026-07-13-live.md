@@ -34,6 +34,12 @@
   'manuell', heutiges Datum). Braucht neuen Endpoint + Button.
 - **R3** „Soll" (monatliche Zuführung) nur an EINER Stelle editierbar (Rücklagen), in Config
   read-only; klar beschriften. Aktuell doppelt editierbar.
+- **R5** 🐞 **Zufluss/Abfluss-Spalten vermutlich falsch** — Berechnung in `ruecklagen_baum` prüfen
+  und fixen. Hängt mit „Salden Kappes" (Nr. 15) zusammen. Zuerst angehen.
+- **R6** **Untertöpfe richtig befüllen** — Zuführungen sinnvoll auf die Unterkategorie-Töpfe
+  verteilen statt alles im Sammel-Topf „Allgemein" (Modell A vervollständigen).
+- **Z1** **Standardzeitraum konfigurierbar** — statt fix `STICHTAG` 01.01.2025–heute ein sinnvoller
+  Default (laufendes Jahr / letzte N Monate), evtl. in Config einstellbar. Betrifft Rücklagen & Reports.
 
 ### Buchungen
 - **B3** Filter/Umschalter nach `buchungsart` (real/ruecklage/…), damit die B1-Summe nicht durch

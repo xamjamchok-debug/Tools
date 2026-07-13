@@ -32,3 +32,6 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 23 | Betrieb | **V1** sichtbare Versionsnummer + automatisierte Tests | Version im Footer (Env-Var); pytest für Queries/Saldo/Endpoints | 🔧/📋 |
 | 24 | Betrieb | **P0.3** Azure-Kostenanzeige in der Seite | Cost-Management-API / Schätzung + Warnschwelle | 📋 offen |
 | 25 | Analyse | **U5** Veränderung **Stichtag X → Y** (Mittelfluss-Überblick), Default nach Import | Delta = Saldo(Y)−Saldo(X) gesamt + Zufluss/Abfluss je Konto/Kategorie/Topf im Intervall; nach Import automatisch X=Stand-vor-Import, Y=jetzt | 📋 offen |
+| 26 | Zeitraum | **Standardzeitraum ändern** (Default-Zeitraum konfigurierbar) | Statt fix `STICHTAG` 01.01.2025–heute: sinnvoller Default (laufendes Jahr / letzte N Monate), evtl. in Config einstellbar | 📋 offen |
+| 27 | Rücklagen | **Zufluss/Abfluss vermutlich falsch** (Spalten prüfen & fixen) | `ruecklagen_baum` Zufluss/Abfluss-Logik prüfen; hängt mit Nr. 15 „Salden Kappes" zusammen | 🐞 offen |
+| 28 | Rücklagen | **Untertöpfe richtig befüllen** (nicht alles in „Allgemein") | Zuführungen sinnvoll auf Unterkategorie-Töpfe verteilen (Verteillogik/manuell) statt Sammel-„Allgemein"; Modell A vervollständigen | 📋 offen |
