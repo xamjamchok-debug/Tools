@@ -67,13 +67,14 @@ Hash/Secret erzeugen: `python -m haushaltskasse.dashboard.auth`. Mit TestClient 
 
 ## P1 — Rücklagenseite kompakter + Fluss sichtbar
 
-Datei: `dashboard/templates/ruecklagen.html`, Query: `dashboard/queries.py`.
+Datei: `dashboard/templates/ruecklagen.html`, Query: `dashboard/queries.py`.  ✅ ERLEDIGT
 
-- [ ] **Unterkategorien aufklappbar** (Accordion/Tree): Kategorie-Zeile zeigt Summe, Klick klappt die
-      Unterkategorien auf/zu → kompaktere Übersicht. Zustand (auf/zu) merken (localStorage genügt).
-- [ ] **Fluss je Unterkategorie sichtbar machen:** pro Unter-/Kategorie nicht nur Soll/Ist-Saldo, sondern
-      **Einnahmen (Zufluss)** und **Ausgaben (Abfluss)** im Zeitraum getrennt anzeigen (2 Spalten + Netto).
-- [ ] Summen je Kategorie automatisch aus den Unterkategorien rollen; Gesamtsumme oben.
+- [x] **Unterkategorien aufklappbar** (Accordion): Kategorie-Zeile klickbar, Unterkategorien auf/zu,
+      Zustand je Kategorie in `localStorage`; „alle auf/zu"-Schalter.
+- [x] **Fluss sichtbar:** je Kategorie **und** Unterkategorie Spalten **Zufluss / Abfluss / Netto**
+      (reale Buchungen im Zeitraum), zusätzlich zu Soll und Ist-Topf. Zeitraum-Filter (von/bis).
+- [x] Kategorie-Summe (Zufluss/Abfluss) direkt aus allen Buchungen der Kategorie (inkl. solcher
+      ohne Unterkategorie); Soll-Gesamt oben.
 
 ---
 

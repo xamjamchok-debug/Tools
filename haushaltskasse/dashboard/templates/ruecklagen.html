@@ -2,39 +2,78 @@
 {% block titel %} · Rücklagen{% endblock %}
 {% block content %}
 <h1>Rücklagen</h1>
-<p class="sub">Monatliche Soll-Rückstellung je Kategorie und Unterkategorie (editierbar) gegenüber dem Ist-Saldo im Topf.</p>
+<p class="sub">Soll-Rückstellung (editierbar) und Ist-Topf je Kategorie, plus der reale Fluss
+  (Zufluss/Abfluss) im Zeitraum. Klick auf eine Kategorie klappt die Unterkategorien auf/zu.</p>
 
-<div class="grid kpis">
-  <div class="card kpi"><div class="label">Monatliche Soll-Rückstellung (gesamt)</div>
-    <div class="val">{{ soll_summe_cent|euro }}</div></div>
-</div>
+<form class="toolbar" method="get">
+  <div class="card kpi" style="padding:8px 12px"><div class="label">Soll gesamt / Monat</div>
+    <div class="val" style="font-size:20px">{{ soll_summe_cent|euro }}</div></div>
+  <label class="small" style="margin-left:auto">von <input type="date" name="von" value="{{ von }}"></label>
+  <label class="small">bis <input type="date" name="bis" value="{{ bis }}"></label>
+  <button type="submit">Zeitraum</button>
+  <button type="button" class="ghost" onclick="alleAuf(true)">alle auf</button>
+  <button type="button" class="ghost" onclick="alleAuf(false)">alle zu</button>
+</form>
 
 <div class="card scroll" style="margin-top:10px"><table>
-  <tr><th>Kategorie / Unterkategorie</th><th class="num">Soll&nbsp;/&nbsp;Monat</th><th class="num">Ist-Saldo (Topf)</th></tr>
-  {% for k in baum %}
   <tr>
-    <td><b>{{ k.name }}</b></td>
+    <th>Kategorie / Unterkategorie</th>
+    <th class="num">Soll&nbsp;/&nbsp;Mon</th>
+    <th class="num">Ist-Topf</th>
+    <th class="num">Zufluss</th>
+    <th class="num">Abfluss</th>
+    <th class="num">Netto</th>
+  </tr>
+  {% for k in baum %}
+  {% set netto = k.zufluss_cent + k.abfluss_cent %}
+  <tr data-kat="{{ k.id }}" style="cursor:pointer" onclick="toggleKat({{ k.id }}, event)">
+    <td><span id="caret-{{ k.id }}" class="muted">▸</span> <b>{{ k.name }}</b>
+      {% if k.unterkategorien %}<span class="tag">{{ k.unterkategorien|length }}</span>{% endif %}</td>
     <td class="num"><input class="ruecklage-inp" value="{{ (k.soll_cent/100)|round(2) }}"
-        onchange="saveSoll('kategorie', {{ k.id }}, this)"> €</td>
+        onclick="event.stopPropagation()" onchange="saveSoll('kategorie', {{ k.id }}, this)"> €</td>
     <td class="num {{ 'pos' if k.ist_cent>=0 else 'neg' }}">{{ k.ist_cent|euro }}</td>
+    <td class="num {{ 'pos' if k.zufluss_cent else 'muted' }}">{{ k.zufluss_cent|euro }}</td>
+    <td class="num {{ 'neg' if k.abfluss_cent else 'muted' }}">{{ k.abfluss_cent|euro }}</td>
+    <td class="num {{ 'pos' if netto>=0 else 'neg' }}">{{ netto|euro }}</td>
   </tr>
     {% for u in k.unterkategorien %}
-    <tr>
+    {% set unetto = u.zufluss_cent + u.abfluss_cent %}
+    <tr class="ukat-{{ k.id }}" style="display:none">
       <td style="padding-left:26px" class="muted">↳ {{ u.name }}</td>
       <td class="num"><input class="ruecklage-inp" value="{{ (u.soll_cent/100)|round(2) }}"
           onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
       <td class="num small {{ 'pos' if u.ist_cent>=0 else 'neg' }}">{{ u.ist_cent|euro }}</td>
+      <td class="num small {{ 'pos' if u.zufluss_cent else 'muted' }}">{{ u.zufluss_cent|euro }}</td>
+      <td class="num small {{ 'neg' if u.abfluss_cent else 'muted' }}">{{ u.abfluss_cent|euro }}</td>
+      <td class="num small {{ 'pos' if unetto>=0 else 'neg' }}">{{ unetto|euro }}</td>
     </tr>
     {% endfor %}
   {% endfor %}
 </table></div>
-<p class="small muted" style="margin-top:10px">Der Ist-Saldo je Unterkategorie zeigt die Netto-Bewegung
-(Zuführung minus Verzehr) der dort verbuchten Beträge; der Kategorie-Ist ist der aktuelle Topf-Stand.</p>
+<p class="small muted" style="margin-top:10px">Ist-Topf = aktueller Rücklagen-Stand (Zuführung minus Verzehr, all-time).
+  Zufluss/Abfluss = reale Ein-/Ausgaben im gewählten Zeitraum. Netto = Zufluss + Abfluss.</p>
 {% endblock %}
 
 {% block script %}
+function setKat(kid, open){
+  document.querySelectorAll('tr.ukat-'+kid).forEach(r=> r.style.display = open ? '' : 'none');
+  const c=document.getElementById('caret-'+kid); if(c) c.textContent = open ? '▾' : '▸';
+  localStorage.setItem('rk-'+kid, open ? '1' : '0');
+}
+function toggleKat(kid, ev){
+  const rows=document.querySelectorAll('tr.ukat-'+kid);
+  const offen = rows.length && rows[0].style.display==='none';
+  setKat(kid, offen);
+}
+function alleAuf(open){ document.querySelectorAll('tr[data-kat]').forEach(el=>setKat(el.getAttribute('data-kat'), open)); }
 async function saveSoll(ebene, id, inp){
   await postJSON('/api/'+ebene+'/'+id+'/ruecklage', {betrag: inp.value});
   flash('gespeichert');
 }
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('tr[data-kat]').forEach(el=>{
+    const kid=el.getAttribute('data-kat');
+    if(localStorage.getItem('rk-'+kid)==='1') setKat(kid, true);
+  });
+});
 {% endblock %}

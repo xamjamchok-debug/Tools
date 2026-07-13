@@ -112,16 +112,47 @@ def uebersicht(cur) -> dict:
 # ---------------------------------------------------------------------------
 # Rücklagen-Baum: Kategorie -> Unterkategorien, je mit Soll und Ist
 # ---------------------------------------------------------------------------
-def ruecklagen_baum(cur) -> list[dict]:
-    """Je Kategorie: Soll (monatlich), Ist-Saldo (aus ruecklage-Buchungen) und die Unterkategorien."""
+def ruecklagen_baum(cur, von: str = STICHTAG, bis: str | None = None) -> list[dict]:
+    """Je Kategorie: Soll (monatlich), Ist-Topf-Saldo (aus ruecklage-Buchungen), die
+    Unterkategorien — und der reale Fluss (Zufluss/Abfluss) im Zeitraum [von, bis].
+
+    Ist-Saldo = aktueller Topf-Stand (all-time). Zufluss/Abfluss = reale Ein-/Ausgaben im Zeitraum.
+    """
+    bis = bis or date.today().isoformat()
+
+    # reale Flüsse im Zeitraum je Kategorie / je Unterkategorie
+    cur.execute("""
+        SELECT kategorie_id,
+               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent > 0), 0),
+               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent < 0), 0)
+        FROM buchungen
+        WHERE buchungsart='real' AND quelle_import <> 'startsaldo'
+          AND kategorie_id IS NOT NULL AND datum_wert >= %s AND datum_wert <= %s
+        GROUP BY kategorie_id
+    """, (von, bis))
+    fluss_kat = {kid: (zu, ab) for kid, zu, ab in cur.fetchall()}
+    cur.execute("""
+        SELECT unterkategorie_id,
+               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent > 0), 0),
+               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent < 0), 0)
+        FROM buchungen
+        WHERE buchungsart='real' AND quelle_import <> 'startsaldo'
+          AND unterkategorie_id IS NOT NULL AND datum_wert >= %s AND datum_wert <= %s
+        GROUP BY unterkategorie_id
+    """, (von, bis))
+    fluss_ukat = {uid: (zu, ab) for uid, zu, ab in cur.fetchall()}
+
     cur.execute("""
         SELECT k.id, k.name, k.monatliche_ruecklage_cent,
                COALESCE((SELECT SUM(b.betrag_cent) FROM buchungen b
                          WHERE b.kategorie_id = k.id AND b.buchungsart='ruecklage'), 0) AS ist
         FROM kategorien k WHERE k.aktiv ORDER BY k.name
     """)
-    kats = [{"id": i, "name": n, "soll_cent": soll, "ist_cent": ist, "unterkategorien": []}
-            for i, n, soll, ist in cur.fetchall()]
+    kats = []
+    for i, n, soll, ist in cur.fetchall():
+        zu, ab = fluss_kat.get(i, (0, 0))
+        kats.append({"id": i, "name": n, "soll_cent": soll, "ist_cent": ist,
+                     "zufluss_cent": zu, "abfluss_cent": ab, "unterkategorien": []})
     kat_by_id = {k["id"]: k for k in kats}
 
     cur.execute("""
@@ -132,8 +163,10 @@ def ruecklagen_baum(cur) -> list[dict]:
     """)
     for i, kid, n, soll, ist in cur.fetchall():
         if kid in kat_by_id:
+            zu, ab = fluss_ukat.get(i, (0, 0))
             kat_by_id[kid]["unterkategorien"].append(
-                {"id": i, "name": n, "soll_cent": soll, "ist_cent": ist})
+                {"id": i, "name": n, "soll_cent": soll, "ist_cent": ist,
+                 "zufluss_cent": zu, "abfluss_cent": ab})
     return kats
 
 

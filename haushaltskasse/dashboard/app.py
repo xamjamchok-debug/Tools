@@ -112,14 +112,15 @@ def view_uebersicht(request: Request):
 
 
 @app.get("/ruecklagen", response_class=HTMLResponse)
-def view_ruecklagen(request: Request):
+def view_ruecklagen(request: Request, von: str = q.STICHTAG, bis: str = ""):
     with db() as conn, conn.cursor() as cur:
-        baum = q.ruecklagen_baum(cur)
+        baum = q.ruecklagen_baum(cur, von=von, bis=bis or None)
     soll_summe = sum(k["soll_cent"] for k in baum) + sum(
         u["soll_cent"] for k in baum for u in k["unterkategorien"])
     return TEMPLATES.TemplateResponse(
         request, "ruecklagen.html",
-        {"request": request, "tab": "ruecklagen", "baum": baum, "soll_summe_cent": soll_summe})
+        {"request": request, "tab": "ruecklagen", "baum": baum,
+         "soll_summe_cent": soll_summe, "von": von, "bis": bis})
 
 
 @app.get("/buchungen", response_class=HTMLResponse)
