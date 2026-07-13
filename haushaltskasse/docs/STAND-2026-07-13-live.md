@@ -55,6 +55,16 @@
 - **I1** **Import neuer Umsätze** über die Weboberfläche (DKB/comdirect/Amazon-CSV hochladen →
   `workflows/pipeline.py` läuft, dedupe, kategorisieren). Merker: `parse_amazon_visa` noch auf .xls
   → auf CSV umstellen, sobald Amazon als CSV kommt.
+- **K1** **Schlauere Kategorien/Unterkategorien** — bessere (KI-gestützte) Zuordnung, lernende
+  Mapping-Regeln (`mapping_regeln`-Tabelle existiert schon), Vorschläge bestätigen.
+- **B4** **Besser filtern** (Buchungen) — mehr/kombinierbare Filter, Mehrfachauswahl Unterkategorie,
+  Filter-Chips; zusammen mit B3 (Buchungsart-Filter).
+- **P2** **Freie Query + Pivot + Ein-/Auszahlen** — freie Recherche (read-only SQL-Konsole und/oder
+  KI-Text-Prompt→SQL), Pivot-Report ausbauen (Basis in Reports vorhanden), „Einzahlen/Auszahlen" =
+  manuelle Zuführung/Entnahme auf Töpfe (deckt sich mit R4).
+- **V1** **Versionierung + Tests** — App-Version/Build-Stempel in der UI anzeigen (sichtbar machen,
+  welche Version live ist), ggf. Daten-Snapshots/Historie; dazu automatisierte Tests (pytest) für
+  Queries/Saldo-Formeln/Endpoints, damit Änderungen abgesichert sind.
 - **P0.3** Azure-Kostenanzeige in der Seite (ACR Basic ~5 $/Mon fix, Postgres, Container ~0 im Leerlauf).
 
 ---
@@ -65,9 +75,12 @@ Nach Code-Änderungen (auch nach `git pull` von Handy-Commits):
 # im Repo-Root, PowerShell:
 $env:PYTHONIOENCODING="utf-8"
 $az = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd"
-& $az acr build -r hhkassec1k7wx -t haushaltskasse:latest .
+& $az acr build -r hhkassec1k7wx -t haushaltskasse:latest . --no-logs   # --no-logs vermeidet den charmap-Crash
 & $az containerapp update -g haushaltskasse-rg -n haushaltskasse --image hhkassec1k7wx.azurecr.io/haushaltskasse:latest
 ```
+> **`--no-logs` ist wichtig:** ohne es crasht die Windows-Konsole (cp1252) beim Log-Streaming
+> (`UnicodeEncodeError: charmap`). Der Build läuft dann zwar serverseitig durch, aber der
+> `update`-Schritt wird übersprungen. Status sonst prüfen: `az acr task list-runs -r hhkassec1k7wx --top 1 -o table`.
 > **Empfehlung fürs Handy-Arbeiten:** GitHub-Actions-Auto-Deploy einrichten (Service Principal +
 > Secret + Workflow), dann deployt jeder Push automatisch — dann brauchst du den PC-Schritt nicht mehr.
 
