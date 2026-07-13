@@ -28,15 +28,14 @@
 Ziel: Zugriff aufs Dashboard unterwegs über das Internet (nicht nur Heimnetz), mit Login-Schutz,
 weil private Finanzdaten. HTTPS zwingend.
 
-### P0.1 Auth / Login (MUSS vor Public-Deploy stehen)
-- [ ] Einfaches Login vor die ganze App hängen. Optionen abwägen:
-  - **A (schnell):** HTTP-Basic-Auth oder Session-Cookie mit einem einzigen User/Passwort aus `.env`
-    (`HAUSHALT_APP_USER`, `HAUSHALT_APP_PASSWORD_HASH`). FastAPI-Dependency auf allen Routen.
-  - **B (sauberer, später):** Azure App Service „Easy Auth" (Microsoft-Entra-Login) — kein eigener Code,
-    aber an Azure gebunden. Für Single-User evtl. Overkill.
-  - **Empfehlung:** Start mit A (Session-Cookie + gehashtes Passwort, `passlib[bcrypt]`), Middleware
-    die alle Routen außer `/login` und `/health` schützt.
-- [ ] CSRF/Secure-Cookie-Flags setzen (`Secure`, `HttpOnly`, `SameSite=Lax`), da über HTTPS öffentlich.
+### P0.1 Auth / Login (MUSS vor Public-Deploy stehen)  ✅ ERLEDIGT (Variante A)
+Umgesetzt: `dashboard/auth.py` (Session-Cookie + bcrypt, Single-User aus `.env`), Middleware schützt
+alle Routen außer `/login`, `/logout`, `/health`. Login-/Logout-Routen + `login.html`, Abmelden im Menü.
+Hash/Secret erzeugen: `python -m haushaltskasse.dashboard.auth`. Mit TestClient verifiziert.
+- [x] Login vor die ganze App gehängt — Variante A (Session-Cookie + gehashtes Passwort, `bcrypt`),
+  Middleware die alle Routen außer `/login`/`/logout`/`/health` schützt (API → 401, Views → Redirect).
+- [x] Secure-Cookie-Flags: `HttpOnly` + `SameSite=Lax` gesetzt; `Secure` via `HAUSHALT_HTTPS_ONLY=1`
+  (in Produktion aktivieren). Session signiert über `HAUSHALT_SESSION_SECRET`.
 
 ### P0.2 Deployment-Ziel wählen + einrichten
 - [ ] Variante festlegen (Empfehlung: **Azure App Service für Linux, Container oder Code-Deploy**,

@@ -65,6 +65,8 @@
   <a href="/buchungen"  class="{{ 'active' if tab=='buchungen' else '' }}">Buchungen</a>
   <a href="/reports"    class="{{ 'active' if tab=='reports' else '' }}">Reports</a>
   <a href="/config"     class="{{ 'active' if tab=='config' else '' }}">Config</a>
+  <a href="#" style="margin-left:auto;color:var(--muted)"
+     onclick="fetch('/logout',{method:'POST'}).then(()=>location='/login');return false">Abmelden</a>
 </nav></header>
 <main>{% block content %}{% endblock %}</main>
 <div class="flash" id="flash"></div>

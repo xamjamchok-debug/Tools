@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anmelden · Haushaltskasse</title>
+<style>
+  :root{ --bg:#f6f7f9; --card:#fff; --text:#181b20; --muted:#6b7280; --border:#e4e7eb;
+    --accent:#2563eb; --neg:#dc2626; }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0f1115; --card:#171a1f; --text:#e6e8eb; --muted:#9aa1ab; --border:#2a2f37;
+      --accent:#4b8bff; --neg:#f87171; } }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;display:flex;
+    align-items:center;justify-content:center;
+    font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .box{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:28px 26px;width:min(360px,92vw)}
+  .brand{font-weight:700;font-size:19px;margin:0 0 2px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+  input{width:100%;font:inherit;color:var(--text);background:var(--bg);
+    border:1px solid var(--border);border-radius:8px;padding:9px 11px}
+  input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  button{width:100%;margin-top:18px;font:inherit;font-weight:600;cursor:pointer;
+    background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px}
+  .fehler{color:var(--neg);font-size:13px;margin:12px 0 0}
+  .hint{color:var(--muted);font-size:12px;margin:16px 0 0;line-height:1.4}
+</style>
+</head>
+<body>
+<form class="box" method="post" action="/login">
+  <p class="brand">🦊 Haushaltskasse</p>
+  <p class="sub">Bitte anmelden</p>
+  {% if not auth_aktiv %}
+    <p class="hint">Auth ist noch nicht konfiguriert. Setze <code>HAUSHALT_APP_USER</code> und
+      <code>HAUSHALT_APP_PASSWORD_HASH</code> in der <code>.env</code>
+      (<code>python -m haushaltskasse.dashboard.auth</code>).</p>
+  {% else %}
+    <label for="username">Benutzername</label>
+    <input id="username" name="username" autocomplete="username" autofocus>
+    <label for="password">Passwort</label>
+    <input id="password" name="password" type="password" autocomplete="current-password">
+    <button type="submit">Anmelden</button>
+  {% endif %}
+  {% if fehler %}<p class="fehler">{{ fehler }}</p>{% endif %}
+</form>
+</body>
+</html>

@@ -12,17 +12,25 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
 
 from ..storage.db import connect
 from ..workflows.gegenbuchung import sync_eine
+from . import auth
 from . import queries as q
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 app = FastAPI(title="Haushaltskasse")
+
+# Reihenfolge wichtig: SessionMiddleware zuletzt hinzufügen -> läuft ZUERST und füllt
+# request.session, bevor die AuthMiddleware sie liest.
+app.add_middleware(auth.AuthMiddleware)
+app.add_middleware(SessionMiddleware, secret_key=auth.session_secret(),
+                   https_only=auth.https_only(), same_site="lax")
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +68,37 @@ def _parse_euro(text) -> int:
 
 
 TEMPLATES.env.filters["euro"] = _euro
+
+
+# ---------------------------------------------------------------------------
+# Auth (P0.1) — Login/Logout/Health
+# ---------------------------------------------------------------------------
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_form(request: Request):
+    return TEMPLATES.TemplateResponse(
+        request, "login.html", {"request": request, "fehler": None, "auth_aktiv": auth.auth_aktiv()})
+
+
+@app.post("/login")
+def login_post(request: Request, username: str = Form(""), password: str = Form("")):
+    if auth.passwort_ok(username, password):
+        request.session["auth"] = True
+        return RedirectResponse("/", status_code=303)
+    return TEMPLATES.TemplateResponse(
+        request, "login.html",
+        {"request": request, "fehler": "Benutzername oder Passwort falsch.", "auth_aktiv": auth.auth_aktiv()},
+        status_code=401)
+
+
+@app.post("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
 
 
 # ---------------------------------------------------------------------------
