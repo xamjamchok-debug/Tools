@@ -1,0 +1,12 @@
+.git
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.vscode/
+# Private Daten / Secrets niemals ins Image
+.env
+input/
+**/data/
+**/data/inbox/

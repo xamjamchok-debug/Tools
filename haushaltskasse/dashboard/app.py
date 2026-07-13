@@ -333,6 +333,7 @@ if __name__ == "__main__":
     # Standard: im Heimnetz erreichbar (0.0.0.0) -> Handy/Laptop via http://<PC-IP>:3000.
     # Nur-lokal:  HAUSHALT_DASHBOARD_HOST=127.0.0.1 setzen.
     host = os.getenv("HAUSHALT_DASHBOARD_HOST", "0.0.0.0")
-    port = int(os.getenv("HAUSHALT_DASHBOARD_PORT", "3000"))
+    # PORT wird von Azure App Service / Container Apps gesetzt; sonst 3000 (lokal).
+    port = int(os.getenv("PORT") or os.getenv("HAUSHALT_DASHBOARD_PORT", "3000"))
     print(f"[dashboard] http://localhost:{port}  (im WLAN: http://<PC-IP>:{port})")
     uvicorn.run(app, host=host, port=port)

@@ -38,6 +38,10 @@ Hash/Secret erzeugen: `python -m haushaltskasse.dashboard.auth`. Mit TestClient 
   (in Produktion aktivieren). Session signiert über `HAUSHALT_SESSION_SECRET`.
 
 ### P0.2 Deployment-Ziel wählen + einrichten
+> **Vorbereitet (Code):** `Dockerfile` + `.dockerignore` im Repo-Root, `$PORT`-Support in `app.py`,
+> Schritt-für-Schritt-Anleitung in `haushaltskasse/docs/DEPLOY.md` (Variante A App Service Code +
+> Variante C Container Apps). Der eigentliche Azure-Deploy ist interaktiv am PC zu machen.
+- [x] `Dockerfile` bzw. `startup`-Command + `requirements.txt` geprüft (uvicorn, Port aus `$PORT`).
 - [ ] Variante festlegen (Empfehlung: **Azure App Service für Linux, Container oder Code-Deploy**,
       gleiche Subscription/RG wie die DB → interne Verbindung zur Postgres, spart Egress + einfacher Firewall):
   - **A App Service (Code, Python):** `az webapp up` / Deploy aus GitHub. Uvicorn/Gunicorn Startcommand.
