@@ -57,14 +57,26 @@ def _euro(cent) -> str:
 
 
 def _parse_euro(text) -> int:
-    """'240', '240,50', '1.234,56 €' -> Cent (int)."""
+    """Euro-Eingabe -> Cent (int). Robust für beide Notationen, weil die UI Werte mit
+    Punkt-Dezimal anzeigt (`round(2)` -> '72.5'), der Nutzer aber auch deutsch tippt ('72,50').
+
+    '240' -> 24000 · '72.5' -> 7250 · '240,50' -> 24050 · '1.234,56 €' -> 123456 · '1,234.56' -> 123456.
+    Regel: der zuletzt stehende '.' oder ',' ist der Dezimaltrenner, alle anderen sind Tausender.
+    """
     if text is None:
         return 0
     s = str(text).replace("€", "").replace(" ", "").strip()
     if not s:
         return 0
-    s = s.replace(".", "").replace(",", ".")       # deutsche -> englische Notation
-    return round(float(s) * 100)
+    neg = s.startswith("-")
+    s = s.lstrip("+-")
+    last_dot, last_comma = s.rfind("."), s.rfind(",")
+    if last_comma > last_dot:            # Komma ist Dezimaltrenner (deutsch): 1.234,56
+        s = s.replace(".", "").replace(",", ".")
+    else:                                # Punkt ist Dezimaltrenner (englisch/UI): 1,234.56 / 72.5
+        s = s.replace(",", "")
+    cent = round(float(s) * 100)
+    return -cent if neg else cent
 
 
 TEMPLATES.env.filters["euro"] = _euro

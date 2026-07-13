@@ -51,6 +51,14 @@
   Vermögensposten als zeitlos-konstant dazurechnen + klar kennzeichnen (opt. `stand_datum` je Posten).
   Datumsfeld an der Saldo-Herleitung (U2).
 
+### Config
+- **C1** Config-Seite: Kategorien **einklappbar** machen (Accordion wie Rücklagen), kompakter.
+
+### Übersicht/Monatsablauf – Einnahmen
+- **E1** **Einnahmen explizit aufnehmen** im Monatsablauf (U3) UND als eigene Sicht: Zufluss/Gehalt
+  je Zeitraum getrennt zeigen, in den konsolidierten Saldo einrechnen. (Teil von U3, hier als
+  eigener Merkpunkt, damit es nicht untergeht.)
+
 ### Sonstiges
 - **I1** **Import neuer Umsätze** über die Weboberfläche (DKB/comdirect/Amazon-CSV hochladen →
   `workflows/pipeline.py` läuft, dedupe, kategorisieren). Merker: `parse_amazon_visa` noch auf .xls
