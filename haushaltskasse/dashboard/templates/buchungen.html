@@ -2,14 +2,23 @@
 {% block titel %} · Buchungen{% endblock %}
 {% block content %}
 <h1>Buchungen</h1>
-<p class="sub">Zuordnung zu Kategorie/Unterkategorie ändern — die Auswahl wird sofort gespeichert und fixiert (bleibt bei Reimport erhalten).</p>
+<p class="sub">Sortier- und filterbar. Kategorie/Unterkategorie ändern wird sofort gespeichert und fixiert (bleibt bei Reimport erhalten).</p>
 
-<form class="toolbar" method="get">
+<form class="toolbar" method="get" id="filter">
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="richtung" value="{{ richtung }}">
+  <input type="hidden" name="seite" value="1">
   <select name="konto"><option value="">Alle Konten</option>
     {% for k in konten %}<option value="{{ k }}" {{ 'selected' if f.konto==k }}>{{ k }}</option>{% endfor %}</select>
   <select name="kategorie_id"><option value="">Alle Kategorien</option>
     {% for k in kats %}<option value="{{ k.id }}" {{ 'selected' if f.kategorie_id==k.id|string }}>{{ k.name }}</option>{% endfor %}</select>
-  <input name="suche" value="{{ f.suche }}" placeholder="Suche Empfänger/Zweck" style="min-width:200px">
+  <select name="unterkategorie_id"><option value="">Alle Unterkat.</option>
+    {% for u in ukats_flat %}<option value="{{ u.id }}" {{ 'selected' if f.unterkategorie_id==u.id|string }}>{{ u.label }}</option>{% endfor %}</select>
+  <input name="suche" value="{{ f.suche }}" placeholder="Empfänger/Zweck" style="min-width:170px">
+  <input type="date" name="von" value="{{ f.von }}" title="Datum von">
+  <input type="date" name="bis" value="{{ f.bis }}" title="Datum bis">
+  <input name="betrag_min" value="{{ f.betrag_min }}" placeholder="Betrag ≥ €" style="width:96px" inputmode="decimal">
+  <input name="betrag_max" value="{{ f.betrag_max }}" placeholder="Betrag ≤ €" style="width:96px" inputmode="decimal">
   <label class="small" style="display:flex;align-items:center;gap:6px">
     <input type="checkbox" name="offen" value="1" {{ 'checked' if f.offen=='1' }} style="width:auto"> nur offene</label>
   <button type="submit">Filtern</button>
@@ -18,8 +27,14 @@
 </form>
 
 <div class="card scroll"><table>
-  <tr><th>Datum</th><th>Konto</th><th>Empfänger / Zweck</th><th class="num">Betrag</th>
-      <th>Kategorie</th><th>Unterkategorie</th></tr>
+  <tr>
+    <th onclick="sortBy('datum')" style="cursor:pointer">Datum {% if sort=='datum' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
+    <th onclick="sortBy('konto')" style="cursor:pointer">Konto {% if sort=='konto' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
+    <th onclick="sortBy('empfaenger')" style="cursor:pointer">Empfänger / Zweck {% if sort=='empfaenger' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
+    <th class="num" onclick="sortBy('betrag')" style="cursor:pointer">Betrag {% if sort=='betrag' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
+    <th onclick="sortBy('kategorie')" style="cursor:pointer">Kategorie {% if sort=='kategorie' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
+    <th onclick="sortBy('unterkategorie')" style="cursor:pointer">Unterkategorie {% if sort=='unterkategorie' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
+  </tr>
   {% for r in rows %}
   <tr>
     <td class="small">{{ r.datum }}</td>
@@ -39,17 +54,25 @@
     </select></td>
   </tr>
   {% endfor %}
+  {% if not rows %}<tr><td colspan="6" class="muted small">Keine Buchungen für diese Filter.</td></tr>{% endif %}
 </table></div>
 
 <div class="toolbar" style="margin-top:14px;justify-content:center">
-  {% if seite>1 %}<a class="tag" href="?konto={{ f.konto }}&kategorie_id={{ f.kategorie_id }}&suche={{ f.suche }}&offen={{ f.offen }}&seite={{ seite-1 }}">‹ zurück</a>{% endif %}
+  {% if seite>1 %}<button type="button" class="ghost" onclick="gotoSeite({{ seite-1 }})">‹ zurück</button>{% endif %}
   <span class="muted small">Seite {{ seite }}</span>
-  {% if rows|length==200 %}<a class="tag" href="?konto={{ f.konto }}&kategorie_id={{ f.kategorie_id }}&suche={{ f.suche }}&offen={{ f.offen }}&seite={{ seite+1 }}">weiter ›</a>{% endif %}
+  {% if rows|length==200 %}<button type="button" class="ghost" onclick="gotoSeite({{ seite+1 }})">weiter ›</button>{% endif %}
 </div>
 {% endblock %}
 
 {% block script %}
 const KATS = {{ kats|tojson }};
+function sortBy(col){
+  const f=document.getElementById('filter');
+  if(f.sort.value===col){ f.richtung.value = (f.richtung.value==='asc') ? 'desc' : 'asc'; }
+  else { f.sort.value=col; f.richtung.value = (col==='datum'||col==='betrag') ? 'desc' : 'asc'; }
+  f.seite.value=1; f.submit();
+}
+function gotoSeite(n){ const f=document.getElementById('filter'); f.seite.value=n; f.submit(); }
 function fillUkat(sel, katId, selectedId){
   sel.innerHTML = '<option value="">—</option>';
   const k = KATS.find(k=>k.id==katId);

@@ -197,9 +197,23 @@ def top_empfaenger(cur, von: str = STICHTAG, limit: int = 20) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Buchungsliste (filterbar) + Stammdaten für Dropdowns
 # ---------------------------------------------------------------------------
+# Whitelist sortierbarer Spalten (Schutz vor SQL-Injection: nur diese Ausdrücke landen im ORDER BY).
+SORT_SPALTEN = {
+    "datum": "b.datum_wert",
+    "betrag": "b.betrag_cent",
+    "empfaenger": "b.empfaenger",
+    "konto": "kt.name",
+    "kategorie": "k.name",
+    "unterkategorie": "u.name",
+    "zweck": "b.verwendungszweck",
+}
+
+
 def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
-              nur_offen: bool = False, suche: str | None = None,
-              von: str | None = None, bis: str | None = None,
+              unterkategorie_id: int | None = None, nur_offen: bool = False,
+              suche: str | None = None, von: str | None = None, bis: str | None = None,
+              betrag_min_cent: int | None = None, betrag_max_cent: int | None = None,
+              sort: str = "datum", richtung: str = "desc",
               limit: int = 200, offset: int = 0) -> tuple[list[dict], int]:
     where = ["b.quelle_import <> 'startsaldo'"]
     params: list = []
@@ -207,6 +221,8 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
         where.append("kt.name = %s"); params.append(konto)
     if kategorie_id is not None:
         where.append("b.kategorie_id = %s"); params.append(kategorie_id)
+    if unterkategorie_id is not None:
+        where.append("b.unterkategorie_id = %s"); params.append(unterkategorie_id)
     if nur_offen:
         where.append("b.kategorie_id IS NULL AND b.buchungsart='real'")
     if suche:
@@ -216,9 +232,18 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
         where.append("b.datum_wert >= %s"); params.append(von)
     if bis:
         where.append("b.datum_wert <= %s"); params.append(bis)
+    if betrag_min_cent is not None:
+        where.append("b.betrag_cent >= %s"); params.append(betrag_min_cent)
+    if betrag_max_cent is not None:
+        where.append("b.betrag_cent <= %s"); params.append(betrag_max_cent)
     w = " AND ".join(where)
 
-    cur.execute(f"SELECT COUNT(*) FROM buchungen b LEFT JOIN konten kt ON kt.id=b.konto_id WHERE {w}", params)
+    # ORDER BY nur aus der Whitelist -> keine Injektion über sort/richtung möglich.
+    spalte = SORT_SPALTEN.get(sort, "b.datum_wert")
+    ordr = "ASC" if richtung == "asc" else "DESC"
+
+    cur.execute(f"""SELECT COUNT(*) FROM buchungen b
+                    LEFT JOIN konten kt ON kt.id=b.konto_id WHERE {w}""", params)
     gesamt = cur.fetchone()[0]
 
     cur.execute(f"""
@@ -230,7 +255,7 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
         LEFT JOIN kategorien k ON k.id = b.kategorie_id
         LEFT JOIN unterkategorien u ON u.id = b.unterkategorie_id
         WHERE {w}
-        ORDER BY b.datum_wert DESC, b.id DESC
+        ORDER BY {spalte} {ordr} NULLS LAST, b.id DESC
         LIMIT %s OFFSET %s
     """, params + [limit, offset])
     cols = ["id", "datum", "betrag_cent", "buchungsart", "konto", "kategorie_id", "kategorie",

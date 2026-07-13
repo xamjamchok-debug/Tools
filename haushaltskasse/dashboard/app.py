@@ -124,20 +124,35 @@ def view_ruecklagen(request: Request):
 
 @app.get("/buchungen", response_class=HTMLResponse)
 def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
-                   offen: str = "", suche: str = "", seite: int = 1):
+                   unterkategorie_id: str = "", offen: str = "", suche: str = "",
+                   von: str = "", bis: str = "", betrag_min: str = "", betrag_max: str = "",
+                   sort: str = "datum", richtung: str = "desc", seite: int = 1):
     limit, offset = 200, (max(seite, 1) - 1) * 200
     kid = int(kategorie_id) if kategorie_id.isdigit() else None
+    uid = int(unterkategorie_id) if unterkategorie_id.isdigit() else None
+    bmin = _parse_euro(betrag_min) if betrag_min.strip() else None
+    bmax = _parse_euro(betrag_max) if betrag_max.strip() else None
+    if sort not in q.SORT_SPALTEN:
+        sort = "datum"
+    richtung = "asc" if richtung == "asc" else "desc"
     with db() as conn, conn.cursor() as cur:
-        rows, gesamt = q.buchungen(cur, konto=konto or None, kategorie_id=kid,
-                                   nur_offen=(offen == "1"), suche=suche or None,
-                                   limit=limit, offset=offset)
+        rows, gesamt = q.buchungen(
+            cur, konto=konto or None, kategorie_id=kid, unterkategorie_id=uid,
+            nur_offen=(offen == "1"), suche=suche or None, von=von or None, bis=bis or None,
+            betrag_min_cent=bmin, betrag_max_cent=bmax, sort=sort, richtung=richtung,
+            limit=limit, offset=offset)
         kats = q.kategorien_mit_unterkategorien(cur)
         cur.execute("SELECT name FROM konten ORDER BY name")
         konten = [r[0] for r in cur.fetchall()]
+    ukats_flat = [{"id": u["id"], "label": f'{k["name"]} / {u["name"]}'}
+                  for k in kats for u in k["unterkategorien"]]
     return TEMPLATES.TemplateResponse(request, "buchungen.html", {
         "request": request, "tab": "buchungen", "rows": rows, "gesamt": gesamt,
-        "kats": kats, "konten": konten, "seite": max(seite, 1),
-        "f": {"konto": konto, "kategorie_id": kategorie_id, "offen": offen, "suche": suche}})
+        "kats": kats, "konten": konten, "ukats_flat": ukats_flat, "seite": max(seite, 1),
+        "sort": sort, "richtung": richtung,
+        "f": {"konto": konto, "kategorie_id": kategorie_id, "unterkategorie_id": unterkategorie_id,
+              "offen": offen, "suche": suche, "von": von, "bis": bis,
+              "betrag_min": betrag_min, "betrag_max": betrag_max}})
 
 
 @app.get("/reports", response_class=HTMLResponse)

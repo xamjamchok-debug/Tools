@@ -96,15 +96,15 @@ Unterkat-Soll wieder **1.000 €** ergibt und die Lücke sichtbar/aufgefüllt is
 
 ## P1 — Buchungen: frei sortieren & filtern
 
-Datei: `dashboard/templates/buchungen.html`, `queries.py` (Buchungsliste).
+Datei: `dashboard/templates/buchungen.html`, `queries.py` (Buchungsliste).  ✅ ERLEDIGT
 
-- [ ] **Sortierung nach jeder Spalte** (Datum, Betrag, Empfänger, Konto, Kategorie, Unterkategorie,
-      Verwendungszweck) auf-/absteigend, per Spaltenkopf-Klick.
-- [ ] **Filter für jede Spalte:** Datum (Von–Bis), Betrag (Min–Max), Text (Empfänger/Zweck enthält),
-      Konto, Kategorie, Unterkategorie (Mehrfachauswahl). Filter kombinierbar.
-- [ ] Serverseitig umsetzen (Query-Params → dynamisches `WHERE`/`ORDER BY`, sauber parametrisiert gegen
-      SQL-Injection), damit auch bei vielen tausend Buchungen performant. Paginierung.
-- [ ] Aktuelle Filter/Sortierung in der URL halten (teilbar, per Reload stabil).
+- [x] **Sortierung nach jeder Spalte** (Datum, Betrag, Empfänger, Konto, Kategorie, Unterkategorie)
+      auf-/absteigend per Spaltenkopf-Klick, mit ▲/▼-Anzeige. ORDER BY aus Whitelist (`q.SORT_SPALTEN`).
+- [x] **Filter je Spalte:** Datum (Von–Bis), Betrag (Min–Max €), Text (Empfänger/Zweck), Konto,
+      Kategorie, Unterkategorie. Kombinierbar.
+- [x] Serverseitig, sauber parametrisiert (SQL-Injection-Test bestanden). Paginierung (200/Seite).
+- [x] Filter/Sortierung im GET-Formular → stehen in der URL (teilbar, per Reload stabil).
+- Offen (später): Unterkategorie-**Mehrfach**auswahl (aktuell Einzelauswahl).
 
 ---
 
