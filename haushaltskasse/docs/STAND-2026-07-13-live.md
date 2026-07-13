@@ -50,6 +50,10 @@
 - **U4** **Stichtagssaldo**: buchungsbasierter Teil exakt (`SUM … WHERE datum_wert ≤ Stichtag`),
   Vermögensposten als zeitlos-konstant dazurechnen + klar kennzeichnen (opt. `stand_datum` je Posten).
   Datumsfeld an der Saldo-Herleitung (U2).
+- **U5** **Veränderung Stichtag X → Y (Mittelfluss-Überblick)** — was hat sich zwischen zwei
+  Stichtagen geändert: Delta-Saldo gesamt + Zufluss/Abfluss je Konto/Kategorie/Topf im Intervall.
+  **Default nach Import** neuer Umsätze (X = Stand vor Import, Y = jetzt) → sofortiger Überblick,
+  welches Geld wohin geflossen ist. Baut auf U4 + I1 auf.
 
 ### Config
 - **C1** Config-Seite: Kategorien **einklappbar** machen (Accordion wie Rücklagen), kompakter.

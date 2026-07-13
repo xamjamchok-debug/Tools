@@ -31,3 +31,4 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`; Amazon-Parser noch `.xls`→CSV | 📋 offen |
 | 23 | Betrieb | **V1** sichtbare Versionsnummer + automatisierte Tests | Version im Footer (Env-Var); pytest für Queries/Saldo/Endpoints | 🔧/📋 |
 | 24 | Betrieb | **P0.3** Azure-Kostenanzeige in der Seite | Cost-Management-API / Schätzung + Warnschwelle | 📋 offen |
+| 25 | Analyse | **U5** Veränderung **Stichtag X → Y** (Mittelfluss-Überblick), Default nach Import | Delta = Saldo(Y)−Saldo(X) gesamt + Zufluss/Abfluss je Konto/Kategorie/Topf im Intervall; nach Import automatisch X=Stand-vor-Import, Y=jetzt | 📋 offen |
