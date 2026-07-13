@@ -114,18 +114,16 @@ Datei: `dashboard/templates/buchungen.html`, `queries.py` (Buchungsliste).  ✅ 
 
 ## P1 — Reporting umbauen: Pivot / Monatsvergleich + Drilldown
 
-Datei: `dashboard/templates/reports.html`, `queries.py`.
+Datei: `dashboard/templates/reports.html`, `queries.py`.  ✅ ERLEDIGT (Kern)
 
-- [ ] **Pivot-artiger Monatsvergleich:** Zeilen = Kategorien **und wahlweise Unterkategorien**,
-      Spalten = Monate im gewählten Zeitraum, Zellen = Summe Ausgaben (oder Einnahmen/Netto umschaltbar).
-- [ ] **Frei konfigurierbar:** Auswahl welche Kategorien/Unterkategorien in die Pivot kommen
-      (Mehrfachauswahl), Zeitraum (Von–Bis / letzte N Monate), Aggregat (Ausgabe/Einnahme/Netto).
-- [ ] **Entwicklung über Monate** visuell: pro ausgewählter (Unter-)Kategorie eine Zeitreihe
-      (Tabelle + kleine Sparkline/Balken). Für Charts ggf. Skill `dataviz` beachten.
-- [ ] **Drilldown per Doppelklick:** Doppelklick auf eine aggregierte Zelle/Kategorie öffnet die
-      **Einzelbuchungen**, die in diese Aggregation (Kategorie × Monat) fallen — idealerweise als
-      gefilterte Buchungsansicht (Wiederverwendung der P1-Buchungsliste mit vorbelegten Filtern).
-- [ ] Summen-/Zwischensummenzeilen (je Kategorie über alle Monate, je Monat über alle Kategorien).
+- [x] **Pivot-Monatsvergleich:** Zeilen = Kategorien **oder** Unterkategorien (umschaltbar),
+      Spalten = Monate, Zellen = Ausgabe/Einnahme/Netto (umschaltbar). Query `q.pivot()`.
+- [x] **Konfigurierbar:** Zeitraum (Von–Bis), Aggregat (Ausgabe/Einnahme/Netto), Ebene (Kat/Unterkat).
+      — Offen (später): Mehrfachauswahl *welche* Kategorien in die Pivot kommen.
+- [x] **Entwicklung über Monate** visuell: Sparkline-Balken je Zeile über die Monate.
+- [x] **Drilldown per Doppelklick:** Zelle (Kategorie × Monat) bzw. Zeile öffnet die gefilterte
+      P1-Buchungsliste (`/buchungen?kategorie_id=…&von=…&bis=…`, Unterkat/offen berücksichtigt).
+- [x] Summenzeile je Monat (Spalten-Summe) + Zeilensumme + Gesamt.
 
 ---
 

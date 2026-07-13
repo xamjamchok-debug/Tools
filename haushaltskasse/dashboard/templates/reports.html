@@ -1,55 +1,85 @@
 {% extends "base.html" %}
 {% block titel %} · Reports{% endblock %}
 {% block content %}
-<h1>Reports</h1>
-<p class="sub">Ausgaben und Einnahmen ab dem gewählten Stichtag (Einzelbuchungs-Historie, ohne Startsalden).</p>
+<h1>Reports — Pivot</h1>
+<p class="sub">Zeilen = {{ 'Unterkategorien' if ebene=='unterkategorie' else 'Kategorien' }}, Spalten = Monate.
+  <b>Doppelklick</b> auf eine Zelle öffnet die Einzelbuchungen (Kategorie × Monat).</p>
 
 <form class="toolbar" method="get">
   <label class="small">von <input type="date" name="von" value="{{ von }}"></label>
   <label class="small">bis <input type="date" name="bis" value="{{ bis }}"></label>
+  <select name="modus">
+    {% for m,l in [('ausgabe','Ausgaben'),('einnahme','Einnahmen'),('netto','Netto')] %}
+    <option value="{{ m }}" {{ 'selected' if modus==m }}>{{ l }}</option>{% endfor %}
+  </select>
+  <select name="ebene">
+    <option value="kategorie" {{ 'selected' if ebene=='kategorie' }}>je Kategorie</option>
+    <option value="unterkategorie" {{ 'selected' if ebene=='unterkategorie' }}>je Unterkategorie</option>
+  </select>
   <button type="submit">Anwenden</button>
 </form>
 
-{% set max_aus = (ausgaben | map(attribute='ausgaben_cent') | map('abs') | list | max) or 1 %}
-<h2>Ausgaben je Kategorie</h2>
 <div class="card scroll"><table>
-  <tr><th>Kategorie</th><th style="width:38%">Anteil</th><th class="num">Ausgaben</th><th class="num">Einnahmen</th><th class="num">Anzahl</th></tr>
-  {% for r in ausgaben %}
   <tr>
-    <td>{{ r.kategorie }}</td>
-    <td><div class="bar"><i style="width:{{ (100 * (r.ausgaben_cent|abs) / max_aus)|round(1) }}%"></i></div></td>
-    <td class="num neg">{{ r.ausgaben_cent|euro }}</td>
-    <td class="num {{ 'pos' if r.einnahmen_cent else 'muted' }}">{{ r.einnahmen_cent|euro }}</td>
-    <td class="num muted">{{ r.n }}</td>
+    <th style="position:sticky;left:0;background:var(--head)">{{ 'Unterkategorie' if ebene=='unterkategorie' else 'Kategorie' }}</th>
+    {% for m in piv.monate %}<th class="num">{{ m }}</th>{% endfor %}
+    <th class="num">Verlauf</th>
+    <th class="num">Summe</th>
+  </tr>
+  {% for z in piv.zeilen %}
+  {% set rowmax = (z.monate.values() | map('abs') | list | max) or 1 %}
+  <tr>
+    <td style="position:sticky;left:0;background:var(--card);cursor:pointer" title="Alle Buchungen dieser Zeile im Zeitraum"
+        ondblclick="drill('{{ z.kategorie_id or '' }}','{{ z.unterkategorie_id or '' }}','')">{{ z.label }}</td>
+    {% for m in piv.monate %}
+      {% set v = z.monate.get(m) %}
+      <td class="num {{ 'neg' if v and v<0 else ('pos' if v and v>0 else 'muted') }}"
+          style="cursor:pointer" ondblclick="drill('{{ z.kategorie_id or '' }}','{{ z.unterkategorie_id or '' }}','{{ m }}')">
+        {{ v|euro if v else '·' }}</td>
+    {% endfor %}
+    <td>
+      <div style="display:flex;align-items:flex-end;gap:1px;height:22px">
+        {% for m in piv.monate %}{% set v = z.monate.get(m) or 0 %}
+        <i title="{{ m }}: {{ v|euro }}" style="flex:1;background:var(--accent);opacity:.55;
+           height:{{ (100 * (v|abs) / rowmax)|round(0) }}%;min-height:1px"></i>{% endfor %}
+      </div>
+    </td>
+    <td class="num {{ 'neg' if z.summe<0 else 'pos' }}"><b>{{ z.summe|euro }}</b></td>
   </tr>
   {% endfor %}
+  {% if not piv.zeilen %}<tr><td colspan="{{ piv.monate|length + 3 }}" class="muted small">Keine Daten im Zeitraum.</td></tr>{% endif %}
+  <tr style="border-top:2px solid var(--border)">
+    <td style="position:sticky;left:0;background:var(--head)"><b>Summe</b></td>
+    {% for m in piv.monate %}<td class="num"><b>{{ piv.spalten_summe[m]|euro }}</b></td>{% endfor %}
+    <td></td>
+    <td class="num"><b>{{ piv.gesamt|euro }}</b></td>
+  </tr>
 </table></div>
 
-<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
-  <div>
-    <h2>Monatsverlauf</h2>
-    {% set max_m = (verlauf | map(attribute='ausgaben_cent') | map('abs') | list | max) or 1 %}
-    <div class="card scroll"><table>
-      <tr><th>Monat</th><th style="width:40%"></th><th class="num">Ausgaben</th><th class="num">Einnahmen</th></tr>
-      {% for m in verlauf %}
-      <tr><td class="small">{{ m.monat }}</td>
-        <td><div class="bar"><i style="width:{{ (100 * (m.ausgaben_cent|abs) / max_m)|round(1) }}%"></i></div></td>
-        <td class="num neg">{{ m.ausgaben_cent|euro }}</td>
-        <td class="num {{ 'pos' if m.einnahmen_cent else 'muted' }}">{{ m.einnahmen_cent|euro }}</td></tr>
-      {% endfor %}
-    </table></div>
-  </div>
+<h2>Top-Empfänger (Ausgaben)</h2>
+<div class="card scroll"><table>
+  <tr><th>Empfänger</th><th class="num">Summe</th><th class="num">Anzahl</th></tr>
+  {% for t in top %}
+  <tr><td>{{ t.empfaenger[:42] }}</td>
+    <td class="num neg">{{ t.summe_cent|euro }}</td>
+    <td class="num muted">{{ t.n }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}
 
-  <div>
-    <h2>Top-Empfänger (Ausgaben)</h2>
-    <div class="card scroll"><table>
-      <tr><th>Empfänger</th><th class="num">Summe</th><th class="num">Anzahl</th></tr>
-      {% for t in top %}
-      <tr><td>{{ t.empfaenger[:42] }}</td>
-        <td class="num neg">{{ t.summe_cent|euro }}</td>
-        <td class="num muted">{{ t.n }}</td></tr>
-      {% endfor %}
-    </table></div>
-  </div>
-</div>
+{% block script %}
+function drill(kid, uid, monat){
+  const p = new URLSearchParams();
+  if(kid) p.set('kategorie_id', kid); else p.set('offen','1');
+  if(uid) p.set('unterkategorie_id', uid);
+  if(monat){
+    const [y,m] = monat.split('-').map(Number);
+    const letzter = new Date(y, m, 0).getDate();
+    p.set('von', monat+'-01');
+    p.set('bis', monat+'-'+String(letzter).padStart(2,'0'));
+  } else {
+    p.set('von', '{{ von }}');{% if bis %} p.set('bis','{{ bis }}');{% endif %}
+  }
+  location = '/buchungen?'+p.toString();
+}
 {% endblock %}

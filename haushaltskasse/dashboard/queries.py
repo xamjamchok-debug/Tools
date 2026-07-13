@@ -194,6 +194,63 @@ def top_empfaenger(cur, von: str = STICHTAG, limit: int = 20) -> list[dict]:
     return [{"empfaenger": e, "summe_cent": s, "n": n} for e, s, n in cur.fetchall()]
 
 
+# Betragsausdruck je Pivot-Modus (Whitelist, kein User-String im SQL).
+_PIVOT_MODUS = {
+    "ausgabe": "SUM(b.betrag_cent) FILTER (WHERE b.betrag_cent < 0)",
+    "einnahme": "SUM(b.betrag_cent) FILTER (WHERE b.betrag_cent > 0)",
+    "netto": "SUM(b.betrag_cent)",
+}
+
+
+def pivot(cur, von: str = STICHTAG, bis: str | None = None,
+          modus: str = "ausgabe", ebene: str = "kategorie") -> dict:
+    """Pivot: Zeilen = Kategorien (oder Unterkategorien), Spalten = Monate, Werte je Modus.
+
+    modus: 'ausgabe' | 'einnahme' | 'netto'. ebene: 'kategorie' | 'unterkategorie'.
+    Rückgabe: monate[], zeilen[{label, kategorie_id, unterkategorie_id, monate{YYYY-MM: cent}, summe}],
+    spalten_summe{monat: cent}, gesamt.
+    """
+    bis = bis or date.today().isoformat()
+    betrag = _PIVOT_MODUS.get(modus, _PIVOT_MODUS["ausgabe"])
+    cur.execute(f"""
+        SELECT b.kategorie_id, b.unterkategorie_id,
+               COALESCE(k.name, '(nicht zugeordnet)') AS kname, u.name AS uname,
+               to_char(date_trunc('month', b.datum_wert), 'YYYY-MM') AS monat,
+               COALESCE({betrag}, 0) AS wert
+        FROM buchungen b
+        LEFT JOIN kategorien k ON k.id = b.kategorie_id
+        LEFT JOIN unterkategorien u ON u.id = b.unterkategorie_id
+        WHERE b.buchungsart='real' AND b.quelle_import <> 'startsaldo'
+          AND b.datum_wert >= %s AND b.datum_wert <= %s
+        GROUP BY b.kategorie_id, b.unterkategorie_id, k.name, u.name,
+                 to_char(date_trunc('month', b.datum_wert), 'YYYY-MM')
+    """, (von, bis))
+
+    monate: set = set()
+    zeilen: dict = {}
+    for kid, uid, kname, uname, monat, wert in cur.fetchall():
+        monate.add(monat)
+        if ebene == "unterkategorie":
+            key = (kid, uid)
+            label = f"{kname} / {uname or '(ohne Unterkat.)'}"
+            drill = {"kategorie_id": kid, "unterkategorie_id": uid}
+        else:
+            key = (kid,)
+            label = kname
+            drill = {"kategorie_id": kid}
+        z = zeilen.setdefault(key, {"label": label, **drill, "monate": {}, "summe": 0})
+        z["monate"][monat] = z["monate"].get(monat, 0) + (wert or 0)
+        z["summe"] += (wert or 0)
+
+    monate = sorted(monate)
+    # Ausgaben (negativ) aufsteigend = größter Betrag zuerst; sonst absteigend.
+    zeilen_liste = sorted(zeilen.values(),
+                          key=lambda z: z["summe"] if modus != "einnahme" else -z["summe"])
+    spalten_summe = {m: sum(z["monate"].get(m, 0) for z in zeilen.values()) for m in monate}
+    return {"monate": monate, "zeilen": zeilen_liste, "spalten_summe": spalten_summe,
+            "gesamt": sum(z["summe"] for z in zeilen.values())}
+
+
 # ---------------------------------------------------------------------------
 # Buchungsliste (filterbar) + Stammdaten für Dropdowns
 # ---------------------------------------------------------------------------

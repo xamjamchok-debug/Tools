@@ -156,14 +156,18 @@ def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
 
 
 @app.get("/reports", response_class=HTMLResponse)
-def view_reports(request: Request, von: str = q.STICHTAG, bis: str = ""):
+def view_reports(request: Request, von: str = q.STICHTAG, bis: str = "",
+                 modus: str = "ausgabe", ebene: str = "kategorie"):
+    if modus not in ("ausgabe", "einnahme", "netto"):
+        modus = "ausgabe"
+    if ebene not in ("kategorie", "unterkategorie"):
+        ebene = "kategorie"
     with db() as conn, conn.cursor() as cur:
-        ausgaben = q.ausgaben_je_kategorie(cur, von=von, bis=bis or None)
-        verlauf = q.monatsverlauf(cur, von=von)
+        piv = q.pivot(cur, von=von, bis=bis or None, modus=modus, ebene=ebene)
         top = q.top_empfaenger(cur, von=von)
     return TEMPLATES.TemplateResponse(request, "reports.html", {
-        "request": request, "tab": "reports", "ausgaben": ausgaben, "verlauf": verlauf,
-        "top": top, "von": von, "bis": bis})
+        "request": request, "tab": "reports", "piv": piv, "top": top,
+        "von": von, "bis": bis, "modus": modus, "ebene": ebene})
 
 
 @app.get("/config", response_class=HTMLResponse)
