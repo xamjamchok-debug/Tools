@@ -32,13 +32,11 @@ CREATE TABLE IF NOT EXISTS kategorien (
     --   'ausgabe'   = reine Ausgaben-Kategorie ohne Topf-Charakter.
     zaehlt_als                TEXT NOT NULL DEFAULT 'ruecklage'
                               CHECK (zaehlt_als IN ('ruecklage','forderung','ausgabe')),
-    -- Default-Unterkategorie: wird beim Kategorisieren verwendet, wenn keine Unterkategorie
-    -- gewählt wird ("wenn ich nicht zuordnen möchte"). NULL = keine.
-    default_unterkategorie_id INTEGER REFERENCES unterkategorien(id),
     aktiv                     BOOLEAN NOT NULL DEFAULT TRUE
 );
 ALTER TABLE kategorien ADD COLUMN IF NOT EXISTS zaehlt_als TEXT NOT NULL DEFAULT 'ruecklage';
-ALTER TABLE kategorien ADD COLUMN IF NOT EXISTS default_unterkategorie_id INTEGER REFERENCES unterkategorien(id);
+-- default_unterkategorie_id verweist auf unterkategorien und wird deshalb erst NACH deren
+-- CREATE hinzugefügt (siehe unten). Sonst scheitert die frische DB an der Vorwärts-Referenz.
 
 -- ---------------------------------------------------------------------------
 -- Unterkategorien = reine Auswertungsdimension INNERHALB einer Kategorie.
@@ -56,6 +54,9 @@ CREATE TABLE IF NOT EXISTS unterkategorien (
 );
 -- Nachrüstung für bestehende DBs (Spalte kam später dazu):
 ALTER TABLE unterkategorien ADD COLUMN IF NOT EXISTS monatliche_ruecklage_cent BIGINT NOT NULL DEFAULT 0;
+
+-- Default-Unterkategorie je Kategorie (Rest-Auffang): jetzt anlegen, da unterkategorien existiert.
+ALTER TABLE kategorien ADD COLUMN IF NOT EXISTS default_unterkategorie_id INTEGER REFERENCES unterkategorien(id);
 
 -- ---------------------------------------------------------------------------
 -- Vermögensposten: externe Werte, die NICHT aus Buchungen ableitbar sind
