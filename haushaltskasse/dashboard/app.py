@@ -137,7 +137,7 @@ def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
         sort = "datum"
     richtung = "asc" if richtung == "asc" else "desc"
     with db() as conn, conn.cursor() as cur:
-        rows, gesamt = q.buchungen(
+        rows, gesamt, summen = q.buchungen(
             cur, konto=konto or None, kategorie_id=kid, unterkategorie_id=uid,
             nur_offen=(offen == "1"), suche=suche or None, von=von or None, bis=bis or None,
             betrag_min_cent=bmin, betrag_max_cent=bmax, sort=sort, richtung=richtung,
@@ -148,7 +148,7 @@ def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
     ukats_flat = [{"id": u["id"], "label": f'{k["name"]} / {u["name"]}'}
                   for k in kats for u in k["unterkategorien"]]
     return TEMPLATES.TemplateResponse(request, "buchungen.html", {
-        "request": request, "tab": "buchungen", "rows": rows, "gesamt": gesamt,
+        "request": request, "tab": "buchungen", "rows": rows, "gesamt": gesamt, "summen": summen,
         "kats": kats, "konten": konten, "ukats_flat": ukats_flat, "seite": max(seite, 1),
         "sort": sort, "richtung": richtung,
         "f": {"konto": konto, "kategorie_id": kategorie_id, "unterkategorie_id": unterkategorie_id,
@@ -212,6 +212,18 @@ def set_kategorie(buchung_id: int, z: Zuordnung):
         """, (z.kategorie_id, ukat, z.unterkategorie_id, buchung_id))
         # Gegenbuchung folgt der neuen Kategorie (alter Spiegel weg, neuer im richtigen Topf).
         sync_eine(cur, buchung_id)
+    return {"ok": True}
+
+
+class Bemerkung(BaseModel):
+    bemerkung: str = ""
+
+
+@app.post("/api/buchung/{buchung_id}/bemerkung")
+def set_bemerkung(buchung_id: int, b: Bemerkung):
+    with db() as conn, conn.cursor() as cur:
+        text = b.bemerkung.strip() or None
+        cur.execute("UPDATE buchungen SET bemerkung=%s WHERE id=%s", (text, buchung_id))
     return {"ok": True}
 
 

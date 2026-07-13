@@ -304,7 +304,7 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
               suche: str | None = None, von: str | None = None, bis: str | None = None,
               betrag_min_cent: int | None = None, betrag_max_cent: int | None = None,
               sort: str = "datum", richtung: str = "desc",
-              limit: int = 200, offset: int = 0) -> tuple[list[dict], int]:
+              limit: int = 200, offset: int = 0) -> tuple[list[dict], int, dict]:
     where = ["b.quelle_import <> 'startsaldo'"]
     params: list = []
     if konto:
@@ -332,14 +332,20 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
     spalte = SORT_SPALTEN.get(sort, "b.datum_wert")
     ordr = "ASC" if richtung == "asc" else "DESC"
 
-    cur.execute(f"""SELECT COUNT(*) FROM buchungen b
+    # Kennzahlen über den GANZEN Filter (nicht nur die aktuelle Seite): Anzahl + Summen.
+    cur.execute(f"""SELECT COUNT(*),
+                           COALESCE(SUM(b.betrag_cent),0),
+                           COALESCE(SUM(b.betrag_cent) FILTER (WHERE b.betrag_cent>0),0),
+                           COALESCE(SUM(b.betrag_cent) FILTER (WHERE b.betrag_cent<0),0)
+                    FROM buchungen b
                     LEFT JOIN konten kt ON kt.id=b.konto_id WHERE {w}""", params)
-    gesamt = cur.fetchone()[0]
+    gesamt, netto, einnahmen, ausgaben = cur.fetchone()
+    summen = {"netto_cent": netto, "einnahmen_cent": einnahmen, "ausgaben_cent": ausgaben}
 
     cur.execute(f"""
         SELECT b.id, b.datum_wert, b.betrag_cent, b.buchungsart, kt.name AS konto,
                b.kategorie_id, k.name AS kategorie, b.unterkategorie_id, u.name AS unterkategorie,
-               b.empfaenger, b.verwendungszweck, b.kat_pinned
+               b.empfaenger, b.verwendungszweck, b.kat_pinned, b.bemerkung
         FROM buchungen b
         LEFT JOIN konten kt ON kt.id = b.konto_id
         LEFT JOIN kategorien k ON k.id = b.kategorie_id
@@ -349,9 +355,10 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
         LIMIT %s OFFSET %s
     """, params + [limit, offset])
     cols = ["id", "datum", "betrag_cent", "buchungsart", "konto", "kategorie_id", "kategorie",
-            "unterkategorie_id", "unterkategorie", "empfaenger", "verwendungszweck", "kat_pinned"]
+            "unterkategorie_id", "unterkategorie", "empfaenger", "verwendungszweck", "kat_pinned",
+            "bemerkung"]
     rows = [dict(zip(cols, r)) for r in cur.fetchall()]
-    return rows, gesamt
+    return rows, gesamt, summen
 
 
 def config_baum(cur) -> list[dict]:

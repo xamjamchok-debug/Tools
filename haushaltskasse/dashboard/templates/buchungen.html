@@ -34,6 +34,7 @@
     <th class="num" onclick="sortBy('betrag')" style="cursor:pointer">Betrag {% if sort=='betrag' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
     <th onclick="sortBy('kategorie')" style="cursor:pointer">Kategorie {% if sort=='kategorie' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
     <th onclick="sortBy('unterkategorie')" style="cursor:pointer">Unterkategorie {% if sort=='unterkategorie' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
+    <th>Bemerkung</th>
   </tr>
   {% for r in rows %}
   <tr>
@@ -52,9 +53,20 @@
         <option value="{{ u.id }}" {{ 'selected' if u.id==r.unterkategorie_id }}>{{ u.name }}</option>
       {% endfor %}{% endfor %}
     </select></td>
+    <td><span class="bemerkung" contenteditable data-buchung="{{ r.id }}"
+             style="display:inline-block;min-width:120px;min-height:1.2em"
+             title="Freitext – Enter speichert">{{ r.bemerkung or '' }}</span></td>
   </tr>
   {% endfor %}
-  {% if not rows %}<tr><td colspan="6" class="muted small">Keine Buchungen für diese Filter.</td></tr>{% endif %}
+  {% if not rows %}<tr><td colspan="7" class="muted small">Keine Buchungen für diese Filter.</td></tr>{% endif %}
+  <tr class="summe" style="border-top:2px solid var(--line, #ccc)">
+    <td colspan="3"><b>Summe über alle {{ gesamt }} Treffer</b>
+      <span class="small muted">(nicht nur diese Seite)</span></td>
+    <td class="num"><b class="{{ 'pos' if summen.netto_cent>=0 else 'neg' }}">{{ summen.netto_cent|euro }}</b>
+      <div class="small"><span class="pos">+{{ summen.einnahmen_cent|euro }}</span>
+        / <span class="neg">{{ summen.ausgaben_cent|euro }}</span></div></td>
+    <td colspan="3"></td>
+  </tr>
 </table></div>
 
 <div class="toolbar" style="margin-top:14px;justify-content:center">
@@ -95,4 +107,11 @@ async function onUkat(sel, id){
   await postJSON('/api/buchung/'+id+'/kategorie', {kategorie_id:katId, unterkategorie_id:ukatId});
   flash('gespeichert');
 }
+document.querySelectorAll('.bemerkung').forEach(el=>{
+  el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); }});
+  el.addEventListener('blur', async ()=>{
+    await postJSON('/api/buchung/'+el.dataset.buchung+'/bemerkung', {bemerkung: el.textContent.trim()});
+    flash('gespeichert');
+  });
+});
 {% endblock %}
