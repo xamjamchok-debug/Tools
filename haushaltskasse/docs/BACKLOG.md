@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.6 · Stand 2026-07-14**
+**Version 1.7 · Stand 2026-07-14**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -15,8 +15,8 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 1 | Deploy | App online von überall (HTTPS, Login) | Azure Container Apps, scale-to-zero, Image aus ACR `hhkassec1k7wx`, DB Azure-Postgres | 👁 Validiert |
 | 2 | Auth | Login-Schutz `joerg` + Passwort | Session-Cookie + bcrypt | 👁 Validiert |
 | 3 | Rücklagen | **Modell A**: Topf je Unterkategorie, Saldierung geht auf | Migration `allgemein_toepfe.py`: NULL-Rücklagen → „Allgemein"-Topf je Kategorie | 👁 Validiert |
-| 4 | Buchungen | **B1** Saldo/Summe über alle gefilterten Treffer | `queries.buchungen` liefert Summen + Summenzeile im Template | 🚀 Deployed |
-| 5 | Buchungen | **B2** Freitext-Bemerkung je Buchung | Schema-Spalte `bemerkung` + Endpoint `/api/buchung/{id}/bemerkung` + editierbare Zelle | 🚀 Deployed |
+| 4 | Buchungen | **B1** Saldo/Summe über alle gefilterten Treffer | `queries.buchungen` liefert Summen + Summenzeile im Template | 👁 Validiert |
+| 5 | Buchungen | **B2** Freitext-Bemerkung je Buchung | Schema-Spalte `bemerkung` + Endpoint `/api/buchung/{id}/bemerkung` + editierbare Zelle | 👁 Validiert |
 | 6 | Bug | **Dezimal-Fehler bei Posten** (Beträge ×100 beim Editieren) | `_parse_euro` neu: letzter `.`/`,` = Dezimaltrenner (beide Notationen) | 👁 Validiert |
 | 7 | Infra | Deploy-Fix (charmap-Crash, `:latest` erzeugt keine neue Revision) | `az acr build --no-logs`; Update per **Image-Digest** statt Tag | 👁 Validiert |
 | 8 | Übersicht | **U1** Merkzettel als eigene Box mit Einzelposten | Neue Spalte `vermoegensposten.gruppe`, eigene Box + Summe | ⭐ 🚀 Deployed |
@@ -37,7 +37,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 23 | Betrieb | **V1** sichtbare Versionsnummer + automatisierte Tests | Version im Footer (Env-Var); pytest für Queries/Saldo/Endpoints | 💡 Idee |
 | 24 | Betrieb | **P0.3** Azure-Kostenanzeige in der Seite | Cost-Management-API / Schätzung + Warnschwelle | 💡 Idee |
 | 25 | Analyse | **U5** Veränderung **Stichtag X → Y** (Mittelfluss-Überblick), Default nach Import | Delta = Saldo(Y)−Saldo(X) + Zufluss/Abfluss je Konto/Kategorie/Topf; nach Import X=vor-Import, Y=jetzt | 📐 Designed |
-| 26 | Zeitraum | **Start-Abgrenzungsdatum konfigurierbar** (statt hart 01.01.2025) | `STICHTAG` in **Config** editierbar (z. B. 01.01.2026), im **Footer sichtbar**; Reports-Default | 🚀 Deployed |
+| 26 | Zeitraum | **Start-Abgrenzungsdatum konfigurierbar** (statt hart 01.01.2025) | `STICHTAG` in **Config** editierbar (z. B. 01.01.2026), im **Footer sichtbar**; Reports-Default | 👁 Validiert |
 | 27 | Rücklagen | **Zufluss/Abfluss-Spalten ENTFERNEN** — falsch & nicht gebraucht; nur Ist-Saldo je Topf | Spalten raus aus `ruecklagen_baum`/Template; Bewegungen über R1 | 👁 Validiert |
 | 28 | Rücklagen | **Untertöpfe richtig befüllen** (nicht alles in „Allgemein") | Zuführungen sinnvoll auf Unterkategorie-Töpfe verteilen statt Sammel-„Allgemein" | 💡 Idee |
 | 29 | Nachbau | **Verlauf-, Schulden- & Fuchsbau-Blatt nachbauen** (aus alter Excel) | Je ein Bereich: Verlauf (Salden-Zeitreihe), Schulden (Kreditübersicht), Fuchsbau (Immobilie) | 💡 Idee |
@@ -50,9 +50,10 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 36 | Demo | **Anonymisierte Show-Site** | Öffentliche Demo mit anonymisierten/synthetischen Daten | 💡 Idee |
 | 37 | Konten | **Eigenes Girokonto in die Berechnungen aufnehmen** | Persönliches Girokonto als reales Konto ergänzen (Startsaldo + Import) | 💡 Idee |
 | 38 | Getrennte Sicht | **Pendant „Großeltern"** zur Haushaltskasse | Ähnliche, reduzierte Logik, komplett getrennt (eigener Bereich/Datensatz); baut auf #35 auf | 💡 Idee |
-| 39 | Config | **Config = monatliche Finanzfluss-Sicht** (Einnahmen − Ausgaben = Monats-Saldo, eingeklappt) | `config_fluss`: Einnahmen=Kategorien mit Einnahme-Unterkats / Ausgaben='ruecklage'; Einnahme-Kennzeichen `ist_einnahme`; aufklappen=Pflege | 🚀 Deployed |
+| 39 | Config | **Config = monatliche Finanzfluss-Sicht** (Einnahmen − Ausgaben = Monats-Saldo, eingeklappt) | `config_fluss`: Einnahmen=Kategorien mit Einnahme-Unterkats / Ausgaben='ruecklage'; Einnahme-Kennzeichen `ist_einnahme`; aufklappen=Pflege | 👁 Validiert · 🎨 Design offen (#45) |
 | 40 | Finanzplanung | **10-Jahres-Verlaufsplanung** — Absprung aus Config; füllbare Tabelle + Diagramm | Jahres-Plan-Tabelle (neues Datenmodell) + Chart (dataviz); Design später | 💡 Idee (nicht jetzt) |
-| 41 | Rücklagen | **Nebenbuch-Ansicht sortierbar** (Default: neueste oben) | Klickbare Spaltenköpfe in `nebenbuch.html` / `queries.nebenbuch` (NB_SORT), Saldo bleibt chronologisch | 🚀 Deployed |
+| 41 | Rücklagen | **Nebenbuch-Ansicht sortierbar** (Default: neueste oben) | Klickbare Spaltenköpfe in `nebenbuch.html` / `queries.nebenbuch` (NB_SORT), Saldo bleibt chronologisch | 👁 Validiert |
 | 42 | Import | 🐞 **Dubletten beim Import** (DKB/Amazon) — Dedupe versagte, weil Empfänger quelle-abhängig geschrieben ist | Fix v2: Dedupe-Schlüssel nur **datum+betrag+konto** (Multiset, Empfänger raus); DKB/Amazon bereinigt (DKB wieder 9.584,90) | 🚀 Deployed |
 | 43 | Buchungen | **Import-Zeitstempel** je Buchung anzeigen | `queries.buchungen` liefert quelle+erstellt_am → Spalte „Quelle / importiert" | 🚀 Deployed |
 | 44 | Buchungen | **Stichtagsbasierte laufende Saldierung** in der Buchungsliste | Laufender Konto-Saldo (chronologisch); knifflig wg. Sortierung/Paginierung/mehrere Konten — Design offen | 💡 Idee |
+| 45 | Config | 🎨 **Config-Design-Anpassungen** (nach Validierung #39) | Darstellung/Layout der Monatsfluss-Sicht nachbessern — konkrete Punkte vom User noch offen | 💡 offen |
