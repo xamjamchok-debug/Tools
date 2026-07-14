@@ -51,6 +51,12 @@ def haushaltssaldo(cur) -> dict:
         "konten_cent": konten, "posten_cent": posten, "langfrist_cent": langfrist,
         "ruecklagen_cent": ruecklagen, "forderung_cent": forderung,
         "saldo_cent": konten + posten - ruecklagen + forderung,
+        # Realsaldo = echtes Geld auf allen Konten (ohne Reservierungen).
+        "realsaldo_cent": konten,
+        # Netto-Gesamtvermögen = Konten + alle Vermögensposten (kurzfristig im Saldo
+        # UND langfristig: Haus, Riester, KfW, Kredit Großeltern). Rücklagen-Töpfe werden
+        # NICHT abgezogen — sie sind Teilmenge der Konten, nur zweckgebunden.
+        "gesamtvermoegen_cent": konten + posten + langfrist,
     }
 
 

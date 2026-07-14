@@ -2,9 +2,10 @@
 {% block titel %} · Rücklagen{% endblock %}
 {% block content %}
 <h1>Rücklagen</h1>
-<p class="sub">Konto-Sicht der Nebenbücher: aktueller Ist-Topf (nur lesen). Klick klappt die
-  Unterkategorien auf/zu. <b>Doppelklick</b> auf ein Nebenbuch öffnet dessen Buchungen (mit laufendem Saldo).
-  Die monatlichen Soll-Beträge pflegst du in <a href="/config">Config</a>.</p>
+<p class="sub">Konto-Sicht der Nebenbücher mit aktuellem Ist-Topf. <b>＋/－</b> je Zeile bucht
+  Rücklage manuell ein/aus (ändert den freien Gesamtsaldo). <b>Umbuchen</b> verschiebt zwischen
+  zwei Töpfen (Gesamtsaldo bleibt gleich). Klick klappt Unterkategorien auf/zu, <b>Doppelklick</b>
+  öffnet die Buchungen. Monatliche Soll-Beträge pflegst du in <a href="/config">Config</a>.</p>
 
 <div class="toolbar">
   <div class="card kpi" style="padding:8px 12px"><div class="label">Soll gesamt / Monat (aus Config)</div>
@@ -13,11 +14,25 @@
   <button type="button" class="ghost" onclick="alleAuf(false)">alle zu</button>
 </div>
 
+<div class="card" style="margin-top:10px">
+  <b>Umbuchen zwischen Töpfen</b>
+  <span class="small muted">— Gesamtsaldo bleibt gleich, nur die beiden Topf-Salden verschieben sich.</span>
+  <div class="toolbar" style="margin-top:8px">
+    <label class="small">Von&nbsp;
+      <select id="umb-von">{% for k in baum %}<option value="{{ k.id }}">{{ k.name }}</option>{% endfor %}</select></label>
+    <label class="small">Nach&nbsp;
+      <select id="umb-nach">{% for k in baum %}<option value="{{ k.id }}">{{ k.name }}</option>{% endfor %}</select></label>
+    <label class="small">Betrag&nbsp;<input id="umb-betrag" type="text" size="8" placeholder="z. B. 500"></label>
+    <button type="button" onclick="topfUmbuchen()">Umbuchen</button>
+  </div>
+</div>
+
 <div class="card scroll" style="margin-top:10px"><table>
   <tr>
     <th>Nebenbuch / Unterkategorie</th>
     <th class="num">Soll&nbsp;/&nbsp;Mon</th>
     <th class="num">Ist-Topf</th>
+    <th class="num">Buchen</th>
   </tr>
   {% for k in baum %}
   <tr data-kat="{{ k.id }}" style="cursor:pointer" title="Klick: auf/zu · Doppelklick: Buchungen"
@@ -26,6 +41,11 @@
       {% if k.unterkategorien %}<span class="tag">{{ k.unterkategorien|length }}</span>{% endif %}</td>
     <td class="num muted">{{ k.soll_cent|euro }}</td>
     <td class="num {{ 'pos' if k.ist_cent>=0 else 'neg' }}">{{ k.ist_cent|euro }}</td>
+    <td class="num" onclick="event.stopPropagation()" ondblclick="event.stopPropagation()">
+      <button class="ghost" title="Rücklage erhöhen (senkt freien Saldo)"
+              onclick="topfBuchen({{ k.id }}, null, 'ein', '{{ k.name|e }}')">＋</button>
+      <button class="ghost" title="Rücklage auflösen (hebt freien Saldo)"
+              onclick="topfBuchen({{ k.id }}, null, 'aus', '{{ k.name|e }}')">－</button></td>
   </tr>
     {% for u in k.unterkategorien %}
     <tr class="ukat-{{ k.id }}" style="display:none;cursor:pointer"
@@ -34,12 +54,17 @@
       <td style="padding-left:26px" class="muted">↳ {{ u.name }}</td>
       <td class="num muted small">{{ u.soll_cent|euro }}</td>
       <td class="num small {{ 'pos' if u.ist_cent>=0 else 'neg' }}">{{ u.ist_cent|euro }}</td>
+      <td class="num" onclick="event.stopPropagation()" ondblclick="event.stopPropagation()">
+        <button class="ghost" title="Rücklage erhöhen"
+                onclick="topfBuchen({{ k.id }}, {{ u.id }}, 'ein', '{{ k.name|e }} / {{ u.name|e }}')">＋</button>
+        <button class="ghost" title="Rücklage auflösen"
+                onclick="topfBuchen({{ k.id }}, {{ u.id }}, 'aus', '{{ k.name|e }} / {{ u.name|e }}')">－</button></td>
     </tr>
     {% endfor %}
   {% endfor %}
 </table></div>
 <p class="small muted" style="margin-top:10px">Ist-Topf = aktueller Rücklagen-Stand (Zuführung minus Verzehr).
-  Die einzelnen Bewegungen eines Nebenbuchs zeigt der Doppelklick (Nebenbuch-Ansicht mit laufendem Saldo).</p>
+  Manuelle Ein-/Ausbuchungen erscheinen als „manuell" in den Buchungen (Doppelklick auf ein Nebenbuch).</p>
 {% endblock %}
 
 {% block script %}
@@ -60,4 +85,26 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(localStorage.getItem('rk-'+kid)==='1') setKat(kid, true);
   });
 });
+
+async function topfBuchen(katId, ukatId, richtung, label){
+  const wort = richtung==='ein' ? 'einbuchen (bindet Geld, senkt freien Saldo)'
+                                : 'ausbuchen (gibt Geld frei, hebt freien Saldo)';
+  const betrag = prompt('Betrag zum ' + wort + '\n\nTopf: ' + label + '\n\nBetrag in €:');
+  if(betrag===null || betrag.trim()==='') return;
+  const r = await fetch('/api/topf/buchen', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({kategorie_id:katId, unterkategorie_id:ukatId, betrag:betrag, richtung:richtung})});
+  const j = await r.json();
+  if(j.ok) location.reload(); else alert('Fehler: ' + (j.fehler||'unbekannt'));
+}
+async function topfUmbuchen(){
+  const von=document.getElementById('umb-von').value;
+  const nach=document.getElementById('umb-nach').value;
+  const betrag=document.getElementById('umb-betrag').value;
+  if(!betrag.trim()){ alert('Bitte einen Betrag eingeben.'); return; }
+  if(von===nach){ alert('Von- und Nach-Topf müssen verschieden sein.'); return; }
+  const r = await fetch('/api/topf/umbuchen', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({von_kategorie_id:+von, nach_kategorie_id:+nach, betrag:betrag})});
+  const j = await r.json();
+  if(j.ok) location.reload(); else alert('Fehler: ' + (j.fehler||'unbekannt'));
+}
 {% endblock %}

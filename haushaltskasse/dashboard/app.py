@@ -351,6 +351,70 @@ def set_ukat_ruecklage(unterkategorie_id: int, b: Betrag):
     return {"ok": True, "cent": _parse_euro(b.betrag)}
 
 
+# --- Manuelle Rücklagen-Bewegungen (virtuell, kein reales Konto berührt) -----------
+class TopfBuchung(BaseModel):
+    kategorie_id: int
+    unterkategorie_id: int | None = None
+    betrag: str                       # Euro, immer positiv eingegeben
+    richtung: str = "ein"             # 'ein' = reservieren (+, senkt freien Saldo) · 'aus' = freigeben (−)
+    bemerkung: str = ""
+
+
+@app.post("/api/topf/buchen")
+def topf_buchen(t: TopfBuchung):
+    """Rücklage eines Topfs (oder Untertopfs) manuell erhöhen/reduzieren. Reine
+    'ruecklage'-Buchung ohne konto_id -> der Realsaldo bleibt gleich, nur der freie
+    Haushalts-Saldo verschiebt sich (Einbuchen bindet Geld, Ausbuchen gibt es frei)."""
+    cent = abs(_parse_euro(t.betrag))
+    if cent == 0:
+        return JSONResponse({"ok": False, "fehler": "Betrag ist 0"}, status_code=400)
+    signed = cent if t.richtung == "ein" else -cent
+    notiz = t.bemerkung.strip() or ("Rücklage eingebucht" if signed > 0 else "Rücklage ausgebucht")
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO buchungen (buchungsart, datum_wert, betrag_cent,
+                                   kategorie_id, unterkategorie_id, quelle_import, bemerkung)
+            VALUES ('ruecklage', CURRENT_DATE, %s, %s, %s, 'manuell', %s)
+        """, (signed, t.kategorie_id, t.unterkategorie_id, notiz))
+    return {"ok": True, "cent": signed}
+
+
+class Umbuchung(BaseModel):
+    von_kategorie_id: int
+    nach_kategorie_id: int
+    betrag: str
+    bemerkung: str = ""
+
+
+@app.post("/api/topf/umbuchen")
+def topf_umbuchen(u: Umbuchung):
+    """Betrag zwischen zwei Nebenbüchern umbuchen: zwei gespiegelte 'ruecklage'-Buchungen
+    (−X vom Quell-Topf, +X in den Ziel-Topf). Summe der Rücklagen bleibt gleich ->
+    der freie Gesamtsaldo ändert sich NICHT, nur die beiden Topf-Salden verschieben sich."""
+    cent = abs(_parse_euro(u.betrag))
+    if cent == 0:
+        return JSONResponse({"ok": False, "fehler": "Betrag ist 0"}, status_code=400)
+    if u.von_kategorie_id == u.nach_kategorie_id:
+        return JSONResponse({"ok": False, "fehler": "Quelle und Ziel sind identisch"}, status_code=400)
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, name FROM kategorien WHERE id IN (%s, %s)",
+                    (u.von_kategorie_id, u.nach_kategorie_id))
+        namen = {i: n for i, n in cur.fetchall()}
+        if len(namen) < 2:
+            return JSONResponse({"ok": False, "fehler": "Topf nicht gefunden"}, status_code=400)
+        von_n, nach_n = namen[u.von_kategorie_id], namen[u.nach_kategorie_id]
+        basis = u.bemerkung.strip()
+        cur.execute("""INSERT INTO buchungen (buchungsart, datum_wert, betrag_cent,
+                       kategorie_id, quelle_import, bemerkung)
+                       VALUES ('ruecklage', CURRENT_DATE, %s, %s, 'manuell', %s)""",
+                    (-cent, u.von_kategorie_id, basis or f"Umbuchung → {nach_n}"))
+        cur.execute("""INSERT INTO buchungen (buchungsart, datum_wert, betrag_cent,
+                       kategorie_id, quelle_import, bemerkung)
+                       VALUES ('ruecklage', CURRENT_DATE, %s, %s, 'manuell', %s)""",
+                    (cent, u.nach_kategorie_id, basis or f"Umbuchung ← {von_n}"))
+    return {"ok": True, "cent": cent}
+
+
 class Flag(BaseModel):
     wert: bool
 

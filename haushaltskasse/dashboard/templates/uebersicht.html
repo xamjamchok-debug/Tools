@@ -6,9 +6,14 @@
 
 <div class="grid kpis">
   <div class="card kpi"><div class="label">Freier Haushalts-Saldo</div>
-    <div class="val {{ 'pos' if u.saldo_cent>=0 else 'neg' }}">{{ u.saldo_cent|euro }}</div></div>
-  <div class="card kpi"><div class="label">Konten (real)</div>
-    <div class="val">{{ u.konten_cent|euro }}</div></div>
+    <div class="val {{ 'pos' if u.saldo_cent>=0 else 'neg' }}">{{ u.saldo_cent|euro }}</div>
+    <div class="small muted">Liquidität nach Reservierungen</div></div>
+  <div class="card kpi"><div class="label">Realsaldo (Konten)</div>
+    <div class="val {{ 'pos' if u.realsaldo_cent>=0 else 'neg' }}">{{ u.realsaldo_cent|euro }}</div>
+    <div class="small muted">echtes Geld auf allen Konten</div></div>
+  <div class="card kpi"><div class="label">Gesamtvermögen (netto)</div>
+    <div class="val {{ 'pos' if u.gesamtvermoegen_cent>=0 else 'neg' }}">{{ u.gesamtvermoegen_cent|euro }}</div>
+    <div class="small muted">Konten + alle Posten (inkl. Haus/Kredite)</div></div>
   <div class="card kpi"><div class="label">Rücklagen gebunden</div>
     <div class="val">{{ u.ruecklagen_cent|euro }}</div></div>
   <div class="card kpi"><div class="label">Forderungen (Natalie/Jörg)</div>

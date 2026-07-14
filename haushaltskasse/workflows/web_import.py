@@ -43,12 +43,23 @@ def importiere_upload(dateiname: str, daten: bytes, conn=None) -> dict:
             else:
                 b["kategorie"] = b["unterkategorie"] = None
 
-        eingefuegt = uebersprungen = 0
+        eingefuegt = uebersprungen = dubletten = 0
         ukat_cache: dict = {}
         with conn.cursor() as cur:
             konten, kategorien = _lade_maps(cur)
+            # Fachlicher Dedupe (quelle-UNABHÄNGIG, Multiset): erkennt auch migrierte Bestände
+            # (z. B. fb-dkb) als Dublette und lässt echte Mehrfachbuchungen desselben Tags zu.
+            cur.execute("SELECT datum_wert, betrag_cent, konto_id, COALESCE(empfaenger,'') "
+                        "FROM buchungen WHERE konto_id IS NOT NULL")
+            bestand = Counter((str(d), bt, k, e) for d, bt, k, e in cur.fetchall())
             for b in roh:
                 konto_id = _konto_id(cur, konten, b["konto"])
+                schluessel = (str(b["datum"]), b["betrag_cent"], konto_id, b.get("empfaenger") or "")
+                if bestand.get(schluessel, 0) > 0:       # schon vorhanden (auch aus Migration) → überspringen
+                    bestand[schluessel] -= 1
+                    dubletten += 1
+                    uebersprungen += 1
+                    continue
                 kat_id = ukat_id = None
                 if b["buchungsart"] == "real" and b.get("kategorie"):
                     kat_id = _kategorie_id(cur, kategorien, b["kategorie"])
