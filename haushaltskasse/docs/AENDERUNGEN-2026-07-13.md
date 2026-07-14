@@ -28,7 +28,7 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 19 | Einnahmen | **E1** Einnahmen explizit im Monatsablauf + eigene Sicht | Zufluss/Gehalt getrennt zeigen, in Saldo einrechnen (Teil von U3) | 📋 offen |
 | 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen | 📋 offen |
 | 21 | Analyse | **P2** freie Query + Pivot-Ausbau | Read-only SQL-Konsole und/oder KI-Prompt→SQL; Pivot in Reports erweitern | 📋 offen |
-| 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`; Amazon-Parser noch `.xls`→CSV | 📋 offen |
+| 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren, Gegenbuchungen; Amazon noch `.xls` | 📋 → in Umsetzung (jetzt gewünscht) |
 | 23 | Betrieb | **V1** sichtbare Versionsnummer + automatisierte Tests | Version im Footer (Env-Var); pytest für Queries/Saldo/Endpoints | 🔧/📋 |
 | 24 | Betrieb | **P0.3** Azure-Kostenanzeige in der Seite | Cost-Management-API / Schätzung + Warnschwelle | 📋 offen |
 | 25 | Analyse | **U5** Veränderung **Stichtag X → Y** (Mittelfluss-Überblick), Default nach Import | Delta = Saldo(Y)−Saldo(X) gesamt + Zufluss/Abfluss je Konto/Kategorie/Topf im Intervall; nach Import automatisch X=Stand-vor-Import, Y=jetzt | 📋 offen |
@@ -47,4 +47,3 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 38 | Getrennte Sicht | **Pendant „Großeltern"** zur Haushaltskasse | Ähnliche, reduzierte Logik, komplett getrennt dargestellt (eigener Bereich/Datensatz); baut auf N5 auf | 📋 offen |
 | 39 | Config | **Config = monatliche Finanzfluss-Sicht** (editierbar): Einnahmen (Jörg/Natalie) − Ausgaben je Nebenbuch→Unterkategorie, einklappbar, **Monats-Saldo** auf einen Blick | Config-Umbau; Einnahmen-Modellierung offen (siehe Frage); nutzt `monatliche_ruecklage_cent` | 📋 (Design-Frage offen) |
 | 40 | Finanzplanung | **10-Jahres-Verlaufsplanung** — Absprung aus Config: wie sich Einnahmen/Ausgaben/Haushalts-Rücklagen über die Jahre ändern; füllbare Tabelle + Diagramm; „wo stehen wir saldoseitig in 5/10 Jahren" | Explizite Jahres-Plan-Tabelle (neues Datenmodell) + Chart (dataviz); **Design später** | 📋 offen (nicht jetzt) |
-| 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren; **jetzt gewünscht** | 📋 → in Umsetzung |
