@@ -13,7 +13,7 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
@@ -82,6 +82,18 @@ def _parse_euro(text) -> int:
 TEMPLATES.env.filters["euro"] = _euro
 
 
+def _stichtag_global() -> str:
+    """#26 — Start-Abgrenzungsdatum für Anzeige im Footer (jede Seite)."""
+    try:
+        with db() as conn, conn.cursor() as cur:
+            return q.stichtag(cur)
+    except Exception:
+        return q.STICHTAG
+
+
+TEMPLATES.env.globals["stichtag_global"] = _stichtag_global
+
+
 # ---------------------------------------------------------------------------
 # Auth (P0.1) — Login/Logout/Health
 # ---------------------------------------------------------------------------
@@ -135,10 +147,14 @@ def view_ruecklagen(request: Request):
 
 
 @app.get("/nebenbuch/{kategorie_id}", response_class=HTMLResponse)
-def view_nebenbuch(request: Request, kategorie_id: int, unterkategorie_id: str = ""):
+def view_nebenbuch(request: Request, kategorie_id: int, unterkategorie_id: str = "",
+                   sort: str = "datum", richtung: str = "desc"):
     uid = int(unterkategorie_id) if unterkategorie_id.isdigit() else None
+    if sort not in q.NB_SORT:
+        sort = "datum"
+    richtung = "asc" if richtung == "asc" else "desc"
     with db() as conn, conn.cursor() as cur:
-        nb = q.nebenbuch(cur, kategorie_id, unterkategorie_id=uid)
+        nb = q.nebenbuch(cur, kategorie_id, unterkategorie_id=uid, sort=sort, richtung=richtung)
     return TEMPLATES.TemplateResponse(
         request, "nebenbuch.html", {"request": request, "tab": "ruecklagen", "nb": nb})
 
@@ -177,13 +193,14 @@ def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
 
 
 @app.get("/reports", response_class=HTMLResponse)
-def view_reports(request: Request, von: str = q.STICHTAG, bis: str = "",
+def view_reports(request: Request, von: str = "", bis: str = "",
                  modus: str = "ausgabe", ebene: str = "kategorie"):
     if modus not in ("ausgabe", "einnahme", "netto"):
         modus = "ausgabe"
     if ebene not in ("kategorie", "unterkategorie"):
         ebene = "kategorie"
     with db() as conn, conn.cursor() as cur:
+        von = von or q.stichtag(cur)      # #26: Default-Von aus den Einstellungen
         piv = q.pivot(cur, von=von, bis=bis or None, modus=modus, ebene=ebene)
         top = q.top_empfaenger(cur, von=von)
     return TEMPLATES.TemplateResponse(request, "reports.html", {
@@ -194,9 +211,52 @@ def view_reports(request: Request, von: str = q.STICHTAG, bis: str = "",
 @app.get("/config", response_class=HTMLResponse)
 def view_config(request: Request):
     with db() as conn, conn.cursor() as cur:
-        baum = q.config_baum(cur)
+        fluss = q.config_fluss(cur)
+        stichtag = q.stichtag(cur)
     return TEMPLATES.TemplateResponse(request, "config.html",
-                                      {"request": request, "tab": "config", "baum": baum})
+                                      {"request": request, "tab": "config", "fluss": fluss,
+                                       "stichtag": stichtag})
+
+
+@app.get("/export/buchungen.xlsx")
+def export_buchungen(konto: str = "", kategorie_id: str = "", unterkategorie_id: str = "",
+                     offen: str = "", suche: str = "", von: str = "", bis: str = "",
+                     betrag_min: str = "", betrag_max: str = "", alle: str = "",
+                     sort: str = "datum", richtung: str = "desc"):
+    """O2 — die (gefilterte) Buchungsliste als Excel exportieren. Gleiche Filter wie /buchungen."""
+    import io
+    from openpyxl import Workbook
+    kid = int(kategorie_id) if kategorie_id.isdigit() else None
+    uid = int(unterkategorie_id) if unterkategorie_id.isdigit() else None
+    bmin = _parse_euro(betrag_min) if betrag_min.strip() else None
+    bmax = _parse_euro(betrag_max) if betrag_max.strip() else None
+    if sort not in q.SORT_SPALTEN:
+        sort = "datum"
+    richtung = "asc" if richtung == "asc" else "desc"
+    with db() as conn, conn.cursor() as cur:
+        rows, gesamt, summen = q.buchungen(
+            cur, konto=konto or None, kategorie_id=kid, unterkategorie_id=uid,
+            nur_offen=(offen == "1"), suche=suche or None, von=von or None, bis=bis or None,
+            betrag_min_cent=bmin, betrag_max_cent=bmax, nur_reale_konten=(alle != "1"),
+            sort=sort, richtung=richtung, limit=100000, offset=0)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Buchungen"
+    ws.append(["Datum", "Konto", "Art", "Kategorie", "Unterkategorie", "Empfänger",
+               "Verwendungszweck", "Betrag €", "Bemerkung"])
+    for r in rows:
+        ws.append([str(r["datum"]), r["konto"] or "", r["buchungsart"], r["kategorie"] or "",
+                   r["unterkategorie"] or "", r["empfaenger"] or "", r["verwendungszweck"] or "",
+                   round(r["betrag_cent"] / 100, 2), r["bemerkung"] or ""])
+    ws.append([])
+    ws.append(["", "", "", "", "", "", f"Summe ({gesamt} Treffer)",
+               round(summen["netto_cent"] / 100, 2), ""])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=buchungen.xlsx"})
 
 
 @app.get("/api/unterkategorien/{kategorie_id}")
@@ -265,6 +325,34 @@ def set_ukat_ruecklage(unterkategorie_id: int, b: Betrag):
         cur.execute("UPDATE unterkategorien SET monatliche_ruecklage_cent=%s WHERE id=%s",
                     (_parse_euro(b.betrag), unterkategorie_id))
     return {"ok": True, "cent": _parse_euro(b.betrag)}
+
+
+class Flag(BaseModel):
+    wert: bool
+
+
+@app.post("/api/unterkategorie/{unterkategorie_id}/einnahme")
+def set_ukat_einnahme(unterkategorie_id: int, f: Flag):
+    """#39 — Unterkategorie als Einnahme-Position (Gehalt/Taschengeld) markieren/entmarkieren."""
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE unterkategorien SET ist_einnahme=%s WHERE id=%s", (f.wert, unterkategorie_id))
+    return {"ok": True}
+
+
+class Wert(BaseModel):
+    wert: str
+
+
+@app.post("/api/einstellung/stichtag")
+def set_stichtag(w: Wert):
+    """#26 — Start-Abgrenzungsdatum setzen (ISO 'YYYY-MM-DD')."""
+    import re
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", w.wert.strip()):
+        return JSONResponse({"ok": False, "fehler": "Datum als JJJJ-MM-TT"}, status_code=400)
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("""INSERT INTO einstellungen (schluessel, wert) VALUES ('stichtag', %s)
+                       ON CONFLICT (schluessel) DO UPDATE SET wert=EXCLUDED.wert""", (w.wert.strip(),))
+    return {"ok": True, "wert": w.wert.strip()}
 
 
 class Rolle(BaseModel):

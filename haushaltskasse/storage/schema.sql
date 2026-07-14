@@ -54,6 +54,16 @@ CREATE TABLE IF NOT EXISTS unterkategorien (
 );
 -- Nachrüstung für bestehende DBs (Spalte kam später dazu):
 ALTER TABLE unterkategorien ADD COLUMN IF NOT EXISTS monatliche_ruecklage_cent BIGINT NOT NULL DEFAULT 0;
+-- #39: Unterkategorie zählt im Monats-Finanzfluss als EINNAHME (z. B. Gehalt, Taschengeld).
+ALTER TABLE unterkategorien ADD COLUMN IF NOT EXISTS ist_einnahme BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- #26: Allgemeine Einstellungen (key/value). 'stichtag' = Start-Abgrenzungsdatum (davor: Startsaldo).
+CREATE TABLE IF NOT EXISTS einstellungen (
+    schluessel TEXT PRIMARY KEY,
+    wert       TEXT NOT NULL
+);
+INSERT INTO einstellungen (schluessel, wert) VALUES ('stichtag', '2025-01-01')
+    ON CONFLICT (schluessel) DO NOTHING;
 
 -- Default-Unterkategorie je Kategorie (Rest-Auffang): jetzt anlegen, da unterkategorien existiert.
 ALTER TABLE kategorien ADD COLUMN IF NOT EXISTS default_unterkategorie_id INTEGER REFERENCES unterkategorien(id);

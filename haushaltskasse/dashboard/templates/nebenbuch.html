@@ -15,9 +15,15 @@
     <div class="val" style="font-size:20px" class="{{ 'pos' if nb.saldo_cent>=0 else 'neg' }}">{{ nb.saldo_cent|euro }}</div></div>
 </form>
 
-<div class="card scroll" style="margin-top:10px"><table>
-  <tr><th>Datum</th><th>Unterkategorie</th><th>Empfänger / Zweck / Bemerkung</th>
-      <th class="num">Betrag</th><th class="num">Saldo</th></tr>
+<p class="small muted" style="margin:10px 0 4px">Spaltenkopf klicken zum Sortieren (Standard: neueste oben).
+  Der Saldo bleibt der laufende Topf-Stand (chronologisch berechnet).</p>
+<div class="card scroll"><table>
+  {% macro th(col, label, num) %}
+    <th {% if num %}class="num"{% endif %} style="cursor:pointer" onclick="sortBy('{{ col }}')">{{ label }}
+      {% if nb.sort==col %}<span class="muted">{{ '▲' if nb.richtung=='asc' else '▼' }}</span>{% endif %}</th>
+  {% endmacro %}
+  <tr>{{ th('datum','Datum') }}{{ th('unterkategorie','Unterkategorie') }}
+      <th>Empfänger / Zweck / Bemerkung</th>{{ th('betrag','Betrag',true) }}{{ th('saldo','Saldo',true) }}</tr>
   {% for r in nb.rows %}
   <tr>
     <td class="small">{{ r.datum }}</td>
@@ -31,4 +37,12 @@
   {% endfor %}
   {% if not nb.rows %}<tr><td colspan="5" class="muted small">Keine Buchungen in diesem Nebenbuch.</td></tr>{% endif %}
 </table></div>
+{% endblock %}
+{% block script %}
+function sortBy(col){
+  const p = new URLSearchParams(location.search);
+  if(p.get('sort')===col){ p.set('richtung', p.get('richtung')==='asc'?'desc':'asc'); }
+  else { p.set('sort', col); p.set('richtung', (col==='unterkategorie')?'asc':'desc'); }
+  location.search = p.toString();
+}
 {% endblock %}

@@ -1,79 +1,127 @@
 {% extends "base.html" %}
 {% block titel %} · Config{% endblock %}
 {% block content %}
-<h1>Config — Nebenbücher &amp; Unterkategorien</h1>
-<p class="sub">Je Nebenbuch: Rolle im Saldo, monatliches Soll, Default-Unterkategorie
-  („wenn ich nicht zuordnen möchte") und die Unterkategorien pflegen.</p>
+<h1>Config — Monatlicher Finanzfluss</h1>
+<p class="sub">Einnahmen − Ausgaben = Monats-Saldo. Nebenbücher sind eingeklappt; Klick klappt Details
+  &amp; Pflege auf (Soll, Unterkategorien, Rolle, Einnahme-Kennzeichen).</p>
 
-{% for k in baum %}
-<div class="card" style="margin-bottom:14px">
-  <div class="toolbar" style="margin-bottom:12px">
-    <b style="flex:1;min-width:140px;font-size:16px">{{ k.name }}</b>
-
-    <label class="small muted">Rolle
-      <select onchange="saveRolle({{ k.id }}, this)">
-        <option value="ruecklage" {{ 'selected' if k.zaehlt_als=='ruecklage' }}>Rücklage (abziehen)</option>
-        <option value="forderung" {{ 'selected' if k.zaehlt_als=='forderung' }}>Forderung (addieren)</option>
-        <option value="ausgabe"   {{ 'selected' if k.zaehlt_als=='ausgabe' }}>Ausgabe (kein Topf)</option>
-      </select>
-    </label>
-
-    <label class="small muted">Soll/Monat
-      <input class="ruecklage-inp" value="{{ (k.soll_cent/100)|round(2) }}"
-             onchange="saveSoll('kategorie', {{ k.id }}, this)"> €
-    </label>
-
-    <label class="small muted">Default-Unterkat.
-      <select onchange="saveDefaultUkat({{ k.id }}, this)">
-        <option value="">(keine)</option>
-        {% for u in k.unterkategorien %}
-        <option value="{{ u.id }}" {{ 'selected' if k.default_ukat_id==u.id }}>{{ u.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
-  </div>
-
-  <div class="scroll"><table>
-    <tr><th>Unterkategorie</th><th class="num">Soll/Monat</th><th>Quelle</th><th></th></tr>
-    {% for u in k.unterkategorien %}
-    <tr>
-      <td><input style="width:100%;max-width:320px" value="{{ u.name }}"
-                 onchange="renameUkat({{ u.id }}, this)"></td>
-      <td class="num"><input class="ruecklage-inp" value="{{ (u.soll_cent/100)|round(2) }}"
-                 onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
-      <td><span class="tag">{{ u.quelle }}</span></td>
-      <td class="num"><button class="ghost" onclick="delUkat({{ u.id }})">✕ löschen</button></td>
-    </tr>
-    {% endfor %}
-    {% if not k.unterkategorien %}
-    <tr><td colspan="4" class="muted small">Noch keine Unterkategorien.</td></tr>
-    {% endif %}
-    <tr>
-      <td colspan="4">
-        <div class="toolbar" style="margin:4px 0 0">
-          <input id="nu-{{ k.id }}" placeholder="Neue Unterkategorie…" style="flex:1;min-width:180px">
-          <button onclick="addUkat({{ k.id }})">+ Unterkategorie</button>
-        </div>
-      </td>
-    </tr>
-  </table></div>
+<div class="grid kpis">
+  <div class="card kpi"><div class="label">Einnahmen / Monat</div>
+    <div class="val pos">{{ fluss.einnahmen_summe_cent|euro }}</div></div>
+  <div class="card kpi"><div class="label">Ausgaben / Monat</div>
+    <div class="val neg">{{ fluss.ausgaben_summe_cent|euro }}</div></div>
+  <div class="card kpi"><div class="label">Monats-Saldo</div>
+    <div class="val {{ 'pos' if fluss.saldo_cent>=0 else 'neg' }}">{{ fluss.saldo_cent|euro }}</div></div>
+  <div class="card kpi"><div class="label">Start-Abgrenzung</div>
+    <div style="margin-top:6px"><input type="date" value="{{ stichtag }}" onchange="saveStichtag(this)"></div></div>
 </div>
-{% endfor %}
+
+{# ---- Makro: eine Kategorie als eingeklappte Kopfzeile + aufklappbare Pflege ---- #}
+{% macro kat_block(k, wert_cent, farbe) %}
+  <tr class="katzeile" style="cursor:pointer" onclick="toggleKat({{ k.id }})">
+    <td><span id="c-{{ k.id }}" class="muted">▸</span> <b>{{ k.name }}</b>
+      {% if k.unterkategorien %}<span class="tag">{{ k.unterkategorien|length }}</span>{% endif %}</td>
+    <td class="num {{ farbe }}">{{ wert_cent|euro }}</td>
+  </tr>
+  <tr class="det-{{ k.id }}" style="display:none">
+    <td colspan="2" style="background:var(--head)">
+      <div class="toolbar" style="margin-bottom:10px">
+        <label class="small muted">Rolle
+          <select onchange="saveRolle({{ k.id }}, this)">
+            <option value="ruecklage" {{ 'selected' if k.zaehlt_als=='ruecklage' }}>Rücklage (Ausgabe-Topf)</option>
+            <option value="forderung" {{ 'selected' if k.zaehlt_als=='forderung' }}>Forderung</option>
+            <option value="ausgabe"   {{ 'selected' if k.zaehlt_als=='ausgabe' }}>Ausgabe (kein Topf)</option>
+          </select>
+        </label>
+        <label class="small muted">Kategorie-Soll/Mon
+          <input class="ruecklage-inp" value="{{ (k.soll_cent/100)|round(2) }}"
+                 onchange="saveSoll('kategorie', {{ k.id }}, this)"> €</label>
+        <label class="small muted">Default-Unterkat.
+          <select onchange="saveDefaultUkat({{ k.id }}, this)">
+            <option value="">(keine)</option>
+            {% for u in k.unterkategorien %}
+            <option value="{{ u.id }}" {{ 'selected' if k.default_ukat_id==u.id }}>{{ u.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <table>
+        <tr><th>Unterkategorie</th><th class="num">Soll/Mon</th><th>Einnahme?</th><th></th></tr>
+        {% for u in k.unterkategorien %}
+        <tr>
+          <td><input style="width:100%;max-width:280px" value="{{ u.name }}"
+                     onchange="renameUkat({{ u.id }}, this)"></td>
+          <td class="num"><input class="ruecklage-inp" value="{{ (u.soll_cent/100)|round(2) }}"
+                     onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
+          <td><label class="small"><input type="checkbox" {{ 'checked' if u.ist_einnahme }}
+                     onchange="toggleEinnahme({{ u.id }}, this)" style="width:auto"> Einnahme</label></td>
+          <td class="num"><button class="ghost" onclick="delUkat({{ u.id }})">✕</button></td>
+        </tr>
+        {% endfor %}
+        <tr><td colspan="4">
+          <div class="toolbar" style="margin:4px 0 0">
+            <input id="nu-{{ k.id }}" placeholder="Neue Unterkategorie…" style="flex:1;min-width:180px">
+            <button onclick="addUkat({{ k.id }})">+ Unterkategorie</button>
+          </div>
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+{% endmacro %}
+
+<h2 style="color:var(--pos)">▼ Einnahmen</h2>
+<div class="card scroll" style="margin-bottom:6px"><table>
+  {% for k in fluss.einnahmen %}{{ kat_block(k, k.einnahme_soll_cent, 'pos') }}{% endfor %}
+  {% if not fluss.einnahmen %}<tr><td colspan="2" class="muted small">Noch keine Einnahme-Position.
+    Klapp z. B. „Jörg" auf und hake „Einnahme" bei Gehalt an.</td></tr>{% endif %}
+  <tr><td><b>Summe Einnahmen</b></td><td class="num pos"><b>{{ fluss.einnahmen_summe_cent|euro }}</b></td></tr>
+</table></div>
+
+<h2 style="color:var(--neg)">▲ Ausgaben (Nebenbücher)</h2>
+<div class="card scroll" style="margin-bottom:6px"><table>
+  {% for k in fluss.ausgaben %}{{ kat_block(k, k.soll_cent, 'neg') }}{% endfor %}
+  <tr><td><b>Summe Ausgaben</b></td><td class="num neg"><b>{{ fluss.ausgaben_summe_cent|euro }}</b></td></tr>
+</table></div>
+
+<div class="card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+  <b style="font-size:16px">Monats-Saldo</b>
+  <b style="font-size:22px" class="{{ 'pos' if fluss.saldo_cent>=0 else 'neg' }}">{{ fluss.saldo_cent|euro }}</b>
+</div>
+
+{% if fluss.weitere %}
+<h2>Weitere (Forderungen/Sparen — zählen NICHT im Monats-Saldo)</h2>
+<div class="card scroll"><table>
+  {% for k in fluss.weitere %}{{ kat_block(k, k.soll_cent, 'muted') }}{% endfor %}
+</table></div>
+{% endif %}
 {% endblock %}
 
 {% block script %}
+function toggleKat(kid){
+  const rows=document.querySelectorAll('tr.det-'+kid);
+  const offen = rows.length && rows[0].style.display==='none';
+  rows.forEach(r=> r.style.display = offen ? '' : 'none');
+  const c=document.getElementById('c-'+kid); if(c) c.textContent = offen ? '▾' : '▸';
+}
 async function saveRolle(katId, sel){
   await postJSON('/api/kategorie/'+katId+'/rolle', {zaehlt_als: sel.value});
-  flash('Rolle gespeichert');
+  flash('Rolle gespeichert'); setTimeout(()=>location.reload(), 400);
 }
 async function saveDefaultUkat(katId, sel){
-  await postJSON('/api/kategorie/'+katId+'/default_ukat',
-    {unterkategorie_id: sel.value ? +sel.value : null});
+  await postJSON('/api/kategorie/'+katId+'/default_ukat', {unterkategorie_id: sel.value ? +sel.value : null});
   flash('Default gespeichert');
 }
 async function saveSoll(ebene, id, inp){
   await postJSON('/api/'+ebene+'/'+id+'/ruecklage', {betrag: inp.value});
-  flash('gespeichert');
+  flash('gespeichert'); setTimeout(()=>location.reload(), 400);
+}
+async function toggleEinnahme(uid, cb){
+  await postJSON('/api/unterkategorie/'+uid+'/einnahme', {wert: cb.checked});
+  flash('gespeichert'); setTimeout(()=>location.reload(), 400);
+}
+async function saveStichtag(inp){
+  await postJSON('/api/einstellung/stichtag', {wert: inp.value});
+  flash('Stichtag gespeichert'); setTimeout(()=>location.reload(), 400);
 }
 async function renameUkat(id, inp){
   const name = inp.value.trim();

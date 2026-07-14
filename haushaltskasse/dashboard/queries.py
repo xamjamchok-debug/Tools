@@ -140,10 +140,23 @@ def ruecklagen_baum(cur) -> list[dict]:
     return kats
 
 
-def nebenbuch(cur, kategorie_id: int, unterkategorie_id: int | None = None) -> dict:
+# Sortier-Whitelist Nebenbuch (#41): Schlüssel -> Sortier-Key. Saldo bleibt IMMER chronologisch
+# (Window-Funktion), nur die Anzeige-Reihenfolge ändert sich.
+NB_SORT = {
+    "datum":          lambda r: (str(r["datum"]), r["id"]),
+    "betrag":         lambda r: r["betrag_cent"],
+    "saldo":          lambda r: r["saldo_cent"],
+    "unterkategorie": lambda r: (r["unterkategorie"] or "").lower(),
+    "empfaenger":     lambda r: (r["empfaenger"] or "").lower(),
+}
+
+
+def nebenbuch(cur, kategorie_id: int, unterkategorie_id: int | None = None,
+              sort: str = "datum", richtung: str = "desc") -> dict:
     """Nebenbuch-Ansicht (wie altes Kto-Blatt): die Rücklagen-Buchungen eines Nebenbuchs
-    (buchungsart='ruecklage') mit LAUFENDEM Saldo, chronologisch. Optional auf eine
-    Unterkategorie eingeschränkt. Enthält auch die Unterkategorien-Liste für den Filter.
+    (buchungsart='ruecklage') mit LAUFENDEM Saldo. Optional auf eine Unterkategorie
+    eingeschränkt. #41: sortierbar (Default: neueste oben); der laufende Saldo wird immer
+    chronologisch berechnet, nur die Anzeige-Reihenfolge folgt sort/richtung.
     """
     cur.execute("SELECT name FROM kategorien WHERE id=%s", (kategorie_id,))
     row = cur.fetchone()
@@ -169,9 +182,12 @@ def nebenbuch(cur, kategorie_id: int, unterkategorie_id: int | None = None) -> d
     cols = ["id", "datum", "betrag_cent", "saldo_cent", "unterkategorie",
             "empfaenger", "verwendungszweck", "bemerkung"]
     rows = [dict(zip(cols, r)) for r in cur.fetchall()]
-    saldo = rows[-1]["saldo_cent"] if rows else 0
+    saldo = rows[-1]["saldo_cent"] if rows else 0     # Endsaldo = chronologisch letzter (vor Umsortieren)
+    keyf = NB_SORT.get(sort, NB_SORT["datum"])
+    rows.sort(key=keyf, reverse=(richtung != "asc"))
     return {"kategorie_id": kategorie_id, "kat_name": kat_name, "unterkategorien": unterkategorien,
-            "unterkategorie_id": unterkategorie_id, "rows": rows, "saldo_cent": saldo}
+            "unterkategorie_id": unterkategorie_id, "rows": rows, "saldo_cent": saldo,
+            "sort": sort, "richtung": richtung}
 
 
 # ---------------------------------------------------------------------------
@@ -385,6 +401,52 @@ def config_baum(cur) -> list[dict]:
             by_id[kid]["unterkategorien"].append(
                 {"id": i, "name": n, "soll_cent": s, "quelle": qu})
     return kats
+
+
+def config_fluss(cur) -> dict:
+    """#39 — monatliche Finanzfluss-Sicht: Einnahmen − Ausgaben = Monats-Saldo.
+
+    Einnahmen  = Kategorien mit ≥1 als „Einnahme" markierten Unterkategorie (Gehalt, Taschengeld …),
+                 Einnahme-Soll = Σ Soll dieser Unterkategorien.
+    Ausgaben   = Nebenbücher mit Rolle 'ruecklage' (ohne Einnahme-Position), Soll = Kategorie-Soll.
+    Weitere    = Rest (Forderungen/Sparen ohne Einnahme, Rolle 'ausgabe') — nur zur Pflege, zählt
+                 NICHT im Monats-Saldo.
+    Jede Kategorie trägt ALLE ihre Unterkategorien (mit Soll, ist_einnahme, quelle) fürs Aufklappen/Pflegen.
+    """
+    cur.execute("""SELECT id, name, zaehlt_als, monatliche_ruecklage_cent, default_unterkategorie_id
+                   FROM kategorien WHERE aktiv ORDER BY name""")
+    kats = {i: {"id": i, "name": n, "zaehlt_als": z, "soll_cent": s, "default_ukat_id": d,
+                "unterkategorien": [], "einnahme_soll_cent": 0}
+            for i, n, z, s, d in cur.fetchall()}
+    cur.execute("""SELECT id, kategorie_id, name, monatliche_ruecklage_cent, ist_einnahme, quelle
+                   FROM unterkategorien ORDER BY name""")
+    for i, kid, n, s, ie, qu in cur.fetchall():
+        if kid in kats:
+            kats[kid]["unterkategorien"].append(
+                {"id": i, "name": n, "soll_cent": s, "ist_einnahme": ie, "quelle": qu})
+            if ie:
+                kats[kid]["einnahme_soll_cent"] += s
+
+    einnahmen, ausgaben, weitere = [], [], []
+    for k in kats.values():
+        if any(u["ist_einnahme"] for u in k["unterkategorien"]):
+            einnahmen.append(k)
+        elif k["zaehlt_als"] == "ruecklage":
+            ausgaben.append(k)
+        else:
+            weitere.append(k)
+    ein_summe = sum(k["einnahme_soll_cent"] for k in einnahmen)
+    aus_summe = sum(k["soll_cent"] for k in ausgaben)
+    return {"einnahmen": einnahmen, "ausgaben": ausgaben, "weitere": weitere,
+            "einnahmen_summe_cent": ein_summe, "ausgaben_summe_cent": aus_summe,
+            "saldo_cent": ein_summe - aus_summe}
+
+
+def stichtag(cur) -> str:
+    """#26 — Start-Abgrenzungsdatum aus den Einstellungen (Fallback: STICHTAG-Konstante)."""
+    cur.execute("SELECT wert FROM einstellungen WHERE schluessel='stichtag'")
+    row = cur.fetchone()
+    return row[0] if row and row[0] else STICHTAG
 
 
 def kategorien_mit_unterkategorien(cur) -> list[dict]:

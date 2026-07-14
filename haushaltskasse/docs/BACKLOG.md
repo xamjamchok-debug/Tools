@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.2 · Stand 2026-07-14**
+**Version 1.3 · Stand 2026-07-14**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Status, Kurzbeschreibung, Umsetzungsweise).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -8,7 +8,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 
 **✅ Live & vom User getestet (Deploy cb3, 2026-07-14):** #6 Dezimal-Fix · #12 R1 Nebenbuch · #14 R3 Rücklagen read-only · #17 B3 Buchungen nur real · #27 Fluss-Spalten weg.
 
-**📦 NÄCHSTES PAKET (zusammen bauen, EIN Deploy):** #39 Config-Monatsfluss (+ C1 einklappbar) · #26 Start-Abgrenzungsdatum konfigurierbar · #41 Nebenbuch sortierbar · #34/O2 Excel-Export.
+**✅ PAKET 2 gebaut & getestet (Deploy 2026-07-14):** #39 Config als Monatsfluss (eingeklappt, Einnahmen−Ausgaben=Saldo, Einnahme-Kennzeichen je Unterkat) · #26 Start-Abgrenzungsdatum in Config editierbar + im Footer sichtbar · #41 Nebenbuch sortierbar (Default neueste oben) · #34/O2 Excel-Export der Buchungen. Schema: `unterkategorien.ist_einnahme` + Tabelle `einstellungen`.
 
 **Legende:** ✅ live · 🔧 Code fertig, Deploy ausstehend · 📋 offen (Backlog) · 🐞 Bug · ❓ Klärung offen
 

@@ -69,6 +69,10 @@
      onclick="fetch('/logout',{method:'POST'}).then(()=>location='/login');return false">Abmelden</a>
 </nav></header>
 <main>{% block content %}{% endblock %}</main>
+<footer style="max-width:1180px;margin:8px auto 30px;padding:0 16px;color:var(--muted);font-size:12px">
+  📅 Daten-Abgrenzung ab <b>{{ stichtag_global() }}</b> — Einzelbuchungen ab diesem Stichtag, davor Startsalden.
+  <span class="muted">(änderbar unter Config)</span>
+</footer>
 <div class="flash" id="flash"></div>
 <script>
 async function postJSON(url, body){
