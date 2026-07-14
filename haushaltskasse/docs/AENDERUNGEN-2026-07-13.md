@@ -18,12 +18,12 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 9 | Übersicht | **U2** transparente Saldo-Herleitung (bis „frei verfügbar") | Wasserfall-Tabelle aus `haushaltssaldo()`-Komponenten | 📋 offen |
 | 10 | Übersicht | **U3** Monatsablauf-Block (Soll vs. Ist, klappbar) | Neuer Accordion-Block, `ruecklagen_baum()` wiederverwenden | 📋 offen |
 | 11 | Übersicht | **U4** stichtagsbezogener Gesamtsaldo | Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet | 📋 offen |
-| 12 | Rücklagen | **R1** Drilldown Unterkategorie → Einzelbuchungen | Link auf `/buchungen?unterkategorie_id=…` | 📋 offen |
+| 12 | Rücklagen | **R1** Doppelklick aufs **Nebenbuch** → dessen Rücklagen-/Gegenbuchungen mit laufendem Saldo (wie altes Kto-Blatt), optional Filter Unterkategorie | Getrennte Nebenbuch-Sicht (`buchungsart='ruecklage'`), nicht die reale Buchungsliste | 📋 offen |
 | 13 | Rücklagen | **R4** „+ zurücklegen / − entnehmen" je Topf (= ein-/ausbuchen) | Neuer Endpoint → manuelle `ruecklage`-Buchung (+/−) | 📋 offen |
 | 14 | Rücklagen | **R3** „Soll" nur an einer Stelle editierbar + klar beschriftet | Rücklagen editierbar, Config read-only | 📋 offen |
 | 15 | Rücklagen | Saldierung nach Migration prüfen (dein Bug-Report) | Nach Hard-Refresh verifizieren; sonst gezielt nachsehen | 🐞 zu prüfen |
 | 16 | Buchungen | Posten/Rücklagen in Buchungsliste verwirrend | Erklären/kennzeichnen; ggf. mit B3 ausblenden | ❓ Klärung |
-| 17 | Buchungen | **B3** Buchungsart-Filter · **B4** besser filtern | Filter erweitern (Art, Mehrfachauswahl, Chips) | 📋 offen |
+| 17 | Buchungen | **B3** Buchungsliste **standardmäßig nur reale Buchungen** (Rücklagen/Spiegel raus, falsches Vorzeichen) · **B4** besser filtern | Default `buchungsart='real'`, optionaler Umschalter; Filter erweitern (Mehrfachauswahl, Chips) | 📋 offen |
 | 18 | Config | **C1** Config-Seite Kategorien **einklappbar** (Accordion wie Rücklagen) | Klappbare Kategorien, kompakter | 📋 offen |
 | 19 | Einnahmen | **E1** Einnahmen explizit im Monatsablauf + eigene Sicht | Zufluss/Gehalt getrennt zeigen, in Saldo einrechnen (Teil von U3) | 📋 offen |
 | 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen | 📋 offen |
@@ -33,7 +33,7 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 24 | Betrieb | **P0.3** Azure-Kostenanzeige in der Seite | Cost-Management-API / Schätzung + Warnschwelle | 📋 offen |
 | 25 | Analyse | **U5** Veränderung **Stichtag X → Y** (Mittelfluss-Überblick), Default nach Import | Delta = Saldo(Y)−Saldo(X) gesamt + Zufluss/Abfluss je Konto/Kategorie/Topf im Intervall; nach Import automatisch X=Stand-vor-Import, Y=jetzt | 📋 offen |
 | 26 | Zeitraum | **Standardzeitraum ändern** (Default-Zeitraum konfigurierbar) | Statt fix `STICHTAG` 01.01.2025–heute: sinnvoller Default (laufendes Jahr / letzte N Monate), evtl. in Config einstellbar | 📋 offen |
-| 27 | Rücklagen | **Zufluss/Abfluss vermutlich falsch** (Spalten prüfen & fixen) | `ruecklagen_baum` Zufluss/Abfluss-Logik prüfen; hängt mit Nr. 15 „Salden Kappes" zusammen | 🐞 offen |
+| 27 | Rücklagen | **Zufluss/Abfluss-Spalten ENTFERNEN** — falsch (Datumsfilter wirkt nicht) und nicht gebraucht; nur Ist-Saldo je Topf zeigen | Spalten raus aus `ruecklagen_baum`/Template; Bewegungen kommen über R1-Doppelklick | 📋 entschieden |
 | 28 | Rücklagen | **Untertöpfe richtig befüllen** (nicht alles in „Allgemein") | Zuführungen sinnvoll auf Unterkategorie-Töpfe verteilen (Verteillogik/manuell) statt Sammel-„Allgemein"; Modell A vervollständigen | 📋 offen |
 | 29 | Nachbau | **Verlauf-, Schulden- & Fuchsbau-Blatt nachbauen** (aus alter Excel) | Je ein Dashboard-Bereich: Verlauf (Salden-Zeitreihe je Nebenbuch), Schulden (Kreditübersicht), Fuchsbau (Immobilie/Finanzierung) | 📋 offen |
 | 30 | Zeitraum/Config | **Verlauf etc. pro Jahr fortschreiben** | Jahresweise Fortschreibung/Snapshots je Nebenbuch, über Config gesteuert (Jahresspalten wie im alten config-Blatt) | 📋 offen |
@@ -43,3 +43,5 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 34 | Export | **Export nach Excel** | Buchungen/Reports/Salden als `.xlsx` (openpyxl) exportieren | 📋 offen |
 | 35 | Datenmodell | **Logik für Großeltern nachbauen** (Pflegekonto/Kredit) | Separater Pflegekonto-Bereich + Kredit Großeltern (−135.000), getrennte Buchführung wie im alten Modell | 📋 offen |
 | 36 | Demo | **Anonymisierte Show-Site** | Öffentliche Demo mit anonymisierten/synthetischen Daten (keine echten Beträge/Namen/IBANs) | 📋 offen |
+| 37 | Konten | **Eigenes Girokonto in die Berechnungen aufnehmen** | Persönliches Girokonto als reales Konto ergänzen (Startsaldo + Import), damit Real-/Haushaltssaldo vollständig sind | 📋 offen |
+| 38 | Getrennte Sicht | **Pendant „Großeltern"** zur Haushaltskasse | Ähnliche, reduzierte Logik, komplett getrennt dargestellt (eigener Bereich/Datensatz); baut auf N5 auf | 📋 offen |

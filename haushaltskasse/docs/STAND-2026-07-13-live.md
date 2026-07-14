@@ -27,23 +27,42 @@
 
 ## 📋 BACKLOG (offen, priorisiert)
 
-### Rücklagen-Seite
-- **R1** Drilldown: Klick auf eine Unterkategorie → deren Einzelbuchungen (Buchungsseite filtert
-  schon nach `unterkategorie_id`, also nur verlinken).
-- **R4** „+ zurücklegen / − entnehmen" je Unterkategorie = neue `ruecklage`-Buchung (+/−, quelle
-  'manuell', heutiges Datum). Braucht neuen Endpoint + Button.
+### Rücklagen-Seite  (Neuausrichtung 2026-07-14)
+> **Zielbild (User 2026-07-14):** Die Rücklagen-/Übersicht-Seite zeigt je Nebenbuch (und Untertopf)
+> **nur den Ist-Saldo** — KEINE Zufluss/Abfluss-Spalten. Die einzelnen Bewegungen eines Nebenbuchs
+> sieht man per **Doppelklick aufs Nebenbuch**: dessen Gegen-/Rücklagenbuchungen mit **laufendem
+> Saldo** (wie das alte Kto-Blatt), optional per Filter auf eine Unterkategorie eingeschränkt.
+- **R5** 🐞→❌ **Zufluss/Abfluss-Spalten ENTFERNEN.** Sie sind falsch (Datumsfilter wirkt nicht,
+  Werte unplausibel) UND werden nicht gebraucht. Rücklagen zeigt nur **Ist-Saldo** je Nebenbuch/Untertopf.
+- **R1** **Doppelklick aufs Nebenbuch → Nebenbuch-Buchungsansicht.** Zeigt die auf dem Nebenbuch
+  gebuchten Bewegungen (`buchungsart='ruecklage'`: Zuführungen/Verzehr/Korrekturen, also die
+  Gegenbuchungen) mit **laufendem Saldo** wie im alten Excel-„Kto-"Blatt. Optional Filter auf eine
+  Unterkategorie. Analog aus der Übersicht. **Nicht** die reale Buchungsliste (die zeigt nur echte
+  Konten, siehe B3) — das ist die getrennte Nebenbuch-Sicht.
 - **R3** „Soll" (monatliche Zuführung) nur an EINER Stelle editierbar (Rücklagen), in Config
   read-only; klar beschriften. Aktuell doppelt editierbar.
-- **R5** 🐞 **Zufluss/Abfluss-Spalten vermutlich falsch** — Berechnung in `ruecklagen_baum` prüfen
-  und fixen. Hängt mit „Salden Kappes" (Nr. 15) zusammen. Zuerst angehen.
-- **R6** **Untertöpfe richtig befüllen** — Zuführungen sinnvoll auf die Unterkategorie-Töpfe
-  verteilen statt alles im Sammel-Topf „Allgemein" (Modell A vervollständigen).
+- **R4** „+ zurücklegen / − entnehmen" je Untertopf = neue `ruecklage`-Buchung (+/−, quelle
+  'manuell', heutiges Datum). Braucht neuen Endpoint + Button.
+- **R6** **Untertöpfe richtig befüllen** — aktuell „kraut und rüben" (alle Zuführungen landeten im
+  Sammel-Topf „Allgemein"). Sinnvolle Verteilung auf die Unterkategorie-Töpfe erarbeiten
+  (Verteillogik/manuell), damit die Untertopf-Salden stimmen. Modell A vervollständigen.
 - **Z1** **Standardzeitraum konfigurierbar** — statt fix `STICHTAG` 01.01.2025–heute ein sinnvoller
   Default (laufendes Jahr / letzte N Monate), evtl. in Config einstellbar. Betrifft Rücklagen & Reports.
 
 ### Buchungen
-- **B3** Filter/Umschalter nach `buchungsart` (real/ruecklage/…), damit die B1-Summe nicht durch
-  Rücklagen-Spiegelbuchungen verzerrt wird (aktuell summiert die Liste ALLE Arten der Treffer).
+- **B3** **Buchungsliste standardmäßig NUR reale Buchungen** (echte Konten, `buchungsart='real'`).
+  Die Rücklagen-/Spiegelbuchungen raus — sie wirken dort wie ein falsches Vorzeichen und gehören
+  auf die Nebenbücher (siehe R1). Optionaler Umschalter für andere Arten; die B1-Summe zählt dann
+  nur die realen Treffer.
+
+### Konten & getrennte Sichten (neu 2026-07-14)
+- **G1** **Eigenes Girokonto in die Berechnungen aufnehmen** — das persönliche Girokonto fehlt bisher
+  in den Salden. Als reales Konto ergänzen (Konten + Startsaldo + Import), damit Real-/Haushaltssaldo
+  vollständig sind.
+- **GE1** **Getrennte Sicht „Großeltern"** — ein Pendant zur jetzigen Haushaltskasse für die
+  Großeltern: **ähnliche Logik, reduzierter Funktionsumfang, komplett getrennt dargestellt**
+  (eigener Bereich/Instanz, eigener Datensatz — keine Vermischung mit dem Haushalt). Baut auf der
+  Großeltern-/Pflegekonto-Logik (N5) auf.
 
 ### Übersicht
 - **U1** Merkzettel als eigene **Box mit Einzelposten** (statt einem Summen-Posten). Neue Spalte
