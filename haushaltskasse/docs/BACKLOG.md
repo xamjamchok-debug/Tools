@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.0 · Stand 2026-07-14**
+**Version 1.1 · Stand 2026-07-14**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Status, Kurzbeschreibung, Umsetzungsweise).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -48,5 +48,5 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 36 | Demo | **Anonymisierte Show-Site** | Öffentliche Demo mit anonymisierten/synthetischen Daten (keine echten Beträge/Namen/IBANs) | 📋 offen |
 | 37 | Konten | **Eigenes Girokonto in die Berechnungen aufnehmen** | Persönliches Girokonto als reales Konto ergänzen (Startsaldo + Import), damit Real-/Haushaltssaldo vollständig sind | 📋 offen |
 | 38 | Getrennte Sicht | **Pendant „Großeltern"** zur Haushaltskasse | Ähnliche, reduzierte Logik, komplett getrennt dargestellt (eigener Bereich/Datensatz); baut auf N5 auf | 📋 offen |
-| 39 | Config | **Config = monatliche Finanzfluss-Sicht** (editierbar): Einnahmen (Jörg/Natalie) − Ausgaben je Nebenbuch→Unterkategorie, einklappbar, **Monats-Saldo** auf einen Blick | Config-Umbau; Einnahmen-Modellierung offen (siehe Frage); nutzt `monatliche_ruecklage_cent` | 📋 (Design-Frage offen) |
+| 39 | Config | **Config = monatliche Finanzfluss-Sicht** (editierbar): Einnahmen (Jörg/Natalie) − Ausgaben je Nebenbuch→Unterkategorie, einklappbar, **Monats-Saldo** auf einen Blick | **Einnahmen-Modell GEKLÄRT (2026-07-14):** je Person mehrere als **„Einnahme" markierte Unterkategorien** in Jörg/Natalie (Gehalt, Taschengeld, …) → neues Unterkat-Kennzeichen `zaehlt_als='einnahme'`. Monats-Saldo = Σ Einnahme-Soll − Σ Ausgaben-Soll; Plan-Soll getrennt vom historischen Ist-Topf | 📋 Design geklärt, baubereit |
 | 40 | Finanzplanung | **10-Jahres-Verlaufsplanung** — Absprung aus Config: wie sich Einnahmen/Ausgaben/Haushalts-Rücklagen über die Jahre ändern; füllbare Tabelle + Diagramm; „wo stehen wir saldoseitig in 5/10 Jahren" | Explizite Jahres-Plan-Tabelle (neues Datenmodell) + Chart (dataviz); **Design später** | 📋 offen (nicht jetzt) |
