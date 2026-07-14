@@ -41,6 +41,7 @@
     <th onclick="sortBy('kategorie')" style="cursor:pointer">Kategorie {% if sort=='kategorie' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
     <th onclick="sortBy('unterkategorie')" style="cursor:pointer">Unterkategorie {% if sort=='unterkategorie' %}<span class="muted">{{ '▲' if richtung=='asc' else '▼' }}</span>{% endif %}</th>
     <th>Bemerkung</th>
+    <th>Quelle / importiert</th>
   </tr>
   {% for r in rows %}
   <tr>
@@ -62,16 +63,18 @@
     <td><span class="bemerkung" contenteditable data-buchung="{{ r.id }}"
              style="display:inline-block;min-width:120px;min-height:1.2em"
              title="Freitext – Enter speichert">{{ r.bemerkung or '' }}</span></td>
+    <td class="small muted"><span class="tag">{{ r.quelle or '?' }}</span>
+      {% if r.importiert_am %}<div>{{ r.importiert_am.strftime('%d.%m.%y %H:%M') }}</div>{% endif %}</td>
   </tr>
   {% endfor %}
-  {% if not rows %}<tr><td colspan="7" class="muted small">Keine Buchungen für diese Filter.</td></tr>{% endif %}
+  {% if not rows %}<tr><td colspan="8" class="muted small">Keine Buchungen für diese Filter.</td></tr>{% endif %}
   <tr class="summe" style="border-top:2px solid var(--line, #ccc)">
     <td colspan="3"><b>Summe über alle {{ gesamt }} Treffer</b>
       <span class="small muted">(nicht nur diese Seite)</span></td>
     <td class="num"><b class="{{ 'pos' if summen.netto_cent>=0 else 'neg' }}">{{ summen.netto_cent|euro }}</b>
       <div class="small"><span class="pos">+{{ summen.einnahmen_cent|euro }}</span>
         / <span class="neg">{{ summen.ausgaben_cent|euro }}</span></div></td>
-    <td colspan="3"></td>
+    <td colspan="4"></td>
   </tr>
 </table></div>
 

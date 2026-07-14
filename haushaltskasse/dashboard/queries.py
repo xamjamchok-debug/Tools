@@ -405,7 +405,8 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
     cur.execute(f"""
         SELECT b.id, b.datum_wert, b.betrag_cent, b.buchungsart, kt.name AS konto,
                b.kategorie_id, k.name AS kategorie, b.unterkategorie_id, u.name AS unterkategorie,
-               b.empfaenger, b.verwendungszweck, b.kat_pinned, b.bemerkung
+               b.empfaenger, b.verwendungszweck, b.kat_pinned, b.bemerkung,
+               b.quelle_import, b.erstellt_am
         FROM buchungen b
         LEFT JOIN konten kt ON kt.id = b.konto_id
         LEFT JOIN kategorien k ON k.id = b.kategorie_id
@@ -416,7 +417,7 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
     """, params + [limit, offset])
     cols = ["id", "datum", "betrag_cent", "buchungsart", "konto", "kategorie_id", "kategorie",
             "unterkategorie_id", "unterkategorie", "empfaenger", "verwendungszweck", "kat_pinned",
-            "bemerkung"]
+            "bemerkung", "quelle", "importiert_am"]
     rows = [dict(zip(cols, r)) for r in cur.fetchall()]
     return rows, gesamt, summen
 

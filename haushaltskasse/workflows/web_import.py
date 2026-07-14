@@ -47,14 +47,17 @@ def importiere_upload(dateiname: str, daten: bytes, conn=None) -> dict:
         ukat_cache: dict = {}
         with conn.cursor() as cur:
             konten, kategorien = _lade_maps(cur)
-            # Fachlicher Dedupe (quelle-UNABHÄNGIG, Multiset): erkennt auch migrierte Bestände
-            # (z. B. fb-dkb) als Dublette und lässt echte Mehrfachbuchungen desselben Tags zu.
-            cur.execute("SELECT datum_wert, betrag_cent, konto_id, COALESCE(empfaenger,'') "
+            # Fachlicher Dedupe (quelle- UND empfänger-UNABHÄNGIG, Multiset): Schlüssel nur
+            # Datum + Betrag + Konto. Empfänger ist bewusst NICHT im Schlüssel, weil dieselbe
+            # Buchung je nach Quelle (FB-Excel vs. Bank-CSV) unterschiedlich beschriftet ist —
+            # ihn mitzunehmen ließe Dubletten durchrutschen. Multiset lässt echte Mehrfach-
+            # buchungen desselben Tags/Betrags weiterhin zu (Bestand 0 → alle werden eingefügt).
+            cur.execute("SELECT datum_wert, betrag_cent, konto_id "
                         "FROM buchungen WHERE konto_id IS NOT NULL")
-            bestand = Counter((str(d), bt, k, e) for d, bt, k, e in cur.fetchall())
+            bestand = Counter((str(d), bt, k) for d, bt, k in cur.fetchall())
             for b in roh:
                 konto_id = _konto_id(cur, konten, b["konto"])
-                schluessel = (str(b["datum"]), b["betrag_cent"], konto_id, b.get("empfaenger") or "")
+                schluessel = (str(b["datum"]), b["betrag_cent"], konto_id)
                 if bestand.get(schluessel, 0) > 0:       # schon vorhanden (auch aus Migration) → überspringen
                     bestand[schluessel] -= 1
                     dubletten += 1

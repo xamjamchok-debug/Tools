@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.5 · Stand 2026-07-14**
+**Version 1.6 · Stand 2026-07-14**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -53,3 +53,6 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 39 | Config | **Config = monatliche Finanzfluss-Sicht** (Einnahmen − Ausgaben = Monats-Saldo, eingeklappt) | `config_fluss`: Einnahmen=Kategorien mit Einnahme-Unterkats / Ausgaben='ruecklage'; Einnahme-Kennzeichen `ist_einnahme`; aufklappen=Pflege | 🚀 Deployed |
 | 40 | Finanzplanung | **10-Jahres-Verlaufsplanung** — Absprung aus Config; füllbare Tabelle + Diagramm | Jahres-Plan-Tabelle (neues Datenmodell) + Chart (dataviz); Design später | 💡 Idee (nicht jetzt) |
 | 41 | Rücklagen | **Nebenbuch-Ansicht sortierbar** (Default: neueste oben) | Klickbare Spaltenköpfe in `nebenbuch.html` / `queries.nebenbuch` (NB_SORT), Saldo bleibt chronologisch | 🚀 Deployed |
+| 42 | Import | 🐞 **Dubletten beim Import** (DKB/Amazon) — Dedupe versagte, weil Empfänger quelle-abhängig geschrieben ist | Fix v2: Dedupe-Schlüssel nur **datum+betrag+konto** (Multiset, Empfänger raus); DKB/Amazon bereinigt (DKB wieder 9.584,90) | 🚀 Deployed |
+| 43 | Buchungen | **Import-Zeitstempel** je Buchung anzeigen | `queries.buchungen` liefert quelle+erstellt_am → Spalte „Quelle / importiert" | 🚀 Deployed |
+| 44 | Buchungen | **Stichtagsbasierte laufende Saldierung** in der Buchungsliste | Laufender Konto-Saldo (chronologisch); knifflig wg. Sortierung/Paginierung/mehrere Konten — Design offen | 💡 Idee |
