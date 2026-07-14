@@ -2,11 +2,12 @@
 {% block titel %} · Rücklagen{% endblock %}
 {% block content %}
 <h1>Rücklagen</h1>
-<p class="sub">Soll-Rückstellung (editierbar) und Ist-Topf je Nebenbuch. Klick klappt die
-  Unterkategorien auf/zu. <b>Doppelklick</b> auf ein Nebenbuch öffnet dessen Buchungen (mit laufendem Saldo).</p>
+<p class="sub">Konto-Sicht der Nebenbücher: aktueller Ist-Topf (nur lesen). Klick klappt die
+  Unterkategorien auf/zu. <b>Doppelklick</b> auf ein Nebenbuch öffnet dessen Buchungen (mit laufendem Saldo).
+  Die monatlichen Soll-Beträge pflegst du in <a href="/config">Config</a>.</p>
 
 <div class="toolbar">
-  <div class="card kpi" style="padding:8px 12px"><div class="label">Soll gesamt / Monat</div>
+  <div class="card kpi" style="padding:8px 12px"><div class="label">Soll gesamt / Monat (aus Config)</div>
     <div class="val" style="font-size:20px">{{ soll_summe_cent|euro }}</div></div>
   <button type="button" class="ghost" onclick="alleAuf(true)">alle auf</button>
   <button type="button" class="ghost" onclick="alleAuf(false)">alle zu</button>
@@ -23,8 +24,7 @@
       onclick="toggleKat({{ k.id }})" ondblclick="location='/nebenbuch/{{ k.id }}'">
     <td><span id="caret-{{ k.id }}" class="muted">▸</span> <b>{{ k.name }}</b>
       {% if k.unterkategorien %}<span class="tag">{{ k.unterkategorien|length }}</span>{% endif %}</td>
-    <td class="num"><input class="ruecklage-inp" value="{{ (k.soll_cent/100)|round(2) }}"
-        onclick="event.stopPropagation()" onchange="saveSoll('kategorie', {{ k.id }}, this)"> €</td>
+    <td class="num muted">{{ k.soll_cent|euro }}</td>
     <td class="num {{ 'pos' if k.ist_cent>=0 else 'neg' }}">{{ k.ist_cent|euro }}</td>
   </tr>
     {% for u in k.unterkategorien %}
@@ -32,8 +32,7 @@
         title="Doppelklick: Buchungen dieser Unterkategorie"
         ondblclick="location='/nebenbuch/{{ k.id }}?unterkategorie_id={{ u.id }}'">
       <td style="padding-left:26px" class="muted">↳ {{ u.name }}</td>
-      <td class="num"><input class="ruecklage-inp" value="{{ (u.soll_cent/100)|round(2) }}"
-          onclick="event.stopPropagation()" onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
+      <td class="num muted small">{{ u.soll_cent|euro }}</td>
       <td class="num small {{ 'pos' if u.ist_cent>=0 else 'neg' }}">{{ u.ist_cent|euro }}</td>
     </tr>
     {% endfor %}
@@ -55,10 +54,6 @@ function toggleKat(kid){
   setKat(kid, offen);
 }
 function alleAuf(open){ document.querySelectorAll('tr[data-kat]').forEach(el=>setKat(el.getAttribute('data-kat'), open)); }
-async function saveSoll(ebene, id, inp){
-  await postJSON('/api/'+ebene+'/'+id+'/ruecklage', {betrag: inp.value});
-  flash('gespeichert');
-}
 document.addEventListener('DOMContentLoaded', ()=>{
   document.querySelectorAll('tr[data-kat]').forEach(el=>{
     const kid=el.getAttribute('data-kat');

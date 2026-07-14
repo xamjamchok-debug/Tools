@@ -20,11 +20,11 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 11 | Übersicht | **U4** stichtagsbezogener Gesamtsaldo | Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet | 📋 offen |
 | 12 | Rücklagen | **R1** Doppelklick aufs **Nebenbuch** → dessen Rücklagen-/Gegenbuchungen mit laufendem Saldo (wie altes Kto-Blatt), optional Filter Unterkategorie | Getrennte Nebenbuch-Sicht (`buchungsart='ruecklage'`) via `/nebenbuch/{id}`, `queries.nebenbuch()` | 🔧 Code fertig, Deploy offen |
 | 13 | Rücklagen | **R4** „+ zurücklegen / − entnehmen" je Topf (= ein-/ausbuchen) | Neuer Endpoint → manuelle `ruecklage`-Buchung (+/−) | 📋 offen |
-| 14 | Rücklagen | **R3** „Soll" nur an einer Stelle editierbar + klar beschriftet | Rücklagen editierbar, Config read-only | 📋 offen |
+| 14 | Rücklagen/Config | **R3** „Soll" nur an EINER Stelle editierbar (**Config**), **Rücklagen read-only** (Konto-Sicht) | Rücklagen-Soll auf read-only umgestellt; Editieren nur in Config | 🔧 Rücklagen read-only fertig · 📋 Config-Ausbau (39) |
 | 15 | Rücklagen | Saldierung nach Migration prüfen (dein Bug-Report) | Nach Hard-Refresh verifizieren; sonst gezielt nachsehen | 🐞 zu prüfen |
 | 16 | Buchungen | Posten/Rücklagen in Buchungsliste verwirrend | Erklären/kennzeichnen; ggf. mit B3 ausblenden | ❓ Klärung |
 | 17 | Buchungen | **B3** Buchungsliste **standardmäßig nur reale Buchungen** (Rücklagen/Spiegel raus, falsches Vorzeichen) · **B4** besser filtern | Default `konto_id IS NOT NULL`, Umschalter „inkl. Rücklagen"; B4-Filter erweitern (Mehrfachauswahl, Chips) | 🔧 B3 fertig · 📋 B4 |
-| 18 | Config | **C1** Config-Seite Kategorien **einklappbar** (Accordion wie Rücklagen) | Klappbare Kategorien, kompakter | 📋 offen |
+| 18 | Config | **C1** Config-Seite **einklappbar** (Accordion) | Klappbare Nebenbücher (Teil von 39) | 📋 offen |
 | 19 | Einnahmen | **E1** Einnahmen explizit im Monatsablauf + eigene Sicht | Zufluss/Gehalt getrennt zeigen, in Saldo einrechnen (Teil von U3) | 📋 offen |
 | 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen | 📋 offen |
 | 21 | Analyse | **P2** freie Query + Pivot-Ausbau | Read-only SQL-Konsole und/oder KI-Prompt→SQL; Pivot in Reports erweitern | 📋 offen |
@@ -45,3 +45,6 @@ Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-liv
 | 36 | Demo | **Anonymisierte Show-Site** | Öffentliche Demo mit anonymisierten/synthetischen Daten (keine echten Beträge/Namen/IBANs) | 📋 offen |
 | 37 | Konten | **Eigenes Girokonto in die Berechnungen aufnehmen** | Persönliches Girokonto als reales Konto ergänzen (Startsaldo + Import), damit Real-/Haushaltssaldo vollständig sind | 📋 offen |
 | 38 | Getrennte Sicht | **Pendant „Großeltern"** zur Haushaltskasse | Ähnliche, reduzierte Logik, komplett getrennt dargestellt (eigener Bereich/Datensatz); baut auf N5 auf | 📋 offen |
+| 39 | Config | **Config = monatliche Finanzfluss-Sicht** (editierbar): Einnahmen (Jörg/Natalie) − Ausgaben je Nebenbuch→Unterkategorie, einklappbar, **Monats-Saldo** auf einen Blick | Config-Umbau; Einnahmen-Modellierung offen (siehe Frage); nutzt `monatliche_ruecklage_cent` | 📋 (Design-Frage offen) |
+| 40 | Finanzplanung | **10-Jahres-Verlaufsplanung** — Absprung aus Config: wie sich Einnahmen/Ausgaben/Haushalts-Rücklagen über die Jahre ändern; füllbare Tabelle + Diagramm; „wo stehen wir saldoseitig in 5/10 Jahren" | Explizite Jahres-Plan-Tabelle (neues Datenmodell) + Chart (dataviz); **Design später** | 📋 offen (nicht jetzt) |
+| 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren; **jetzt gewünscht** | 📋 → in Umsetzung |
