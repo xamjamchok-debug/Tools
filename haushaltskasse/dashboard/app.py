@@ -124,22 +124,30 @@ def view_uebersicht(request: Request):
 
 
 @app.get("/ruecklagen", response_class=HTMLResponse)
-def view_ruecklagen(request: Request, von: str = q.STICHTAG, bis: str = ""):
+def view_ruecklagen(request: Request):
     with db() as conn, conn.cursor() as cur:
-        baum = q.ruecklagen_baum(cur, von=von, bis=bis or None)
+        baum = q.ruecklagen_baum(cur)
     soll_summe = sum(k["soll_cent"] for k in baum) + sum(
         u["soll_cent"] for k in baum for u in k["unterkategorien"])
     return TEMPLATES.TemplateResponse(
         request, "ruecklagen.html",
-        {"request": request, "tab": "ruecklagen", "baum": baum,
-         "soll_summe_cent": soll_summe, "von": von, "bis": bis})
+        {"request": request, "tab": "ruecklagen", "baum": baum, "soll_summe_cent": soll_summe})
+
+
+@app.get("/nebenbuch/{kategorie_id}", response_class=HTMLResponse)
+def view_nebenbuch(request: Request, kategorie_id: int, unterkategorie_id: str = ""):
+    uid = int(unterkategorie_id) if unterkategorie_id.isdigit() else None
+    with db() as conn, conn.cursor() as cur:
+        nb = q.nebenbuch(cur, kategorie_id, unterkategorie_id=uid)
+    return TEMPLATES.TemplateResponse(
+        request, "nebenbuch.html", {"request": request, "tab": "ruecklagen", "nb": nb})
 
 
 @app.get("/buchungen", response_class=HTMLResponse)
 def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
                    unterkategorie_id: str = "", offen: str = "", suche: str = "",
                    von: str = "", bis: str = "", betrag_min: str = "", betrag_max: str = "",
-                   sort: str = "datum", richtung: str = "desc", seite: int = 1):
+                   alle: str = "", sort: str = "datum", richtung: str = "desc", seite: int = 1):
     limit, offset = 200, (max(seite, 1) - 1) * 200
     kid = int(kategorie_id) if kategorie_id.isdigit() else None
     uid = int(unterkategorie_id) if unterkategorie_id.isdigit() else None
@@ -152,8 +160,8 @@ def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
         rows, gesamt, summen = q.buchungen(
             cur, konto=konto or None, kategorie_id=kid, unterkategorie_id=uid,
             nur_offen=(offen == "1"), suche=suche or None, von=von or None, bis=bis or None,
-            betrag_min_cent=bmin, betrag_max_cent=bmax, sort=sort, richtung=richtung,
-            limit=limit, offset=offset)
+            betrag_min_cent=bmin, betrag_max_cent=bmax, nur_reale_konten=(alle != "1"),
+            sort=sort, richtung=richtung, limit=limit, offset=offset)
         kats = q.kategorien_mit_unterkategorien(cur)
         cur.execute("SELECT name FROM konten ORDER BY name")
         konten = [r[0] for r in cur.fetchall()]
@@ -165,7 +173,7 @@ def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
         "sort": sort, "richtung": richtung,
         "f": {"konto": konto, "kategorie_id": kategorie_id, "unterkategorie_id": unterkategorie_id,
               "offen": offen, "suche": suche, "von": von, "bis": bis,
-              "betrag_min": betrag_min, "betrag_max": betrag_max}})
+              "betrag_min": betrag_min, "betrag_max": betrag_max, "alle": alle}})
 
 
 @app.get("/reports", response_class=HTMLResponse)

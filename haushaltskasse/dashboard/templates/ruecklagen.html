@@ -2,56 +2,45 @@
 {% block titel %} · Rücklagen{% endblock %}
 {% block content %}
 <h1>Rücklagen</h1>
-<p class="sub">Soll-Rückstellung (editierbar) und Ist-Topf je Kategorie, plus der reale Fluss
-  (Zufluss/Abfluss) im Zeitraum. Klick auf eine Kategorie klappt die Unterkategorien auf/zu.</p>
+<p class="sub">Soll-Rückstellung (editierbar) und Ist-Topf je Nebenbuch. Klick klappt die
+  Unterkategorien auf/zu. <b>Doppelklick</b> auf ein Nebenbuch öffnet dessen Buchungen (mit laufendem Saldo).</p>
 
-<form class="toolbar" method="get">
+<div class="toolbar">
   <div class="card kpi" style="padding:8px 12px"><div class="label">Soll gesamt / Monat</div>
     <div class="val" style="font-size:20px">{{ soll_summe_cent|euro }}</div></div>
-  <label class="small" style="margin-left:auto">von <input type="date" name="von" value="{{ von }}"></label>
-  <label class="small">bis <input type="date" name="bis" value="{{ bis }}"></label>
-  <button type="submit">Zeitraum</button>
   <button type="button" class="ghost" onclick="alleAuf(true)">alle auf</button>
   <button type="button" class="ghost" onclick="alleAuf(false)">alle zu</button>
-</form>
+</div>
 
 <div class="card scroll" style="margin-top:10px"><table>
   <tr>
-    <th>Kategorie / Unterkategorie</th>
+    <th>Nebenbuch / Unterkategorie</th>
     <th class="num">Soll&nbsp;/&nbsp;Mon</th>
     <th class="num">Ist-Topf</th>
-    <th class="num">Zufluss</th>
-    <th class="num">Abfluss</th>
-    <th class="num">Netto</th>
   </tr>
   {% for k in baum %}
-  {% set netto = k.zufluss_cent + k.abfluss_cent %}
-  <tr data-kat="{{ k.id }}" style="cursor:pointer" onclick="toggleKat({{ k.id }}, event)">
+  <tr data-kat="{{ k.id }}" style="cursor:pointer" title="Klick: auf/zu · Doppelklick: Buchungen"
+      onclick="toggleKat({{ k.id }})" ondblclick="location='/nebenbuch/{{ k.id }}'">
     <td><span id="caret-{{ k.id }}" class="muted">▸</span> <b>{{ k.name }}</b>
       {% if k.unterkategorien %}<span class="tag">{{ k.unterkategorien|length }}</span>{% endif %}</td>
     <td class="num"><input class="ruecklage-inp" value="{{ (k.soll_cent/100)|round(2) }}"
         onclick="event.stopPropagation()" onchange="saveSoll('kategorie', {{ k.id }}, this)"> €</td>
     <td class="num {{ 'pos' if k.ist_cent>=0 else 'neg' }}">{{ k.ist_cent|euro }}</td>
-    <td class="num {{ 'pos' if k.zufluss_cent else 'muted' }}">{{ k.zufluss_cent|euro }}</td>
-    <td class="num {{ 'neg' if k.abfluss_cent else 'muted' }}">{{ k.abfluss_cent|euro }}</td>
-    <td class="num {{ 'pos' if netto>=0 else 'neg' }}">{{ netto|euro }}</td>
   </tr>
     {% for u in k.unterkategorien %}
-    {% set unetto = u.zufluss_cent + u.abfluss_cent %}
-    <tr class="ukat-{{ k.id }}" style="display:none">
+    <tr class="ukat-{{ k.id }}" style="display:none;cursor:pointer"
+        title="Doppelklick: Buchungen dieser Unterkategorie"
+        ondblclick="location='/nebenbuch/{{ k.id }}?unterkategorie_id={{ u.id }}'">
       <td style="padding-left:26px" class="muted">↳ {{ u.name }}</td>
       <td class="num"><input class="ruecklage-inp" value="{{ (u.soll_cent/100)|round(2) }}"
-          onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
+          onclick="event.stopPropagation()" onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
       <td class="num small {{ 'pos' if u.ist_cent>=0 else 'neg' }}">{{ u.ist_cent|euro }}</td>
-      <td class="num small {{ 'pos' if u.zufluss_cent else 'muted' }}">{{ u.zufluss_cent|euro }}</td>
-      <td class="num small {{ 'neg' if u.abfluss_cent else 'muted' }}">{{ u.abfluss_cent|euro }}</td>
-      <td class="num small {{ 'pos' if unetto>=0 else 'neg' }}">{{ unetto|euro }}</td>
     </tr>
     {% endfor %}
   {% endfor %}
 </table></div>
-<p class="small muted" style="margin-top:10px">Ist-Topf = aktueller Rücklagen-Stand (Zuführung minus Verzehr, all-time).
-  Zufluss/Abfluss = reale Ein-/Ausgaben im gewählten Zeitraum. Netto = Zufluss + Abfluss.</p>
+<p class="small muted" style="margin-top:10px">Ist-Topf = aktueller Rücklagen-Stand (Zuführung minus Verzehr).
+  Die einzelnen Bewegungen eines Nebenbuchs zeigt der Doppelklick (Nebenbuch-Ansicht mit laufendem Saldo).</p>
 {% endblock %}
 
 {% block script %}
@@ -60,7 +49,7 @@ function setKat(kid, open){
   const c=document.getElementById('caret-'+kid); if(c) c.textContent = open ? '▾' : '▸';
   localStorage.setItem('rk-'+kid, open ? '1' : '0');
 }
-function toggleKat(kid, ev){
+function toggleKat(kid){
   const rows=document.querySelectorAll('tr.ukat-'+kid);
   const offen = rows.length && rows[0].style.display==='none';
   setKat(kid, offen);

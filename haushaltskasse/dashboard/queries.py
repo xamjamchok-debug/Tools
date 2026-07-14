@@ -112,47 +112,19 @@ def uebersicht(cur) -> dict:
 # ---------------------------------------------------------------------------
 # Rücklagen-Baum: Kategorie -> Unterkategorien, je mit Soll und Ist
 # ---------------------------------------------------------------------------
-def ruecklagen_baum(cur, von: str = STICHTAG, bis: str | None = None) -> list[dict]:
-    """Je Kategorie: Soll (monatlich), Ist-Topf-Saldo (aus ruecklage-Buchungen), die
-    Unterkategorien — und der reale Fluss (Zufluss/Abfluss) im Zeitraum [von, bis].
-
-    Ist-Saldo = aktueller Topf-Stand (all-time). Zufluss/Abfluss = reale Ein-/Ausgaben im Zeitraum.
+def ruecklagen_baum(cur) -> list[dict]:
+    """Je Kategorie (Nebenbuch): Soll (monatlich) und Ist-Topf-Saldo (aus ruecklage-Buchungen),
+    dazu die Unterkategorien mit ihrem Ist-Topf. KEINE Zufluss/Abfluss-Spalten mehr — die
+    einzelnen Bewegungen sieht man per Doppelklick in der Nebenbuch-Ansicht (nebenbuch()).
     """
-    bis = bis or date.today().isoformat()
-
-    # reale Flüsse im Zeitraum je Kategorie / je Unterkategorie
-    cur.execute("""
-        SELECT kategorie_id,
-               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent > 0), 0),
-               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent < 0), 0)
-        FROM buchungen
-        WHERE buchungsart='real' AND quelle_import <> 'startsaldo'
-          AND kategorie_id IS NOT NULL AND datum_wert >= %s AND datum_wert <= %s
-        GROUP BY kategorie_id
-    """, (von, bis))
-    fluss_kat = {kid: (zu, ab) for kid, zu, ab in cur.fetchall()}
-    cur.execute("""
-        SELECT unterkategorie_id,
-               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent > 0), 0),
-               COALESCE(SUM(betrag_cent) FILTER (WHERE betrag_cent < 0), 0)
-        FROM buchungen
-        WHERE buchungsart='real' AND quelle_import <> 'startsaldo'
-          AND unterkategorie_id IS NOT NULL AND datum_wert >= %s AND datum_wert <= %s
-        GROUP BY unterkategorie_id
-    """, (von, bis))
-    fluss_ukat = {uid: (zu, ab) for uid, zu, ab in cur.fetchall()}
-
     cur.execute("""
         SELECT k.id, k.name, k.monatliche_ruecklage_cent,
                COALESCE((SELECT SUM(b.betrag_cent) FROM buchungen b
                          WHERE b.kategorie_id = k.id AND b.buchungsart='ruecklage'), 0) AS ist
         FROM kategorien k WHERE k.aktiv ORDER BY k.name
     """)
-    kats = []
-    for i, n, soll, ist in cur.fetchall():
-        zu, ab = fluss_kat.get(i, (0, 0))
-        kats.append({"id": i, "name": n, "soll_cent": soll, "ist_cent": ist,
-                     "zufluss_cent": zu, "abfluss_cent": ab, "unterkategorien": []})
+    kats = [{"id": i, "name": n, "soll_cent": soll, "ist_cent": ist, "unterkategorien": []}
+            for i, n, soll, ist in cur.fetchall()]
     kat_by_id = {k["id"]: k for k in kats}
 
     cur.execute("""
@@ -163,11 +135,43 @@ def ruecklagen_baum(cur, von: str = STICHTAG, bis: str | None = None) -> list[di
     """)
     for i, kid, n, soll, ist in cur.fetchall():
         if kid in kat_by_id:
-            zu, ab = fluss_ukat.get(i, (0, 0))
             kat_by_id[kid]["unterkategorien"].append(
-                {"id": i, "name": n, "soll_cent": soll, "ist_cent": ist,
-                 "zufluss_cent": zu, "abfluss_cent": ab})
+                {"id": i, "name": n, "soll_cent": soll, "ist_cent": ist})
     return kats
+
+
+def nebenbuch(cur, kategorie_id: int, unterkategorie_id: int | None = None) -> dict:
+    """Nebenbuch-Ansicht (wie altes Kto-Blatt): die Rücklagen-Buchungen eines Nebenbuchs
+    (buchungsart='ruecklage') mit LAUFENDEM Saldo, chronologisch. Optional auf eine
+    Unterkategorie eingeschränkt. Enthält auch die Unterkategorien-Liste für den Filter.
+    """
+    cur.execute("SELECT name FROM kategorien WHERE id=%s", (kategorie_id,))
+    row = cur.fetchone()
+    kat_name = row[0] if row else "?"
+
+    cur.execute("SELECT id, name FROM unterkategorien WHERE kategorie_id=%s ORDER BY name", (kategorie_id,))
+    unterkategorien = [{"id": i, "name": n} for i, n in cur.fetchall()]
+
+    where = ["b.buchungsart='ruecklage'", "b.kategorie_id=%s"]
+    params: list = [kategorie_id]
+    if unterkategorie_id is not None:
+        where.append("b.unterkategorie_id=%s"); params.append(unterkategorie_id)
+    w = " AND ".join(where)
+    cur.execute(f"""
+        SELECT b.id, b.datum_wert, b.betrag_cent,
+               SUM(b.betrag_cent) OVER (ORDER BY b.datum_wert, b.id) AS saldo,
+               u.name AS unterkategorie, b.empfaenger, b.verwendungszweck, b.bemerkung
+        FROM buchungen b
+        LEFT JOIN unterkategorien u ON u.id = b.unterkategorie_id
+        WHERE {w}
+        ORDER BY b.datum_wert, b.id
+    """, params)
+    cols = ["id", "datum", "betrag_cent", "saldo_cent", "unterkategorie",
+            "empfaenger", "verwendungszweck", "bemerkung"]
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    saldo = rows[-1]["saldo_cent"] if rows else 0
+    return {"kategorie_id": kategorie_id, "kat_name": kat_name, "unterkategorien": unterkategorien,
+            "unterkategorie_id": unterkategorie_id, "rows": rows, "saldo_cent": saldo}
 
 
 # ---------------------------------------------------------------------------
@@ -303,10 +307,15 @@ def buchungen(cur, konto: str | None = None, kategorie_id: int | None = None,
               unterkategorie_id: int | None = None, nur_offen: bool = False,
               suche: str | None = None, von: str | None = None, bis: str | None = None,
               betrag_min_cent: int | None = None, betrag_max_cent: int | None = None,
+              nur_reale_konten: bool = True,
               sort: str = "datum", richtung: str = "desc",
               limit: int = 200, offset: int = 0) -> tuple[list[dict], int, dict]:
     where = ["b.quelle_import <> 'startsaldo'"]
     params: list = []
+    if nur_reale_konten:
+        # Nur Bewegungen echter Konten. Schließt die virtuellen Rücklagen-Gegenbuchungen
+        # (buchungsart='ruecklage', konto_id IS NULL) aus — die gehören auf die Nebenbücher.
+        where.append("b.konto_id IS NOT NULL")
     if konto:
         where.append("kt.name = %s"); params.append(konto)
     if kategorie_id is not None:

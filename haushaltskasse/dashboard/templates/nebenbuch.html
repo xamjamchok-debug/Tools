@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titel %} · Nebenbuch {{ nb.kat_name }}{% endblock %}
+{% block content %}
+<h1>Nebenbuch: {{ nb.kat_name }}</h1>
+<p class="sub">Rücklagen-Bewegungen dieses Nebenbuchs (Zuführung / Verzehr / Korrektur) mit laufendem Saldo.
+  <a href="/ruecklagen">← zurück zu Rücklagen</a></p>
+
+<form class="toolbar" method="get" action="/nebenbuch/{{ nb.kategorie_id }}">
+  <select name="unterkategorie_id" onchange="this.form.submit()">
+    <option value="">Alle Unterkategorien</option>
+    {% for u in nb.unterkategorien %}
+    <option value="{{ u.id }}" {{ 'selected' if nb.unterkategorie_id==u.id }}>{{ u.name }}</option>{% endfor %}
+  </select>
+  <div class="card kpi" style="padding:8px 12px;margin-left:auto"><div class="label">Saldo (Topf-Stand)</div>
+    <div class="val" style="font-size:20px" class="{{ 'pos' if nb.saldo_cent>=0 else 'neg' }}">{{ nb.saldo_cent|euro }}</div></div>
+</form>
+
+<div class="card scroll" style="margin-top:10px"><table>
+  <tr><th>Datum</th><th>Unterkategorie</th><th>Empfänger / Zweck / Bemerkung</th>
+      <th class="num">Betrag</th><th class="num">Saldo</th></tr>
+  {% for r in nb.rows %}
+  <tr>
+    <td class="small">{{ r.datum }}</td>
+    <td class="small">{{ r.unterkategorie or '—' }}</td>
+    <td>{{ r.empfaenger or '' }}
+      {% if r.verwendungszweck %}<div class="small muted">{{ r.verwendungszweck[:70] }}</div>{% endif %}
+      {% if r.bemerkung %}<div class="small">{{ r.bemerkung }}</div>{% endif %}</td>
+    <td class="num {{ 'pos' if r.betrag_cent>=0 else 'neg' }}">{{ r.betrag_cent|euro }}</td>
+    <td class="num {{ 'pos' if r.saldo_cent>=0 else 'neg' }}">{{ r.saldo_cent|euro }}</td>
+  </tr>
+  {% endfor %}
+  {% if not nb.rows %}<tr><td colspan="5" class="muted small">Keine Buchungen in diesem Nebenbuch.</td></tr>{% endif %}
+</table></div>
+{% endblock %}

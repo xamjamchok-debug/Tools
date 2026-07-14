@@ -2,7 +2,8 @@
 {% block titel %} · Buchungen{% endblock %}
 {% block content %}
 <h1>Buchungen</h1>
-<p class="sub">Sortier- und filterbar. Kategorie/Unterkategorie ändern wird sofort gespeichert und fixiert (bleibt bei Reimport erhalten).</p>
+<p class="sub">Nur Bewegungen echter Konten. Die virtuellen Rücklagen-Buchungen stehen im Nebenbuch
+  (Rücklagen → Doppelklick). Kategorie/Unterkategorie ändern wird sofort gespeichert und fixiert.</p>
 
 <form class="toolbar" method="get" id="filter">
   <input type="hidden" name="sort" value="{{ sort }}">
@@ -21,6 +22,9 @@
   <input name="betrag_max" value="{{ f.betrag_max }}" placeholder="Betrag ≤ €" style="width:96px" inputmode="decimal">
   <label class="small" style="display:flex;align-items:center;gap:6px">
     <input type="checkbox" name="offen" value="1" {{ 'checked' if f.offen=='1' }} style="width:auto"> nur offene</label>
+  <label class="small" style="display:flex;align-items:center;gap:6px"
+         title="auch virtuelle Rücklagen-Gegenbuchungen anzeigen">
+    <input type="checkbox" name="alle" value="1" {{ 'checked' if f.alle=='1' }} style="width:auto"> inkl. Rücklagen</label>
   <button type="submit">Filtern</button>
   <a class="tag" href="/buchungen">zurücksetzen</a>
   <span class="muted small" style="margin-left:auto">{{ gesamt }} Treffer</span>
