@@ -83,7 +83,7 @@ Sobald das geklärt ist:
 ---
 
 ## Backlog & Status
-- Übersicht/Status: `docs/AENDERUNGEN-2026-07-13.md` (40 Punkte, nach Status)
+- Übersicht/Status: `docs/BACKLOG.md` (40 Punkte, nach Status; v1.0)
 - Detail + Deploy: `docs/STAND-2026-07-13-live.md`
 - Diese Session hat #12 (R1), #14 (R3 read-only), #17 (B3), #27 (Fluss weg) auf „🔧 Code fertig,
   Deploy offen" gebracht — mit dem Deploy oben gehen sie live.
