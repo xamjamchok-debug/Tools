@@ -88,6 +88,9 @@ CREATE TABLE IF NOT EXISTS vermoegensposten (
     erstellt_am TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE vermoegensposten ADD COLUMN IF NOT EXISTS im_haushaltssaldo BOOLEAN NOT NULL DEFAULT TRUE;
+-- #39/U1: Gruppe für die Darstellung. 'merkzettel' = eigene Box (künftige/reservierte Kosten),
+-- 'posten' = normale Vermögens-/Saldo-Posten. Beide zählen wie bisher (im_haushaltssaldo entscheidet).
+ALTER TABLE vermoegensposten ADD COLUMN IF NOT EXISTS gruppe TEXT NOT NULL DEFAULT 'posten';
 
 -- ---------------------------------------------------------------------------
 -- Buchungen: alle Bewegungen. buchungsart trennt die drei Fälle:

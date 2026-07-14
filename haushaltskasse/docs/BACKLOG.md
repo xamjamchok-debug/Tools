@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.4 · Stand 2026-07-14**
+**Version 1.5 · Stand 2026-07-14**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -8,7 +8,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 
 **Reifegrad-Stufen:** 💡 Idee (nur notiert) → 📐 Designed (Konzept geklärt) → 🔨 Entwickelt (Code fertig, lokal getestet) → 🚀 Deployed (live) → 👁 Validiert (vom User live geprüft/getestet). Sonderstatus: 🐞 Bug · ❓ Klärung offen · ⭐ Priorität.
 
-**⭐ Nächste Prioritäten (User 2026-07-14):** #8 U1 Merkzettel-Box · #11 U4 stichtagsbezogener Saldo · #22 I1 Import neuer Umsätze.
+**✅ PAKET 3 gebaut, getestet & deployt (2026-07-14):** #8 U1 Merkzettel-Box (eigene Übersicht-Box, `vermoegensposten.gruppe`) · #11 U4 stichtagsbezogener Gesamtsaldo (Datumsfeld auf Übersicht) · #22 I1 Import neuer Umsätze (Upload-Seite, Dedupe getestet). Hinweis: I1 im Server ohne lokale_config (IBANs) → grobe Abgrenzung, danach nachkategorisieren (Verbesserung: lokale_config in DB).
 
 | Nr | Bereich | Kurzbeschreibung | Umsetzungsweise | Reifegrad |
 |----|---------|------------------|-----------------|-----------|
@@ -19,10 +19,10 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 5 | Buchungen | **B2** Freitext-Bemerkung je Buchung | Schema-Spalte `bemerkung` + Endpoint `/api/buchung/{id}/bemerkung` + editierbare Zelle | 🚀 Deployed |
 | 6 | Bug | **Dezimal-Fehler bei Posten** (Beträge ×100 beim Editieren) | `_parse_euro` neu: letzter `.`/`,` = Dezimaltrenner (beide Notationen) | 👁 Validiert |
 | 7 | Infra | Deploy-Fix (charmap-Crash, `:latest` erzeugt keine neue Revision) | `az acr build --no-logs`; Update per **Image-Digest** statt Tag | 👁 Validiert |
-| 8 | Übersicht | **U1** Merkzettel als eigene Box mit Einzelposten | Neue Spalte `vermoegensposten.gruppe`, eigene Box + Summe | ⭐ 📐 Designed |
+| 8 | Übersicht | **U1** Merkzettel als eigene Box mit Einzelposten | Neue Spalte `vermoegensposten.gruppe`, eigene Box + Summe | ⭐ 🚀 Deployed |
 | 9 | Übersicht | **U2** transparente Saldo-Herleitung (bis „frei verfügbar") | Wasserfall-Tabelle aus `haushaltssaldo()`-Komponenten | 📐 Designed |
 | 10 | Übersicht | **U3** Monatsablauf-Block (Soll vs. Ist, klappbar) | Neuer Accordion-Block, `ruecklagen_baum()` wiederverwenden (verwandt mit #39) | 📐 Designed |
-| 11 | Übersicht | **U4** stichtagsbezogener Gesamtsaldo | Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet | ⭐ 📐 Designed |
+| 11 | Übersicht | **U4** stichtagsbezogener Gesamtsaldo | Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet | ⭐ 🚀 Deployed |
 | 12 | Rücklagen | **R1** Doppelklick aufs **Nebenbuch** → Rücklagen-/Gegenbuchungen mit laufendem Saldo (altes Kto-Blatt), optional Filter Unterkategorie | Getrennte Nebenbuch-Sicht (`buchungsart='ruecklage'`) via `/nebenbuch/{id}`, `queries.nebenbuch()` | 👁 Validiert |
 | 13 | Rücklagen | **R4** „+ zurücklegen / − entnehmen" je Topf (= ein-/ausbuchen) | Neuer Endpoint → manuelle `ruecklage`-Buchung (+/−) | 📐 Designed |
 | 14 | Rücklagen/Config | **R3** „Soll" nur an EINER Stelle editierbar (**Config**), **Rücklagen read-only** | Rücklagen-Soll read-only; Editieren nur in Config | 👁 Validiert |
@@ -33,7 +33,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 19 | Einnahmen | **E1** Einnahmen explizit (Kennzeichen je Unterkat, in Monatssaldo) | Einnahme-Kennzeichen `ist_einnahme` + Config-Fluss (via #39); eigene Übersicht-Sicht noch offen | 🚀 Deployed (Teil) |
 | 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen | 💡 Idee |
 | 21 | Analyse | **P2** freie Query + Pivot-Ausbau | Read-only SQL-Konsole und/oder KI-Prompt→SQL; Pivot erweitern | 💡 Idee |
-| 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren, Gegenbuchungen; Amazon noch `.xls` | ⭐ 📐 Designed |
+| 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren, Gegenbuchungen; Amazon noch `.xls` | ⭐ 🚀 Deployed |
 | 23 | Betrieb | **V1** sichtbare Versionsnummer + automatisierte Tests | Version im Footer (Env-Var); pytest für Queries/Saldo/Endpoints | 💡 Idee |
 | 24 | Betrieb | **P0.3** Azure-Kostenanzeige in der Seite | Cost-Management-API / Schätzung + Warnschwelle | 💡 Idee |
 | 25 | Analyse | **U5** Veränderung **Stichtag X → Y** (Mittelfluss-Überblick), Default nach Import | Delta = Saldo(Y)−Saldo(X) + Zufluss/Abfluss je Konto/Kategorie/Topf; nach Import X=vor-Import, Y=jetzt | 📐 Designed |

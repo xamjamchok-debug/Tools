@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titel %} · Import{% endblock %}
+{% block content %}
+<h1>Import neuer Umsätze</h1>
+<p class="sub">Kontoauszug hochladen (CSV/XLS). Zuordnung über den Dateinamen: <b>dkb</b>/<b>girokonto</b>,
+  <b>comdirect</b>, <b>tagesgeld</b>, <b>amazon</b>. Doppelte Buchungen werden automatisch übersprungen (Dedupe),
+  ein erneuter Import derselben Datei ist also gefahrlos.</p>
+
+<div class="card" style="margin-bottom:16px">
+  <form method="post" action="/import" enctype="multipart/form-data" class="toolbar" style="margin:0">
+    <input type="file" name="datei" accept=".csv,.xls" required>
+    <button type="submit">Hochladen &amp; importieren</button>
+  </form>
+</div>
+
+{% if bericht %}
+<div class="card">
+  <h2 style="margin-top:0">Ergebnis — {{ bericht.datei }}</h2>
+  {% if bericht.fehler %}
+    <p class="neg">Fehler beim Import: {{ bericht.fehler }}</p>
+  {% elif not bericht.erkannt %}
+    <p class="neg">{{ bericht.hinweis }}</p>
+  {% else %}
+  <div class="grid kpis">
+    <div class="card kpi"><div class="label">Geparst</div><div class="val">{{ bericht.geparst }}</div></div>
+    <div class="card kpi"><div class="label">Neu eingefügt</div><div class="val pos">{{ bericht.eingefuegt }}</div></div>
+    <div class="card kpi"><div class="label">Übersprungen (Dubletten)</div><div class="val muted">{{ bericht.uebersprungen }}</div></div>
+    <div class="card kpi"><div class="label">Offen (unkategorisiert)</div><div class="val">{{ bericht.offen }}</div></div>
+  </div>
+  {% if bericht.konten %}
+  <p class="small muted">Je Konto: {% for k, c in bericht.konten.items() %}{{ k }}: {{ c }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  {% endif %}
+  {% if bericht.config_fehlt %}
+  <p class="small neg">Hinweis: Auf dem Server liegt keine lokale Konfiguration (IBANs/Personen) —
+    Umbuchungen wurden ohne Personenbezug grob abgegrenzt. Bei Bedarf in „Buchungen" nachkategorisieren.</p>
+  {% endif %}
+  {% if bericht.eingefuegt and bericht.offen %}
+  <p class="small"><a href="/buchungen?offen=1">→ {{ bericht.offen }} offene Buchungen kategorisieren</a></p>
+  {% endif %}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

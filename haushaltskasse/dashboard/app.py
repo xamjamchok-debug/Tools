@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -129,9 +129,14 @@ def logout(request: Request):
 # Views (GET)
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
-def view_uebersicht(request: Request):
+def view_uebersicht(request: Request, stichtag: str = ""):
+    import re
     with db() as conn, conn.cursor() as cur:
-        ctx = {"request": request, "tab": "uebersicht", "u": q.uebersicht(cur)}
+        u = q.uebersicht(cur)
+        st = None
+        if stichtag and re.fullmatch(r"\d{4}-\d{2}-\d{2}", stichtag.strip()):
+            st = q.haushaltssaldo_per_stichtag(cur, stichtag.strip())
+        ctx = {"request": request, "tab": "uebersicht", "u": u, "st": st, "stichtag": stichtag}
     return TEMPLATES.TemplateResponse(request, "uebersicht.html", ctx)
 
 
@@ -216,6 +221,25 @@ def view_config(request: Request):
     return TEMPLATES.TemplateResponse(request, "config.html",
                                       {"request": request, "tab": "config", "fluss": fluss,
                                        "stichtag": stichtag})
+
+
+@app.get("/import", response_class=HTMLResponse)
+def view_import(request: Request):
+    return TEMPLATES.TemplateResponse(request, "import.html",
+                                      {"request": request, "tab": "import", "bericht": None})
+
+
+@app.post("/import", response_class=HTMLResponse)
+async def do_import(request: Request, datei: UploadFile = File(...)):
+    from ..workflows.web_import import importiere_upload
+    daten = await datei.read()
+    try:
+        bericht = importiere_upload(datei.filename or "unbekannt", daten)
+    except Exception as e:
+        bericht = {"datei": datei.filename, "erkannt": False, "fehler": f"{type(e).__name__}: {e}",
+                   "geparst": 0, "eingefuegt": 0, "uebersprungen": 0}
+    return TEMPLATES.TemplateResponse(request, "import.html",
+                                      {"request": request, "tab": "import", "bericht": bericht})
 
 
 @app.get("/export/buchungen.xlsx")
@@ -427,21 +451,24 @@ class Posten(BaseModel):
     betrag: str
     art: str = "vermoegen"    # 'vermoegen' | 'schuld'
     notiz: str | None = None
+    gruppe: str = "posten"    # 'posten' | 'merkzettel' (U1)
 
 
 @app.post("/api/vermoegensposten")
 def upsert_posten(p: Posten):
     cent = _parse_euro(p.betrag)
+    gruppe = p.gruppe if p.gruppe in ("posten", "merkzettel") else "posten"
     with db() as conn, conn.cursor() as cur:
         if p.id:
             cur.execute("UPDATE vermoegensposten SET name=%s, wert_cent=%s, art=%s, notiz=%s WHERE id=%s",
                         (p.name.strip(), cent, p.art, p.notiz, p.id))
             pid = p.id
         else:
-            cur.execute("""INSERT INTO vermoegensposten (name, wert_cent, art, notiz) VALUES (%s,%s,%s,%s)
+            cur.execute("""INSERT INTO vermoegensposten (name, wert_cent, art, notiz, gruppe)
+                           VALUES (%s,%s,%s,%s,%s)
                            ON CONFLICT (name) DO UPDATE SET wert_cent=EXCLUDED.wert_cent, art=EXCLUDED.art,
-                           notiz=EXCLUDED.notiz RETURNING id""",
-                        (p.name.strip(), cent, p.art, p.notiz))
+                           notiz=EXCLUDED.notiz, gruppe=EXCLUDED.gruppe RETURNING id""",
+                        (p.name.strip(), cent, p.art, p.notiz, gruppe))
             pid = cur.fetchone()[0]
     return {"ok": True, "id": pid, "cent": cent}
 

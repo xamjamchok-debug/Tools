@@ -54,6 +54,25 @@ def haushaltssaldo(cur) -> dict:
     }
 
 
+def haushaltssaldo_per_stichtag(cur, datum: str) -> dict:
+    """#U4 — Gesamtsaldo ZUM Stichtag `datum`. Buchungsbasierter Teil exakt (nur Buchungen mit
+    datum_wert ≤ datum), Vermögensposten zeitlos-konstant (aktueller Wert — sie haben keine Historie).
+    """
+    cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE konto_id IS NOT NULL AND datum_wert<=%s", (datum,))
+    konten = cur.fetchone()[0]
+    cur.execute("SELECT COALESCE(SUM(wert_cent),0) FROM vermoegensposten WHERE aktiv AND im_haushaltssaldo")
+    posten = cur.fetchone()[0]                       # zeitlos (kein Datum)
+    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b JOIN kategorien k ON k.id=b.kategorie_id
+                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='ruecklage' AND b.datum_wert<=%s""", (datum,))
+    ruecklagen = cur.fetchone()[0]
+    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b JOIN kategorien k ON k.id=b.kategorie_id
+                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='forderung' AND b.datum_wert<=%s""", (datum,))
+    forderung = cur.fetchone()[0]
+    return {"datum": datum, "konten_cent": konten, "posten_cent": posten,
+            "ruecklagen_cent": ruecklagen, "forderung_cent": forderung,
+            "saldo_cent": konten + posten - ruecklagen + forderung}
+
+
 def konten_salden(cur) -> list[dict]:
     """Echtes Kontovermögen je reales Konto (Summe aller Bewegungen inkl. Startsaldo)."""
     cur.execute("""
@@ -84,12 +103,20 @@ def uebersicht(cur) -> dict:
     hs = haushaltssaldo(cur)
     konten = konten_salden(cur)
 
-    cur.execute("""SELECT id, name, wert_cent, art, notiz, im_haushaltssaldo
+    cur.execute("""SELECT id, name, wert_cent, art, notiz, im_haushaltssaldo, gruppe
                    FROM vermoegensposten WHERE aktiv ORDER BY im_haushaltssaldo DESC, name""")
-    posten_saldo, posten_langfrist = [], []
-    for i, n, w, a, z, im in cur.fetchall():
-        (posten_saldo if im else posten_langfrist).append(
-            {"id": i, "name": n, "wert_cent": w, "art": a, "notiz": z})
+    posten_saldo, posten_langfrist, merkzettel = [], [], []
+    for i, n, w, a, z, im, g in cur.fetchall():
+        item = {"id": i, "name": n, "wert_cent": w, "art": a, "notiz": z}
+        if g == "merkzettel":            # U1: eigene Box (künftige/reservierte Kosten)
+            merkzettel.append(item)
+        elif im:
+            posten_saldo.append(item)
+        else:
+            posten_langfrist.append(item)
+    # Box-Summen getrennt: Merkzettel separat, Posten-im-Saldo ohne Merkzettel.
+    merkzettel_summe = sum(m["wert_cent"] for m in merkzettel)
+    posten_saldo_summe = sum(p["wert_cent"] for p in posten_saldo)
 
     # Töpfe mit aktuellem Netto-Stand (inkl. Auto-Gegenbuchungen), getrennt nach Rolle.
     cur.execute("""
@@ -106,6 +133,8 @@ def uebersicht(cur) -> dict:
 
     return {**hs, "konten": konten,
             "posten_saldo": posten_saldo, "posten_langfrist": posten_langfrist,
+            "merkzettel": merkzettel, "merkzettel_summe_cent": merkzettel_summe,
+            "posten_saldo_summe_cent": posten_saldo_summe,
             "ruecklagen_toepfe": ruecklagen_toepfe, "forderungen": forderungen}
 
 

@@ -19,6 +19,24 @@
   + Forderungen {{ u.forderung_cent|euro }} − Rücklagen {{ u.ruecklagen_cent|euro }}
   = <b>{{ u.saldo_cent|euro }}</b>. &nbsp; Langfristig separat: {{ u.langfrist_cent|euro }}.</p>
 
+<div class="card" style="margin-bottom:16px">
+  <form method="get" class="toolbar" style="margin:0">
+    <label class="small">📅 Gesamtsaldo per Stichtag
+      <input type="date" name="stichtag" value="{{ stichtag }}"></label>
+    <button type="submit">Berechnen</button>
+    {% if st %}
+    <span style="margin-left:auto;text-align:right">Saldo per <b>{{ st.datum }}</b>:
+      <b class="{{ 'pos' if st.saldo_cent>=0 else 'neg' }}" style="font-size:18px">{{ st.saldo_cent|euro }}</b>
+      <div class="small muted">Konten {{ st.konten_cent|euro }} + Posten {{ st.posten_cent|euro }}
+        − Rücklagen {{ st.ruecklagen_cent|euro }} + Forderungen {{ st.forderung_cent|euro }}
+        · Konten/Töpfe stichtaggenau, Posten zeitlos (aktueller Wert)</div></span>
+    {% else %}
+    <span class="small muted" style="margin-left:auto">Datum wählen → Saldo zu diesem Tag
+      (Buchungen bis dahin; Merkzettel/Posten zeitlos).</span>
+    {% endif %}
+  </form>
+</div>
+
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
   <div>
     <h2>Reale Konten</h2>
@@ -65,7 +83,7 @@
         <td class="num"><button class="ghost" onclick="delPosten({{ p.id }})">✕</button></td>
       </tr>
       {% endfor %}
-      <tr><td colspan="2"><b>Summe Posten im Saldo</b></td><td class="num"><b>{{ u.posten_cent|euro }}</b></td><td></td></tr>
+      <tr><td colspan="2"><b>Summe Posten im Saldo</b></td><td class="num"><b>{{ u.posten_saldo_summe_cent|euro }}</b></td><td></td></tr>
     </table>
     <div class="toolbar" style="margin-top:12px">
       <input id="np-name" placeholder="Name" style="flex:1;min-width:160px">
@@ -74,6 +92,31 @@
       <button onclick="addPosten()">+ Posten</button>
     </div>
     <p class="small muted">Wert direkt bearbeiten (Enter bestätigt). Schulden als negativen Betrag.</p>
+    </div>
+
+    <h2 style="margin-top:24px">📌 Merkzettel (reservierte / künftige Kosten)</h2>
+    <div class="card scroll"><table id="merkzettel">
+      <tr><th>Posten</th><th class="num">Wert</th><th></th></tr>
+      {% for p in u.merkzettel %}
+      <tr data-id="{{ p.id }}">
+        <td>{{ p.name }}{% if p.notiz %}<div class="small muted">{{ p.notiz }}</div>{% endif %}</td>
+        <td class="num {{ 'pos' if p.wert_cent>=0 else 'neg' }}">
+          <span class="wert" contenteditable data-id="{{ p.id }}"
+                data-name="{{ p.name }}" data-art="{{ p.art }}"
+                data-gruppe="merkzettel">{{ (p.wert_cent/100)|round(2) }}</span></td>
+        <td class="num"><button class="ghost" onclick="delPosten({{ p.id }})">✕</button></td>
+      </tr>
+      {% endfor %}
+      {% if not u.merkzettel %}<tr><td colspan="3" class="muted small">Noch keine Merkzettel-Posten.</td></tr>{% endif %}
+      <tr><td><b>Summe Merkzettel</b></td><td class="num"><b>{{ u.merkzettel_summe_cent|euro }}</b></td><td></td></tr>
+    </table>
+    <div class="toolbar" style="margin-top:12px">
+      <input id="mz-name" placeholder="Name (z. B. Urlaub, Reparatur)" style="flex:1;min-width:160px">
+      <input id="mz-betrag" placeholder="Betrag €" class="ruecklage-inp">
+      <button onclick="addMerkzettel()">+ Merkzettel</button>
+    </div>
+    <p class="small muted">Künftige/reservierte Kosten, die noch nicht als Buchung anfallen.
+      Reservierung als <b>negativen</b> Betrag eintragen. Zählt im Haushalts-Saldo.</p>
     </div>
 
     <h2 style="margin-top:24px">Langfristig (nicht im Haushalts-Saldo)</h2>
@@ -97,7 +140,7 @@
 {% endblock %}
 
 {% block script %}
-document.querySelectorAll('#posten-saldo .wert, #posten-langfrist .wert').forEach(el=>{
+document.querySelectorAll('#posten-saldo .wert, #posten-langfrist .wert, #merkzettel .wert').forEach(el=>{
   el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); }});
   el.addEventListener('blur', async ()=>{
     await postJSON('/api/vermoegensposten',
@@ -111,6 +154,13 @@ async function addPosten(){
   const art=document.getElementById('np-art').value;
   if(!name){ flash('Name fehlt', true); return; }
   await postJSON('/api/vermoegensposten', {name, betrag, art});
+  flash('angelegt'); setTimeout(()=>location.reload(), 400);
+}
+async function addMerkzettel(){
+  const name=document.getElementById('mz-name').value.trim();
+  const betrag=document.getElementById('mz-betrag').value.trim();
+  if(!name){ flash('Name fehlt', true); return; }
+  await postJSON('/api/vermoegensposten', {name, betrag, art:'schuld', gruppe:'merkzettel'});
   flash('angelegt'); setTimeout(()=>location.reload(), 400);
 }
 async function delPosten(id){
