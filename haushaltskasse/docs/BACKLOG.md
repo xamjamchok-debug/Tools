@@ -1,7 +1,10 @@
-# Änderungen & TODOs — Session 2026-07-13
+# Backlog — Haushaltskasse
 
-Zusammenfassung aller angeforderten Änderungen dieser Session inkl. Status, Kurzbeschreibung und
-Umsetzungsweise. Detaillierter Backlog + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
+**Version 1.0 · Stand 2026-07-14**
+
+Kanonische Liste aller Änderungen & offenen TODOs (Status, Kurzbeschreibung, Umsetzungsweise).
+Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
+Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1.1 → …).
 
 **Legende:** ✅ live · 🔧 Code fertig, Deploy ausstehend · 📋 offen (Backlog) · 🐞 Bug · ❓ Klärung offen
 
