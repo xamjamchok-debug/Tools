@@ -45,7 +45,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 31 | Analyse | **Diagramme** | Grafische Auswertungen (Verlauf, Ausgaben je Kat, Monatsvergleich); Skill `dataviz`, CSP-konform | 💡 Idee |
 | 32 | Übersicht | **Stichtage für Merkzettel** | Merkzettel-/Vermögensposten mit Stichtag/Fälligkeit (baut auf U1/U4 auf) | 💡 Idee |
 | 33 | Betrieb | **Backup** | Regelmäßige DB-Sicherung (pg_dump / Azure-Backup) + Rückspielweg | 💡 Idee |
-| 34 | Export | **Export nach Excel** (Buchungen) | `/export/buchungen.xlsx` (openpyxl), gefilterte Liste; Reports/Salden später | 🚀 Deployed |
+| 34 | Export | **Export auf JEDER Sicht** (Übersicht · Rücklagen · Reports · Buchungen) | **Auf CSV umgestellt** (User 2026-07-15) — `dashboard/export.py`, Endpoints `/export/{uebersicht,ruecklagen,reports,buchungen}.csv`, ⬇-CSV-Link in allen 4 Templates. Excel-tauglich: Semikolon + UTF-8-**BOM** + deutsche Dezimalkommas. Export folgt den Filtern/der Pivot-Sicht der Seite, mit Abschnitten + Summen. Der alte `buchungen.xlsx` (openpyxl) ist ersetzt | 🔨 Entwickelt (getestet, Deploy offen) |
 | 35 | Datenmodell | **Logik für Großeltern nachbauen** (Pflegekonto/Kredit) | Separater Pflegekonto-Bereich + Kredit Großeltern (−135.000), getrennte Buchführung | 💡 Idee |
 | 36 | Demo | **Anonymisierte Show-Site** | Öffentliche Demo mit anonymisierten/synthetischen Daten | 💡 Idee |
 | 37 | Konten | **Eigenes Girokonto in die Berechnungen aufnehmen** | Persönliches Girokonto als reales Konto ergänzen (Startsaldo + Import) | 💡 Idee |

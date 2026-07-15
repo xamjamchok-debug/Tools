@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block titel %} · Übersicht{% endblock %}
 {% block content %}
-<h1>Übersicht</h1>
+<h1>Übersicht <a class="tag" style="float:right;font-size:.6em"
+     href="/export/uebersicht.csv" title="Diese Sicht als CSV (Excel-tauglich)">⬇ CSV</a></h1>
 <p class="sub">Freier Haushalts-Saldo: reale Konten + Posten − Rücklagen-Töpfe + Forderungen.</p>
 
 <div class="grid kpis">

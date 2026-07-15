@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block titel %} · Rücklagen{% endblock %}
 {% block content %}
-<h1>Rücklagen</h1>
+<h1>Rücklagen <a class="tag" style="float:right;font-size:.6em"
+     href="/export/ruecklagen.csv" title="Nebenbücher + Untertöpfe als CSV (Excel-tauglich)">⬇ CSV</a></h1>
 <p class="sub">Konto-Sicht der Nebenbücher mit aktuellem Ist-Topf. <b>＋/－</b> je Zeile bucht
   Rücklage manuell ein/aus (ändert den freien Gesamtsaldo). <b>Umbuchen</b> verschiebt zwischen
   zwei Töpfen (Gesamtsaldo bleibt gleich). Klick klappt Unterkategorien auf/zu, <b>Doppelklick</b>

@@ -21,6 +21,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from ..storage.db import connect
 from ..workflows.gegenbuchung import sync_eine
 from . import auth
+from . import export as xp
 from . import queries as q
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -242,14 +243,50 @@ async def do_import(request: Request, datei: UploadFile = File(...)):
                                       {"request": request, "tab": "import", "bericht": bericht})
 
 
-@app.get("/export/buchungen.xlsx")
+# ---------------------------------------------------------------------------
+# CSV-Export je Sicht (#34/O2). CSV statt xlsx: keine openpyxl-Abhängigkeit, und jede
+# Sicht exportiert exakt das, was auf dem Schirm steht (inkl. Filter, Abschnitte, Summen).
+# ---------------------------------------------------------------------------
+def _heute() -> str:
+    from datetime import date
+    return date.today().isoformat()
+
+
+@app.get("/export/uebersicht.csv")
+def export_uebersicht():
+    with db() as conn, conn.cursor() as cur:
+        u = q.uebersicht(cur)
+    return xp.antwort(xp.uebersicht_zeilen(u, _heute()), "uebersicht.csv")
+
+
+@app.get("/export/ruecklagen.csv")
+def export_ruecklagen():
+    with db() as conn, conn.cursor() as cur:
+        baum = q.ruecklagen_baum(cur)
+    return xp.antwort(xp.ruecklagen_zeilen(baum, _heute()), "ruecklagen.csv")
+
+
+@app.get("/export/reports.csv")
+def export_reports(von: str = "", bis: str = "", modus: str = "ausgabe",
+                   ebene: str = "kategorie"):
+    """Gleiche Parameter wie /reports — der Export folgt der eingestellten Pivot-Sicht."""
+    if modus not in ("ausgabe", "einnahme", "netto"):
+        modus = "ausgabe"
+    if ebene not in ("kategorie", "unterkategorie"):
+        ebene = "kategorie"
+    with db() as conn, conn.cursor() as cur:
+        stichtag = q.stichtag(cur)
+        p = q.pivot(cur, von=von or stichtag, bis=bis or None, modus=modus, ebene=ebene)
+    titel = f"{modus}, je {ebene}"
+    return xp.antwort(xp.pivot_zeilen(p, titel, _heute()), "reports.csv")
+
+
+@app.get("/export/buchungen.csv")
 def export_buchungen(konto: str = "", kategorie_id: str = "", unterkategorie_id: str = "",
                      offen: str = "", suche: str = "", von: str = "", bis: str = "",
                      betrag_min: str = "", betrag_max: str = "", alle: str = "",
                      sort: str = "datum", richtung: str = "desc"):
-    """O2 — die (gefilterte) Buchungsliste als Excel exportieren. Gleiche Filter wie /buchungen."""
-    import io
-    from openpyxl import Workbook
+    """Die (gefilterte) Buchungsliste als CSV. Gleiche Filter wie /buchungen."""
     kid = int(kategorie_id) if kategorie_id.isdigit() else None
     uid = int(unterkategorie_id) if unterkategorie_id.isdigit() else None
     bmin = _parse_euro(betrag_min) if betrag_min.strip() else None
@@ -263,24 +300,7 @@ def export_buchungen(konto: str = "", kategorie_id: str = "", unterkategorie_id:
             nur_offen=(offen == "1"), suche=suche or None, von=von or None, bis=bis or None,
             betrag_min_cent=bmin, betrag_max_cent=bmax, nur_reale_konten=(alle != "1"),
             sort=sort, richtung=richtung, limit=100000, offset=0)
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Buchungen"
-    ws.append(["Datum", "Konto", "Art", "Kategorie", "Unterkategorie", "Empfänger",
-               "Verwendungszweck", "Betrag €", "Bemerkung"])
-    for r in rows:
-        ws.append([str(r["datum"]), r["konto"] or "", r["buchungsart"], r["kategorie"] or "",
-                   r["unterkategorie"] or "", r["empfaenger"] or "", r["verwendungszweck"] or "",
-                   round(r["betrag_cent"] / 100, 2), r["bemerkung"] or ""])
-    ws.append([])
-    ws.append(["", "", "", "", "", "", f"Summe ({gesamt} Treffer)",
-               round(summen["netto_cent"] / 100, 2), ""])
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    return StreamingResponse(
-        buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=buchungen.xlsx"})
+    return xp.antwort(xp.buchungen_zeilen(rows, gesamt, summen, _heute()), "buchungen.csv")
 
 
 @app.get("/api/unterkategorien/{kategorie_id}")

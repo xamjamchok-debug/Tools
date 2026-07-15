@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block titel %} · Reports{% endblock %}
 {% block content %}
-<h1>Reports — Pivot</h1>
+<h1>Reports — Pivot <a class="tag" style="float:right;font-size:.6em" href="#"
+     title="Pivot in der eingestellten Sicht als CSV (Excel-tauglich)"
+     onclick="location='/export/reports.csv'+location.search;return false">⬇ CSV</a></h1>
 <p class="sub">Zeilen = {{ 'Unterkategorien' if ebene=='unterkategorie' else 'Kategorien' }}, Spalten = Monate.
   <b>Doppelklick</b> auf eine Zelle öffnet die Einzelbuchungen (Kategorie × Monat).</p>
 

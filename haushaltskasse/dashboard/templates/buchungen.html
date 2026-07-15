@@ -27,8 +27,8 @@
     <input type="checkbox" name="alle" value="1" {{ 'checked' if f.alle=='1' }} style="width:auto"> inkl. Rücklagen</label>
   <button type="submit">Filtern</button>
   <a class="tag" href="/buchungen">zurücksetzen</a>
-  <a class="tag" href="#" title="Gefilterte Liste als Excel"
-     onclick="location='/export/buchungen.xlsx'+location.search;return false">⬇ Excel</a>
+  <a class="tag" href="#" title="Gefilterte Liste als CSV (Excel-tauglich)"
+     onclick="location='/export/buchungen.csv'+location.search;return false">⬇ CSV</a>
   <span class="muted small" style="margin-left:auto">{{ gesamt }} Treffer</span>
 </form>
 
