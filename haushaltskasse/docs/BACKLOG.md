@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.7 · Stand 2026-07-14**
+**Version 1.8 · Stand 2026-07-15**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -31,7 +31,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 17 | Buchungen | **B3** Buchungsliste **standardmäßig nur reale Buchungen** · **B4** besser filtern | Default nur echte Konten, Umschalter „inkl. Rücklagen"; B4-Filter erweitern | 👁 B3 Validiert · 💡 B4 |
 | 18 | Config | **C1** Config-Seite **einklappbar** (Accordion) | Klappbare Nebenbücher (via #39 umgesetzt) | 🚀 Deployed |
 | 19 | Einnahmen | **E1** Einnahmen explizit (Kennzeichen je Unterkat, in Monatssaldo) | Einnahme-Kennzeichen `ist_einnahme` + Config-Fluss (via #39); eigene Übersicht-Sicht noch offen | 🚀 Deployed (Teil) |
-| 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen | 💡 Idee |
+| 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen; baut auf den Klarnamen + der Mapping-Tabelle aus #46 auf | 💡 Idee |
 | 21 | Analyse | **P2** freie Query + Pivot-Ausbau | Read-only SQL-Konsole und/oder KI-Prompt→SQL; Pivot erweitern | 💡 Idee |
 | 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren, Gegenbuchungen; Amazon noch `.xls` | ⭐ 🚀 Deployed |
 | 23 | Betrieb | **V1** sichtbare Versionsnummer + automatisierte Tests | Version im Footer (Env-Var); pytest für Queries/Saldo/Endpoints | 💡 Idee |
@@ -39,7 +39,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 25 | Analyse | **U5** Veränderung **Stichtag X → Y** (Mittelfluss-Überblick), Default nach Import | Delta = Saldo(Y)−Saldo(X) + Zufluss/Abfluss je Konto/Kategorie/Topf; nach Import X=vor-Import, Y=jetzt | 📐 Designed |
 | 26 | Zeitraum | **Start-Abgrenzungsdatum konfigurierbar** (statt hart 01.01.2025) | `STICHTAG` in **Config** editierbar (z. B. 01.01.2026), im **Footer sichtbar**; Reports-Default | 👁 Validiert |
 | 27 | Rücklagen | **Zufluss/Abfluss-Spalten ENTFERNEN** — falsch & nicht gebraucht; nur Ist-Saldo je Topf | Spalten raus aus `ruecklagen_baum`/Template; Bewegungen über R1 | 👁 Validiert |
-| 28 | Rücklagen | **Untertöpfe richtig befüllen** (nicht alles in „Allgemein") | Zuführungen sinnvoll auf Unterkategorie-Töpfe verteilen statt Sammel-„Allgemein" | 💡 Idee |
+| 28 | Rücklagen | **Untertöpfe richtig befüllen** (nicht alles in „Allgemein") | Zuführungen sinnvoll auf Unterkategorie-Töpfe verteilen statt Sammel-„Allgemein". %-Vorschlag liegt vor: [untertopf-verteilung-vorschlag.md](untertopf-verteilung-vorschlag.md) → **Entscheidung User offen**; setzt die Namen aus #46 voraus, Skript `allgemein_verteilen.py` (dry-run → `--write`) | 💡 Idee · ❓ Klärung |
 | 29 | Nachbau | **Verlauf-, Schulden- & Fuchsbau-Blatt nachbauen** (aus alter Excel) | Je ein Bereich: Verlauf (Salden-Zeitreihe), Schulden (Kreditübersicht), Fuchsbau (Immobilie) | 💡 Idee |
 | 30 | Zeitraum/Config | **Verlauf etc. pro Jahr fortschreiben** | Jahresweise Fortschreibung/Snapshots je Nebenbuch, über Config gesteuert | 💡 Idee |
 | 31 | Analyse | **Diagramme** | Grafische Auswertungen (Verlauf, Ausgaben je Kat, Monatsvergleich); Skill `dataviz`, CSP-konform | 💡 Idee |
@@ -57,3 +57,4 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 43 | Buchungen | **Import-Zeitstempel** je Buchung anzeigen | `queries.buchungen` liefert quelle+erstellt_am → Spalte „Quelle / importiert" | 🚀 Deployed |
 | 44 | Buchungen | **Stichtagsbasierte laufende Saldierung** in der Buchungsliste | Laufender Konto-Saldo (chronologisch); knifflig wg. Sortierung/Paginierung/mehrere Konten — Design offen | 💡 Idee |
 | 45 | Config | 🎨 **Config-Design-Anpassungen** (nach Validierung #39) | Darstellung/Layout der Monatsfluss-Sicht nachbessern — konkrete Punkte vom User noch offen | 💡 offen |
+| 46 | Kategorien | **Sprechende Unterkategorien + Mapping** — Klarnamen statt der Excel-Kürzel (`S-Auto`, `R-NK`, `S-Füchschen`); Präfixe H-/R-/S- fallen weg | Konzept + Mapping-Tabelle: [unterkategorien-vorschlag.md](unterkategorien-vorschlag.md) (vom User angenommen 2026-07-15, Klärungen eingearbeitet). Umzusetzen: Unterkats umbenennen/anlegen, Bestandsbuchungen ummappen, Erkennungsmuster → `mapping_regeln`. Vorlauf zu #20/K1, Basis für #28 | 🔨 in Umsetzung |
