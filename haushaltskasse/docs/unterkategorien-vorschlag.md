@@ -27,7 +27,7 @@
 | **Nebenkosten** | Wasser/Abwasser · Strom · Grundsteuer · Müll · Schornsteinfeger | S-NK, Abwasser |
 | **Sport** | Fitnessstudio · Verein/Mitgliedschaft · Kurse & Training · Ausrüstung | S-Sport, R-Sport |
 | **Urlaub** | **je Reise eine Unterkategorie** (neutral benannt: „Reiseziel Jahr", z. B. „Portugal 2026") · **Urlaub allgemein** (neutraler Anspartopf, solange keine Reise feststeht) | S-Urlaub, Bar |
-| **Füchschen (Kinder)** | Betreuung (OGS/Kita) · Kindergarten · Schulbedarf · Ausstattung & Anschaffung · Freizeit | S-Füchschen, Kiga etc |
+| **Füchschen (= die Kinder)** | Betreuung (OGS/Kita) · Kindergarten · Schulbedarf · Ausstattung & Anschaffung · Freizeit · **Sparen/Taschengeld** · **Kindergeld (Einnahme)** | S-Füchschen, Kiga etc · Kategorie „Kinder" entfällt |
 | **Telefon/Medien** | Mobilfunk & Internet · Streaming & Software · Rundfunkbeitrag · Zeitung/Medien · sonstige Abos | Abo, S-Tel |
 | **Instandhaltung** | Handwerker · PV/Solar · Möbel & Einrichtung · Baumaterial · **Garten & Außenanlage** · sonstige Anschaffung | S-Inst, H-Inst, Garten (aus NK) |
 | **Krankenkasse/Gesundheit (TK)** | Private KV (DKV) · Krankenkasse (TK) · Apotheke · Arzt & Zahnarzt | S-TK, tk |
@@ -69,6 +69,8 @@
 | „Kindergarten", „Kita" | Füchschen | Kindergarten |
 | Rhein-Sieg-Kreis (Schule), „Schulbedarf" | Füchschen | Schulbedarf |
 | Amazon (Kinderartikel), „Radanhänger", „Chariot", Bottosso | Füchschen | Ausstattung & Anschaffung |
+| Familienkasse, „Kindergeld" | Füchschen | Kindergeld (**Einnahme**, +) |
+| „Spar" an Kinderkonten (Taschengeld/Sparen) | Füchschen | Sparen/Taschengeld |
 | Telekom, Telefonica, Vodafone, o2, 1&1, congstar | Telefon/Medien | Mobilfunk & Internet |
 | Amazon Digital, Adobe, Office 365, Audible, Netflix, Spotify, Claude | Telefon/Medien | Streaming & Software |
 | WDR, „Rundfunk", GEZ, Beitragsservice | Telefon/Medien | Rundfunkbeitrag |

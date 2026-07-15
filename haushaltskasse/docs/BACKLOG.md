@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.8 · Stand 2026-07-15**
+**Version 2.0 · Stand 2026-07-15**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -19,19 +19,19 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 5 | Buchungen | **B2** Freitext-Bemerkung je Buchung | Schema-Spalte `bemerkung` + Endpoint `/api/buchung/{id}/bemerkung` + editierbare Zelle | 👁 Validiert |
 | 6 | Bug | **Dezimal-Fehler bei Posten** (Beträge ×100 beim Editieren) | `_parse_euro` neu: letzter `.`/`,` = Dezimaltrenner (beide Notationen) | 👁 Validiert |
 | 7 | Infra | Deploy-Fix (charmap-Crash, `:latest` erzeugt keine neue Revision) | `az acr build --no-logs`; Update per **Image-Digest** statt Tag | 👁 Validiert |
-| 8 | Übersicht | **U1** Merkzettel als eigene Box mit Einzelposten | Neue Spalte `vermoegensposten.gruppe`, eigene Box + Summe | ⭐ 🚀 Deployed |
+| 8 | Übersicht | **U1** Merkzettel als eigene Box mit Einzelposten | Neue Spalte `vermoegensposten.gruppe`, eigene Box + Summe | 👁 Validiert |
 | 9 | Übersicht | **U2** transparente Saldo-Herleitung (bis „frei verfügbar") | Wasserfall-Tabelle aus `haushaltssaldo()`-Komponenten | 📐 Designed |
 | 10 | Übersicht | **U3** Monatsablauf-Block (Soll vs. Ist, klappbar) | Neuer Accordion-Block, `ruecklagen_baum()` wiederverwenden (verwandt mit #39) | 📐 Designed |
-| 11 | Übersicht | **U4** stichtagsbezogener Gesamtsaldo | Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet | ⭐ 🚀 Deployed |
+| 11 | Übersicht | **U4** stichtagsbezogener Gesamtsaldo | Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet. *(Rechnet korrekt; die Abweichung zu den KPI-Kacheln ist deren Fehler → #52)* | 👁 Validiert |
 | 12 | Rücklagen | **R1** Doppelklick aufs **Nebenbuch** → Rücklagen-/Gegenbuchungen mit laufendem Saldo (altes Kto-Blatt), optional Filter Unterkategorie | Getrennte Nebenbuch-Sicht (`buchungsart='ruecklage'`) via `/nebenbuch/{id}`, `queries.nebenbuch()` | 👁 Validiert |
 | 13 | Rücklagen | **R4** „+ zurücklegen / − entnehmen" je Topf (= ein-/ausbuchen) | Neuer Endpoint → manuelle `ruecklage`-Buchung (+/−) | 📐 Designed |
 | 14 | Rücklagen/Config | **R3** „Soll" nur an EINER Stelle editierbar (**Config**), **Rücklagen read-only** | Rücklagen-Soll read-only; Editieren nur in Config | 👁 Validiert |
 | 15 | Rücklagen | Saldierung nach Migration prüfen (dein Bug-Report „Salden Kappes") | Nach Hard-Refresh verifizieren; sonst gezielt nachsehen | 🐞 offen |
 | 16 | Buchungen | Posten/Rücklagen in Buchungsliste verwirrend | Erklären/kennzeichnen; via B3 ausgeblendet | ❓ Klärung |
 | 17 | Buchungen | **B3** Buchungsliste **standardmäßig nur reale Buchungen** · **B4** besser filtern | Default nur echte Konten, Umschalter „inkl. Rücklagen"; B4-Filter erweitern | 👁 B3 Validiert · 💡 B4 |
-| 18 | Config | **C1** Config-Seite **einklappbar** (Accordion) | Klappbare Nebenbücher (via #39 umgesetzt) | 🚀 Deployed |
-| 19 | Einnahmen | **E1** Einnahmen explizit (Kennzeichen je Unterkat, in Monatssaldo) | Einnahme-Kennzeichen `ist_einnahme` + Config-Fluss (via #39); eigene Übersicht-Sicht noch offen | 🚀 Deployed (Teil) |
-| 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen; baut auf den Klarnamen + der Mapping-Tabelle aus #46 auf | 💡 Idee |
+| 18 | Config | **C1** Config-Seite **einklappbar** (Accordion) | Klappbare Nebenbücher (via #39 umgesetzt) | 👁 Validiert |
+| 19 | Einnahmen | **E1** Einnahmen explizit (in Monatssaldo) | Aktueller Stand via `ist_einnahme` vom User geprüft; **wird trotzdem ersetzt** → Einnahme über **Vorzeichen** (s. #47), „Einnahmen" kein Topf (#46) | 👁 Validiert → 🔄 Umbau (#46/#47) |
+| 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen. **Basis steht** (#50): 64 Regeln aktiv, Klarnamen live → hier nur noch KI-Vorschlag + Bestätigen | 💡 Idee |
 | 21 | Analyse | **P2** freie Query + Pivot-Ausbau | Read-only SQL-Konsole und/oder KI-Prompt→SQL; Pivot erweitern | 💡 Idee |
 | 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren, Gegenbuchungen; Amazon noch `.xls` | ⭐ 🚀 Deployed |
 | 23 | Betrieb | **V1** sichtbare Versionsnummer + automatisierte Tests | Version im Footer (Env-Var); pytest für Queries/Saldo/Endpoints | 💡 Idee |
@@ -57,4 +57,11 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 43 | Buchungen | **Import-Zeitstempel** je Buchung anzeigen | `queries.buchungen` liefert quelle+erstellt_am → Spalte „Quelle / importiert" | 🚀 Deployed |
 | 44 | Buchungen | **Stichtagsbasierte laufende Saldierung** in der Buchungsliste | Laufender Konto-Saldo (chronologisch); knifflig wg. Sortierung/Paginierung/mehrere Konten — Design offen | 💡 Idee |
 | 45 | Config | 🎨 **Config-Design-Anpassungen** (nach Validierung #39) | Darstellung/Layout der Monatsfluss-Sicht nachbessern — konkrete Punkte vom User noch offen | 💡 offen |
-| 46 | Kategorien | **Sprechende Unterkategorien + Mapping** — Klarnamen statt der Excel-Kürzel (`S-Auto`, `R-NK`, `S-Füchschen`); Präfixe H-/R-/S- fallen weg | Konzept + Mapping-Tabelle: [unterkategorien-vorschlag.md](unterkategorien-vorschlag.md) (vom User angenommen 2026-07-15, Klärungen eingearbeitet). Umzusetzen: Unterkats umbenennen/anlegen, Bestandsbuchungen ummappen, Erkennungsmuster → `mapping_regeln`. Vorlauf zu #20/K1, Basis für #28 | 🔨 in Umsetzung |
+| 46 | Datenmodell | **„Einnahmen" ist KEIN Rücklagen-Topf** (User-Entscheid) | Kategorie „Einnahmen" von `zaehlt_als='ruecklage'` lösen (kein Topf, keine Gegenbuchung); Einnahmen = positive Realbuchungen, nur Gruppierung/Reporting | 📐 entschieden |
+| 47 | Config | **`ist_einnahme`-Häkchen entfernen** — Einnahme am Vorzeichen erkennbar | Häkchen raus; Einnahme/Ausgabe im Monatsplan über **Vorzeichen des Soll-Betrags** (Gehalt = +, Ausgaben = −). Ersetzt Teil von #19. *(Konvention bestätigen)* | 📐 entschieden (Abstimmung offen) |
+| 48 | Unterkategorien | **„S-Auto/S-Vers" umbenennen** (sprechend) + **„Allgemein" als Rest-Topf** behalten | **Weitgehend erledigt via #50** (Klarnamen live, „Allgemein" bleibt Auffang-Rest). **Rest:** die `S-*`-Töpfe selbst leben noch — es sind FB-Migrations-Buchungen **ohne Empfänger**, deshalb greift keine Regel; brauchen KI-Zuordnung (#20) oder manuell | 🔨 Rest offen (s. #50) |
+| 49 | Kategorien | **Cleanup Kategorien** (User-Entscheid) | (a) **3× „Kindergeld" → 1**, als **Einnahme** (Vorzeichen +, unter Füchschen); (b) **Kategorie „Kinder" entfernen** (Füchschen = die Kinder); (c) Unterkategorie **„Sparen/Taschengeld" → Füchschen** verschieben. Braucht Cleanup-Migration (umhängen + löschen) oder Config-Aktionen | 📐 entschieden |
+| 50 | Kategorien | **Sprechende Unterkategorien + Mapping** — Klarnamen statt der Excel-Kürzel; Präfixe H-/R-/S- fallen weg *(war kurzzeitig auch als #46 geführt — Nummernkollision zweier paralleler Sessions, hier aufgelöst)* | `workflows/unterkategorien.py` (Phasen struktur/regeln/apply, dry-run Default). **Live in der DB (2026-07-15):** Telefon 23→7 Unterkats, Case-Dubletten (`abo`/`Abo`/`Abo/Medien`) zusammengeführt, `AutoVers`/`zurich`/`RLV`→`KFZ-Versicherung`/`Leben/BU`; **`mapping_regeln` erstmals befüllt (64 aktiv)**, 335 Buchungen retroaktiv zugeordnet; Kategorie-Salden unverändert. Konzept: [unterkategorien-vorschlag.md](unterkategorien-vorschlag.md). Setzt #48 um, Basis für #20/#28 | 🔨 Entwickelt (DB live, **Deploy offen**) |
+| 51 | Übersicht | 🐞 **„Gesamtvermögen (netto)" ist irreführend** (−328.487 €) — zeigt alle Kredite, aber **das Haus fehlt als Vermögensposten** | Langfrist-Posten sind ausschließlich Schulden (DB-Kredit, Großeltern, KfW, Riester = −343.923,98); der Immobilienwert ist nirgends erfasst → Kachel entweder ausblenden oder Hausposten pflegen (hängt an #29 Fuchsbau-Blatt) | 🐞 offen |
+| 52 | Übersicht | 🐞 **KPI-Kacheln vs. Stichtagssaldo driften** (−15.122,30 ↔ −15.869,16) | Kacheln zählen **alle** Buchungen, die Stichtags-Box nur bis Datum. Ursache: 11 Zuführungen sind auf **Monatsende vordatiert** (31.07.2026, +11.373,14 → Jörg 6.060 + Töpfe 5.313,14). Fix: Kacheln ebenfalls stichtaggenau auf „heute" rechnen | 🐞 offen |
+| 53 | Betrieb | **`__TEST_POSTEN__` in der Produktiv-DB** (1.234,56) | Steht auf `aktiv=FALSE`, zählt nicht mit — trotzdem löschen | 💡 Idee |
