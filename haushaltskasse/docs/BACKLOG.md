@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.8 · Stand 2026-07-14**
+**Version 1.9 · Stand 2026-07-14**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -60,3 +60,4 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 46 | Datenmodell | **„Einnahmen" ist KEIN Rücklagen-Topf** (User-Entscheid) | Kategorie „Einnahmen" von `zaehlt_als='ruecklage'` lösen (kein Topf, keine Gegenbuchung); Einnahmen = positive Realbuchungen, nur Gruppierung/Reporting | 📐 entschieden |
 | 47 | Config | **`ist_einnahme`-Häkchen entfernen** — Einnahme am Vorzeichen erkennbar | Häkchen raus; Einnahme/Ausgabe im Monatsplan über **Vorzeichen des Soll-Betrags** (Gehalt = +, Ausgaben = −). Ersetzt Teil von #19. *(Konvention bestätigen)* | 📐 entschieden (Abstimmung offen) |
 | 48 | Unterkategorien | **„S-Auto/S-Vers" umbenennen** (sprechend) + **„Allgemein" als Rest-Topf** behalten | Rename per `unterkategorien-vorschlag.md`; „Allgemein" bleibt Auffang-Rest je Nebenbuch, wird durch Verteilung (#28, `untertopf-verteilung-vorschlag.md`) kleingemacht; Filter immer Nebenbuch+Unterkategorie | 📐 Designed |
+| 49 | Kategorien | **Cleanup Kategorien** (User-Entscheid) | (a) **3× „Kindergeld" → 1**, als **Einnahme** (Vorzeichen +, unter Füchschen); (b) **Kategorie „Kinder" entfernen** (Füchschen = die Kinder); (c) Unterkategorie **„Sparen/Taschengeld" → Füchschen** verschieben. Braucht Cleanup-Migration (umhängen + löschen) oder Config-Aktionen | 📐 entschieden |
