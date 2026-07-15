@@ -2,12 +2,17 @@
 {% block titel %} · Config{% endblock %}
 {% block content %}
 <h1>Config — Monatlicher Finanzfluss</h1>
-<p class="sub">Einnahmen − Ausgaben = Monats-Saldo. Nebenbücher sind eingeklappt; Klick klappt Details
-  &amp; Pflege auf (Soll, Unterkategorien, Rolle, Einnahme-Kennzeichen).</p>
+<p class="sub">Einnahmen + Forderungen − Ausgaben = Monats-Saldo. Nebenbücher sind eingeklappt; Klick
+  klappt Details &amp; Pflege auf (Soll, Unterkategorien, Rolle, Einnahme-Kennzeichen).
+  Die <b>Rolle</b> bestimmt den Block — ein Rücklagen-Topf bleibt bei den Ausgaben, auch wenn er
+  eine Einnahme-Unterkategorie hat (z. B. Füchschen/Kindergeld).</p>
 
 <div class="grid kpis">
   <div class="card kpi"><div class="label">Einnahmen / Monat</div>
     <div class="val pos">{{ fluss.einnahmen_summe_cent|euro }}</div></div>
+  <div class="card kpi"><div class="label">Forderungen / Monat</div>
+    <div class="val {{ 'pos' if fluss.forderungen_summe_cent>=0 else 'neg' }}">
+      {{ fluss.forderungen_summe_cent|euro }}</div></div>
   <div class="card kpi"><div class="label">Ausgaben / Monat</div>
     <div class="val neg">{{ fluss.ausgaben_summe_cent|euro }}</div></div>
   <div class="card kpi"><div class="label">Monats-Saldo</div>
@@ -34,7 +39,7 @@
           </select>
         </label>
         <label class="small muted">Kategorie-Soll/Mon
-          <input class="ruecklage-inp" value="{{ (k.soll_cent/100)|round(2) }}"
+          <input class="ruecklage-inp" value="{{ k.soll_cent|eurozahl }}"
                  onchange="saveSoll('kategorie', {{ k.id }}, this)"> €</label>
         <label class="small muted">Default-Unterkat.
           <select onchange="saveDefaultUkat({{ k.id }}, this)">
@@ -51,7 +56,7 @@
         <tr>
           <td><input style="width:100%;max-width:280px" value="{{ u.name }}"
                      onchange="renameUkat({{ u.id }}, this)"></td>
-          <td class="num"><input class="ruecklage-inp" value="{{ (u.soll_cent/100)|round(2) }}"
+          <td class="num"><input class="ruecklage-inp" value="{{ u.soll_cent|eurozahl }}"
                      onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
           <td><label class="small"><input type="checkbox" {{ 'checked' if u.ist_einnahme }}
                      onchange="toggleEinnahme({{ u.id }}, this)" style="width:auto"> Einnahme</label></td>
@@ -83,13 +88,29 @@
   <tr><td><b>Summe Ausgaben</b></td><td class="num neg"><b>{{ fluss.ausgaben_summe_cent|euro }}</b></td></tr>
 </table></div>
 
+<h2>⇄ Forderungen (Natalie / Jörg)</h2>
+<div class="card scroll" style="margin-bottom:6px"><table>
+  {% for k in fluss.forderungen %}
+    {{ kat_block(k, k.soll_cent, 'pos' if k.soll_cent>=0 else 'neg') }}
+  {% endfor %}
+  {% if not fluss.forderungen %}<tr><td colspan="2" class="muted small">Keine Forderungs-Kategorie.</td></tr>{% endif %}
+  <tr><td><b>Summe Forderungen</b></td>
+    <td class="num {{ 'pos' if fluss.forderungen_summe_cent>=0 else 'neg' }}">
+      <b>{{ fluss.forderungen_summe_cent|euro }}</b></td></tr>
+</table></div>
+<p class="small muted" style="margin-top:-2px">Zählen mit ihrem Vorzeichen im Monats-Saldo.
+  Soll je Forderung im aufgeklappten Block pflegen.</p>
+
 <div class="card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
-  <b style="font-size:16px">Monats-Saldo</b>
+  <div><b style="font-size:16px">Monats-Saldo</b>
+    <div class="small muted">Einnahmen {{ fluss.einnahmen_summe_cent|euro }}
+      + Forderungen {{ fluss.forderungen_summe_cent|euro }}
+      − Ausgaben {{ fluss.ausgaben_summe_cent|euro }}</div></div>
   <b style="font-size:22px" class="{{ 'pos' if fluss.saldo_cent>=0 else 'neg' }}">{{ fluss.saldo_cent|euro }}</b>
 </div>
 
 {% if fluss.weitere %}
-<h2>Weitere (Forderungen/Sparen — zählen NICHT im Monats-Saldo)</h2>
+<h2>Weitere (zählen NICHT im Monats-Saldo)</h2>
 <div class="card scroll"><table>
   {% for k in fluss.weitere %}{{ kat_block(k, k.soll_cent, 'muted') }}{% endfor %}
 </table></div>

@@ -85,7 +85,7 @@
         <td><span class="tag">{{ p.art }}</span></td>
         <td class="num {{ 'pos' if p.wert_cent>=0 else 'neg' }}">
           <span class="wert" contenteditable data-id="{{ p.id }}"
-                data-name="{{ p.name }}" data-art="{{ p.art }}">{{ (p.wert_cent/100)|round(2) }}</span></td>
+                data-name="{{ p.name }}" data-art="{{ p.art }}">{{ p.wert_cent|eurozahl }}</span></td>
         <td class="num"><button class="ghost" onclick="delPosten({{ p.id }})">✕</button></td>
       </tr>
       {% endfor %}
@@ -109,7 +109,7 @@
         <td class="num {{ 'pos' if p.wert_cent>=0 else 'neg' }}">
           <span class="wert" contenteditable data-id="{{ p.id }}"
                 data-name="{{ p.name }}" data-art="{{ p.art }}"
-                data-gruppe="merkzettel">{{ (p.wert_cent/100)|round(2) }}</span></td>
+                data-gruppe="merkzettel">{{ p.wert_cent|eurozahl }}</span></td>
         <td class="num"><button class="ghost" onclick="delPosten({{ p.id }})">✕</button></td>
       </tr>
       {% endfor %}
@@ -134,7 +134,7 @@
         <td><span class="tag">{{ p.art }}</span></td>
         <td class="num {{ 'pos' if p.wert_cent>=0 else 'neg' }}">
           <span class="wert" contenteditable data-id="{{ p.id }}"
-                data-name="{{ p.name }}" data-art="{{ p.art }}">{{ (p.wert_cent/100)|round(2) }}</span></td>
+                data-name="{{ p.name }}" data-art="{{ p.art }}">{{ p.wert_cent|eurozahl }}</span></td>
       </tr>
       {% endfor %}
       <tr><td colspan="2"><b>Summe langfristig</b></td><td class="num"><b>{{ u.langfrist_cent|euro }}</b></td></tr>

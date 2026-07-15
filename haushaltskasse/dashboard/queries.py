@@ -442,11 +442,19 @@ def config_baum(cur) -> list[dict]:
 def config_fluss(cur) -> dict:
     """#39 — monatliche Finanzfluss-Sicht: Einnahmen − Ausgaben = Monats-Saldo.
 
-    Einnahmen  = Kategorien mit ≥1 als „Einnahme" markierten Unterkategorie (Gehalt, Taschengeld …),
-                 Einnahme-Soll = Σ Soll dieser Unterkategorien.
-    Ausgaben   = Nebenbücher mit Rolle 'ruecklage' (ohne Einnahme-Position), Soll = Kategorie-Soll.
-    Weitere    = Rest (Forderungen/Sparen ohne Einnahme, Rolle 'ausgabe') — nur zur Pflege, zählt
-                 NICHT im Monats-Saldo.
+    Die **Rolle (`zaehlt_als`) entscheidet**, nicht das Einnahme-Häkchen — sonst rutscht ein
+    Rücklagen-Topf in die Einnahmen, nur weil er eine Einnahme-Unterkategorie hat
+    (Füchschen/Kindergeld, User-Korrektur 2026-07-15).
+
+    Ausgaben     = Nebenbücher mit Rolle 'ruecklage', Soll = Kategorie-Soll.
+    Forderungen  = Rolle 'forderung' (Natalie/Jörg) — zählen im Monats-Saldo mit ihrem
+                   Kategorie-Soll und Vorzeichen (User-Wunsch: im Monatsfluss mit aufnehmen).
+    Einnahmen    = übrige Kategorien mit ≥1 Einnahme-Unterkategorie; Einnahme-Soll = Σ Soll
+                   dieser Unterkategorien, ersatzweise das Kategorie-Soll, falls die
+                   Unterkategorien kein Soll tragen.
+    Weitere      = Rest (Rolle 'ausgabe' ohne Einnahme) — nur zur Pflege, zählt NICHT im Saldo.
+
+    Monats-Saldo = Einnahmen + Forderungen − Ausgaben.
     Jede Kategorie trägt ALLE ihre Unterkategorien (mit Soll, ist_einnahme, quelle) fürs Aufklappen/Pflegen.
     """
     cur.execute("""SELECT id, name, zaehlt_als, monatliche_ruecklage_cent, default_unterkategorie_id
@@ -463,19 +471,31 @@ def config_fluss(cur) -> dict:
             if ie:
                 kats[kid]["einnahme_soll_cent"] += s
 
-    einnahmen, ausgaben, weitere = [], [], []
+    einnahmen, ausgaben, forderungen, weitere = [], [], [], []
     for k in kats.values():
-        if any(u["ist_einnahme"] for u in k["unterkategorien"]):
+        if k["zaehlt_als"] == "ruecklage":
+            ausgaben.append(k)                    # Rolle schlägt Einnahme-Häkchen
+        elif k["zaehlt_als"] == "forderung":
+            forderungen.append(k)
+        elif any(u["ist_einnahme"] for u in k["unterkategorien"]):
             einnahmen.append(k)
-        elif k["zaehlt_als"] == "ruecklage":
-            ausgaben.append(k)
         else:
             weitere.append(k)
+
+    # Trägt die Einnahme-Unterkategorie kein Soll, gilt das Kategorie-Soll — sonst zählt
+    # eine Einnahme mit 0, obwohl auf der Kategorie ein Betrag steht.
+    for k in einnahmen:
+        if not k["einnahme_soll_cent"]:
+            k["einnahme_soll_cent"] = k["soll_cent"]
+
     ein_summe = sum(k["einnahme_soll_cent"] for k in einnahmen)
     aus_summe = sum(k["soll_cent"] for k in ausgaben)
-    return {"einnahmen": einnahmen, "ausgaben": ausgaben, "weitere": weitere,
+    ford_summe = sum(k["soll_cent"] for k in forderungen)
+    return {"einnahmen": einnahmen, "ausgaben": ausgaben,
+            "forderungen": forderungen, "weitere": weitere,
             "einnahmen_summe_cent": ein_summe, "ausgaben_summe_cent": aus_summe,
-            "saldo_cent": ein_summe - aus_summe}
+            "forderungen_summe_cent": ford_summe,
+            "saldo_cent": ein_summe + ford_summe - aus_summe}
 
 
 def stichtag(cur) -> str:

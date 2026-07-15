@@ -80,7 +80,17 @@ def _parse_euro(text) -> int:
     return -cent if neg else cent
 
 
+def _eurozahl(cent) -> str:
+    """Cent -> '1.234,56' — deutsch, aber OHNE €-Zeichen: für editierbare Felder.
+
+    Muss deutsch sein, sonst steht in der Maske '-2775.0' (#6). `_parse_euro` liest beide
+    Notationen zurück, der Rundlauf Anzeige -> Eingabe -> Speichern bleibt also heil.
+    """
+    return _euro(cent).removesuffix(" €")
+
+
 TEMPLATES.env.filters["euro"] = _euro
+TEMPLATES.env.filters["eurozahl"] = _eurozahl
 
 
 def _stichtag_global() -> str:
