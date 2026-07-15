@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 1.7 · Stand 2026-07-14**
+**Version 1.8 · Stand 2026-07-14**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -30,7 +30,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 16 | Buchungen | Posten/Rücklagen in Buchungsliste verwirrend | Erklären/kennzeichnen; via B3 ausgeblendet | ❓ Klärung |
 | 17 | Buchungen | **B3** Buchungsliste **standardmäßig nur reale Buchungen** · **B4** besser filtern | Default nur echte Konten, Umschalter „inkl. Rücklagen"; B4-Filter erweitern | 👁 B3 Validiert · 💡 B4 |
 | 18 | Config | **C1** Config-Seite **einklappbar** (Accordion) | Klappbare Nebenbücher (via #39 umgesetzt) | 🚀 Deployed |
-| 19 | Einnahmen | **E1** Einnahmen explizit (Kennzeichen je Unterkat, in Monatssaldo) | Einnahme-Kennzeichen `ist_einnahme` + Config-Fluss (via #39); eigene Übersicht-Sicht noch offen | 🚀 Deployed (Teil) |
+| 19 | Einnahmen | **E1** Einnahmen explizit (in Monatssaldo) | Aktuell via `ist_einnahme`; **wird ersetzt** → Einnahme über **Vorzeichen** (s. #47), „Einnahmen" kein Topf (#46) | 🚀 Deployed → 🔄 Umbau (#46/#47) |
 | 20 | Kategorien | **K1** schlauere Kategorien/Unterkategorien | KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen | 💡 Idee |
 | 21 | Analyse | **P2** freie Query + Pivot-Ausbau | Read-only SQL-Konsole und/oder KI-Prompt→SQL; Pivot erweitern | 💡 Idee |
 | 22 | Import | **I1** Import neuer Umsätze über die Weboberfläche | CSV-Upload → `pipeline.py`, dedupe, kategorisieren, Gegenbuchungen; Amazon noch `.xls` | ⭐ 🚀 Deployed |
@@ -57,3 +57,6 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 43 | Buchungen | **Import-Zeitstempel** je Buchung anzeigen | `queries.buchungen` liefert quelle+erstellt_am → Spalte „Quelle / importiert" | 🚀 Deployed |
 | 44 | Buchungen | **Stichtagsbasierte laufende Saldierung** in der Buchungsliste | Laufender Konto-Saldo (chronologisch); knifflig wg. Sortierung/Paginierung/mehrere Konten — Design offen | 💡 Idee |
 | 45 | Config | 🎨 **Config-Design-Anpassungen** (nach Validierung #39) | Darstellung/Layout der Monatsfluss-Sicht nachbessern — konkrete Punkte vom User noch offen | 💡 offen |
+| 46 | Datenmodell | **„Einnahmen" ist KEIN Rücklagen-Topf** (User-Entscheid) | Kategorie „Einnahmen" von `zaehlt_als='ruecklage'` lösen (kein Topf, keine Gegenbuchung); Einnahmen = positive Realbuchungen, nur Gruppierung/Reporting | 📐 entschieden |
+| 47 | Config | **`ist_einnahme`-Häkchen entfernen** — Einnahme am Vorzeichen erkennbar | Häkchen raus; Einnahme/Ausgabe im Monatsplan über **Vorzeichen des Soll-Betrags** (Gehalt = +, Ausgaben = −). Ersetzt Teil von #19. *(Konvention bestätigen)* | 📐 entschieden (Abstimmung offen) |
+| 48 | Unterkategorien | **„S-Auto/S-Vers" umbenennen** (sprechend) + **„Allgemein" als Rest-Topf** behalten | Rename per `unterkategorien-vorschlag.md`; „Allgemein" bleibt Auffang-Rest je Nebenbuch, wird durch Verteilung (#28, `untertopf-verteilung-vorschlag.md`) kleingemacht; Filter immer Nebenbuch+Unterkategorie | 📐 Designed |
