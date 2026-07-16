@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 2.0 · Stand 2026-07-15**
+**Version 2.1 · Stand 2026-07-15**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -20,7 +20,7 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 6 | Bug | **Dezimal-Fehler bei Posten** (Beträge ×100 beim Editieren) | `_parse_euro` neu: letzter `.`/`,` = Dezimaltrenner (beide Notationen) | 👁 Validiert |
 | 7 | Infra | Deploy-Fix (charmap-Crash, `:latest` erzeugt keine neue Revision) | `az acr build --no-logs`; Update per **Image-Digest** statt Tag | 👁 Validiert |
 | 8 | Übersicht | **U1** Merkzettel als eigene Box mit Einzelposten | Neue Spalte `vermoegensposten.gruppe`, eigene Box + Summe | 👁 Validiert |
-| 9 | Übersicht | **U2** transparente Saldo-Herleitung (bis „frei verfügbar") | Wasserfall-Tabelle aus `haushaltssaldo()`-Komponenten | 📐 Designed |
+| 9 | Übersicht | **U2** ⭐ transparente Saldo-Herleitung (Wasserfall) | **Konkret (User 2026-07-15):** Zeilen mit €: Konten − Rücklagen − Merkzettel = **Frei verfügbar (Liquidität nach Reservierung)**; dann + Forderungen + Posten = Haushalts-Saldo; muss exakt zu den Tabellen aufgehen. **Bug dabei:** aktuelle Rechnung zählt „Posten" inkl. Merkzettel, zeigt sie aber getrennt → Zahl geht nicht auf („Posten fehlen"). Forderungen-Vorzeichen bestätigen (+/−) | ⭐ 📐 Designed |
 | 10 | Übersicht | **U3** Monatsablauf-Block (Soll vs. Ist, klappbar) | Neuer Accordion-Block, `ruecklagen_baum()` wiederverwenden (verwandt mit #39) | 📐 Designed |
 | 11 | Übersicht | **U4** stichtagsbezogener Gesamtsaldo | Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet. *(Rechnet korrekt; die Abweichung zu den KPI-Kacheln ist deren Fehler → #52)* | 👁 Validiert |
 | 12 | Rücklagen | **R1** Doppelklick aufs **Nebenbuch** → Rücklagen-/Gegenbuchungen mit laufendem Saldo (altes Kto-Blatt), optional Filter Unterkategorie | Getrennte Nebenbuch-Sicht (`buchungsart='ruecklage'`) via `/nebenbuch/{id}`, `queries.nebenbuch()` | 👁 Validiert |
@@ -66,3 +66,4 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 51 | Übersicht | 🐞 **„Gesamtvermögen (netto)" ist irreführend** (−328.487 €) — zeigt alle Kredite, aber **das Haus fehlt als Vermögensposten** | Langfrist-Posten sind ausschließlich Schulden (DB-Kredit, Großeltern, KfW, Riester = −343.923,98); der Immobilienwert ist nirgends erfasst → Kachel entweder ausblenden oder Hausposten pflegen (hängt an #29 Fuchsbau-Blatt) | 🐞 offen |
 | 52 | Übersicht | 🐞 **KPI-Kacheln vs. Stichtagssaldo driften** (−15.122,30 ↔ −15.869,16) | Kacheln zählen **alle** Buchungen, die Stichtags-Box nur bis Datum. Ursache: 11 Zuführungen sind auf **Monatsende vordatiert** (31.07.2026, +11.373,14 → Jörg 6.060 + Töpfe 5.313,14). Fix: Kacheln ebenfalls stichtaggenau auf „heute" rechnen | 🐞 offen |
 | 53 | Betrieb | **`__TEST_POSTEN__` in der Produktiv-DB** (1.234,56) | Steht auf `aktiv=FALSE`, zählt nicht mit — trotzdem löschen | 💡 Idee |
+| 54 | Rücklagen | **„Haushaltskasse" als Rücklagen-Topf entfernen** (User: Soll-Eingabe wirkungslos) | Rolle auf `ausgabe` (kein Topf) → nicht mehr in Rücklagen-Liste/Saldo; Alltagskonsum läuft über Realbuchungen, nicht als Rücklage. *(Falls doch Puffer gewünscht: echter Topf + einrechnen)* | 📐 entschieden |
