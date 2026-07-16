@@ -14,7 +14,8 @@ Abschnitt 3 und sind bindend für deine Vorschläge.**
 1. `haushaltskasse/docs/BACKLOG.md` (v3.4) — die Steuerdatei, alle 58 Punkte mit Reifegrad.
 2. `haushaltskasse/docs/CODE-ANALYSE-2026-07-16.md` — **Schritt 1** (grobe Übersicht + Risiken), die du reviewen sollst.
 3. `haushaltskasse/docs/CODE-ANALYSE-DEEP-DIVE-I.md` — **Deep Dive I** (Geld-Logik, read-only gegen Live-DB verifiziert), den du ebenfalls reviewen sollst.
-4. Kern-Code: `storage/schema.sql`, `dashboard/queries.py`, `dashboard/app.py`, `workflows/gegenbuchung.py`, `workflows/beladung.py`, `workflows/allgemein_toepfe.py`, `workflows/allgemein_verteilen.py`, `workflows/kategorie_cleanup.py`.
+4. `haushaltskasse/docs/DELTA-2026-07-16-1620-Handy-anPC.md` — Delta einer parallelen Handy-Session (informativ, PC ist führend). Enthält u. a. die verifizierte Umkat-Erkenntnis (s. Leitplanke 3.2) und den #28-Wiederverwendbarkeits-Hinweis.
+5. Kern-Code: `storage/schema.sql`, `dashboard/queries.py`, `dashboard/app.py`, `workflows/gegenbuchung.py`, `workflows/beladung.py`, `workflows/allgemein_toepfe.py`, `workflows/allgemein_verteilen.py`, `workflows/kategorie_cleanup.py`.
 
 **Arbeitsregeln:**
 - **Nur read-only gegen die Live-DB** (Connection kommt aus `.env` → `HAUSHALT_DATABASE_URL`). Wie in Deep Dive I: SELECTs zum Nachrechnen, **kein** Schreibzugriff, **kein** Deploy, **keine** Migrations-Skripte mit `--write`.
@@ -75,6 +76,13 @@ Vorschläge zur **Entschärfung**: z. B. die Saldo-/Vorzeichen-Logik an **einer*
 (single source of truth), einheitlicher Diskriminator (`gruppe` vs. `im_haushaltssaldo` angleichen),
 Invarianten als automatische Tests (die 4 aus Deep Dive I + weitere), evtl. eine kleine Typ-/Enum-Schicht
 statt String-Vergleichen. Ziel: Änderungen an der Geld-Logik dürfen kein Blindflug mehr sein.
+
+**Bereits verifizierter Fakt (Delta 2026-07-16, nicht neu als Risiko werten):** Umkategorisieren im
+Dashboard erzeugt genau **eine** Gegenbuchung, kein Doppelzählen — `set_kategorie` → `sync_eine` macht
+`DELETE FROM buchungen WHERE spiegel_von_id=<id>` und legt **genau einen** neuen Spiegel im richtigen
+Topf an (Ziel Nicht-Topf 'ausgabe'/'forderung' → gar kein Spiegel; FB-Quellen/kreditfinanziert → nie
+ein Spiegel). Deckt sich mit Deep-Dive-I-Befund E (0 verwaiste/doppelte Spiegel). Darauf aufbauen,
+nicht neu prüfen.
 
 ### 3.3 Migrations-Reihenfolge ist Herrschaftswissen — **verständlich erklären + in Code gießen**
 > Jörg: *„versteh ich nicht, aber ok …"*
