@@ -1,10 +1,20 @@
 # Backlog — Haushaltskasse
 
-**Version 3.6 · Stand 2026-07-16**
+**Version 3.7 · Stand 2026-07-16**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
 Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1.1 → …).
+
+**✅ FABLE DEEP-DIVE-II P1–P9 DEPLOYT (2026-07-16, Commit `4ab5b9a`, Rev `0000012`, `/health`=4ab5b9a):**
+Der große Refactor (in einer hängengebliebenen Fable-Session gebaut, uncommittet vorgefunden) ist
+verifiziert (16 Tests grün, alle Seiten+Exporte 200 gegen echte DB) und live. Enthält: P1 Web-Import-
+Spiegelfix (#59) · P2 `domain/saldo.py` single-source + Bugfix B7 (Forderungen nicht in Rücklagen) ·
+P3 pytest `tests/` (#23b) · P4 CI/CD `.github/` (Deploy nur von `master` via OIDC, #62) · P5
+`reload.py`/`audit.py`/`admin_laeufe` (#61) · P7 Auth fail-hard (#63) · P8 `app.py`→`routes/` ·
+P9 `lokale_config` Datei-ODER-DB (#22-Rest). Schema-Migration (`chk_merkzettel_im_saldo` #60,
+`admin_laeufe` #61) gegen Azure gefahren. **Offen:** #23b Tests im CI grün ziehen; OIDC-Vars für
+master-Auto-Deploy verifizieren; `lokale_config --push` in die DB (sonst Container-Import ohne IBANs).
 
 **Reifegrad-Stufen:** 💡 Idee (nur notiert) → 📐 Designed (Konzept geklärt) → 🔨 Entwickelt (Code fertig, lokal getestet) → 🚀 Deployed (live) → 👁 Validiert (vom User live geprüft/getestet). Sonderstatus: 🐞 Bug · ❓ Klärung offen · ⭐ Priorität.
 
