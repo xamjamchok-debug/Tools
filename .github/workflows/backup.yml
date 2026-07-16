@@ -1,0 +1,55 @@
+# DB-Backup Haushaltskasse (#33): wöchentlicher logischer Dump zusätzlich zum Azure-PITR
+# (tägliche automatische Backups, 14 Tage — verifiziert 2026-07-16). Der Dump schützt vor
+# Langzeit-Szenarien (Fehler spät bemerkt, Abo/Konto weg) und dient als Backup vor
+# destruktiven Läufen (#61). Läuft montags 03:23 UTC + manuell per workflow_dispatch.
+name: DB-Backup
+
+on:
+  schedule:
+    - cron: '23 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure-Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # GitHub-Runner haben wechselnde IPs -> Firewall kurz öffnen, danach IMMER schließen.
+      - name: Runner-IP an der DB-Firewall freischalten
+        run: |
+          IP=$(curl -s https://api.ipify.org)
+          az postgres flexible-server firewall-rule create -g haushaltskasse-rg -n hh-te86ka \
+            --rule-name gh-backup-runner --start-ip-address "$IP" --end-ip-address "$IP" -o none
+
+      - name: pg_dump
+        env:
+          DB_URL: ${{ secrets.HAUSHALT_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          STAND=$(date +%F)
+          pg_dump "$DB_URL" -Fc -f "haushaltskasse-${STAND}.dump"
+          ls -lh haushaltskasse-*.dump
+
+      - name: Firewall-Regel entfernen
+        if: always()
+        run: |
+          az postgres flexible-server firewall-rule delete -g haushaltskasse-rg -n hh-te86ka \
+            --rule-name gh-backup-runner --yes -o none || true
+
+      - name: Dump als Artefakt sichern (90 Tage)
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: '*.dump'
+          retention-days: 90

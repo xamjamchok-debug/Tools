@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from datetime import date
 
+from ..domain import saldo as _saldo
+
 STICHTAG = "2025-01-01"   # erster Tag der Einzelbuchungs-Historie (davor: Startsaldo)
 
 
@@ -32,47 +34,19 @@ def haushaltssaldo(cur) -> dict:
     Langfristige Posten (Kredit Großeltern −135.000, Riester, KfW, Deutsche Bank) stehen
     getrennt und zählen NICHT im Saldo. Reserve-/Forderungs-Stände sind Netto (inkl.
     Auto-Gegenbuchungen der Realausgaben) -> topf-verzehrende Ausgaben sind saldo-neutral.
+
+    #60: die Formel lebt in domain/saldo.py (Single Source of Truth) — hier nur der Aufruf.
     """
-    cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE konto_id IS NOT NULL")
-    konten = cur.fetchone()[0]
-    cur.execute("SELECT COALESCE(SUM(wert_cent),0) FROM vermoegensposten WHERE aktiv AND im_haushaltssaldo")
-    posten = cur.fetchone()[0]
-    cur.execute("SELECT COALESCE(SUM(wert_cent),0) FROM vermoegensposten WHERE aktiv AND NOT im_haushaltssaldo")
-    langfrist = cur.fetchone()[0]
-    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b
-                   JOIN kategorien k ON k.id=b.kategorie_id
-                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='ruecklage'""")
-    ruecklagen = cur.fetchone()[0]
-    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b
-                   JOIN kategorien k ON k.id=b.kategorie_id
-                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='forderung'""")
-    forderung = cur.fetchone()[0]
-    return {
-        "konten_cent": konten, "posten_cent": posten, "langfrist_cent": langfrist,
-        "ruecklagen_cent": ruecklagen, "forderung_cent": forderung,
-        "saldo_cent": konten + posten - ruecklagen + forderung,
-        # Realsaldo = echtes Geld auf allen Konten (ohne Reservierungen).
-        "realsaldo_cent": konten,
-    }
+    return _saldo.haushaltssaldo(cur)
 
 
 def haushaltssaldo_per_stichtag(cur, datum: str) -> dict:
     """#U4 — Gesamtsaldo ZUM Stichtag `datum`. Buchungsbasierter Teil exakt (nur Buchungen mit
-    datum_wert ≤ datum), Vermögensposten zeitlos-konstant (aktueller Wert — sie haben keine Historie).
+    datum_wert ≤ datum), Vermögensposten zeitlos-konstant. #60: gleiche Formel wie
+    haushaltssaldo(), nur stichtaggenau — beide rufen domain/saldo.py auf, können also
+    nicht mehr auseinanderdriften.
     """
-    cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE konto_id IS NOT NULL AND datum_wert<=%s", (datum,))
-    konten = cur.fetchone()[0]
-    cur.execute("SELECT COALESCE(SUM(wert_cent),0) FROM vermoegensposten WHERE aktiv AND im_haushaltssaldo")
-    posten = cur.fetchone()[0]                       # zeitlos (kein Datum)
-    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b JOIN kategorien k ON k.id=b.kategorie_id
-                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='ruecklage' AND b.datum_wert<=%s""", (datum,))
-    ruecklagen = cur.fetchone()[0]
-    cur.execute("""SELECT COALESCE(SUM(b.betrag_cent),0) FROM buchungen b JOIN kategorien k ON k.id=b.kategorie_id
-                   WHERE b.buchungsart='ruecklage' AND k.zaehlt_als='forderung' AND b.datum_wert<=%s""", (datum,))
-    forderung = cur.fetchone()[0]
-    return {"datum": datum, "konten_cent": konten, "posten_cent": posten,
-            "ruecklagen_cent": ruecklagen, "forderung_cent": forderung,
-            "saldo_cent": konten + posten - ruecklagen + forderung}
+    return _saldo.haushaltssaldo(cur, stichtag=datum)
 
 
 def konten_salden(cur) -> list[dict]:

@@ -91,6 +91,11 @@ ALTER TABLE vermoegensposten ADD COLUMN IF NOT EXISTS im_haushaltssaldo BOOLEAN 
 -- #39/U1: Gruppe für die Darstellung. 'merkzettel' = eigene Box (künftige/reservierte Kosten),
 -- 'posten' = normale Vermögens-/Saldo-Posten. Beide zählen wie bisher (im_haushaltssaldo entscheidet).
 ALTER TABLE vermoegensposten ADD COLUMN IF NOT EXISTS gruppe TEXT NOT NULL DEFAULT 'posten';
+-- #60: Konsistenz-Falle hart machen (Deep-Dive-I-Befund C): ein Merkzettel-Posten MUSS im
+-- Haushaltssaldo zählen, sonst kippt die Übersicht-Herleitung lautlos. DROP+ADD = idempotent.
+ALTER TABLE vermoegensposten DROP CONSTRAINT IF EXISTS chk_merkzettel_im_saldo;
+ALTER TABLE vermoegensposten ADD CONSTRAINT chk_merkzettel_im_saldo
+    CHECK (gruppe <> 'merkzettel' OR im_haushaltssaldo);
 
 -- ---------------------------------------------------------------------------
 -- Buchungen: alle Bewegungen. buchungsart trennt die drei Fälle:
@@ -159,4 +164,18 @@ CREATE TABLE IF NOT EXISTS import_dateien (
     quelle        TEXT NOT NULL,
     zeilen_count  INTEGER NOT NULL DEFAULT 0,
     importiert_am TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ---------------------------------------------------------------------------
+-- #61: Audit-Log der Admin-/Write-Läufe (CLI-Workflows). Beantwortet „was lief wann?"
+-- Kennzahlen vorher/nachher als JSON-Text (realsaldo, ruecklagen, forderungen …).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS admin_laeufe (
+    id                 INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    werkzeug           TEXT NOT NULL,
+    argumente          TEXT,
+    kennzahlen_vorher  TEXT,
+    kennzahlen_nachher TEXT,
+    invarianten_ok     BOOLEAN,
+    gestartet          TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -1,0 +1,100 @@
+# CI/CD Haushaltskasse (#62): Test-Gate + Auto-Deploy.
+# Tests laufen auf jedem Push (master + claude/**-Branches), das Deploy NUR auf master
+# und NUR wenn die Tests grün sind. Azure-Login per OIDC (keine Passwort-Secrets).
+name: CI
+
+on:
+  push:
+    branches: [master, 'claude/**']
+  workflow_dispatch:
+
+permissions:
+  id-token: write     # OIDC-Token für den Azure-Login
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: haushaltskasse_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Szenario-Tests (schreibend) UND Smoke-Tests nutzen in CI dieselbe Wegwerf-DB.
+      HAUSHALT_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/haushaltskasse_test
+      HAUSHALT_DATABASE_URL: postgresql://postgres:test@localhost:5432/haushaltskasse_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # gitleaks braucht die Historie
+
+      # #63: Secret-Scan. Vorerst nicht blockierend (continue-on-error), bis der Erstlauf
+      # über die Historie bestätigt sauber ist — dann auf blocking stellen.
+      - name: Secret-Scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Abhängigkeiten installieren
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Tests (Invarianten + Szenarien + Smoke)
+        run: pytest haushaltskasse/tests -v
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure-Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Genau die dokumentierten PC-Schritte (STAND-…-live.md), automatisiert:
+      # Update per Image-DIGEST (Tag erzeugt keine neue Revision), APP_VERSION Pflicht (#23).
+      - name: Image bauen + Container App aktualisieren
+        run: |
+          set -euo pipefail
+          DIGEST=$(az acr build -r hhkassec1k7wx -t haushaltskasse:latest . --no-logs \
+                     --query "outputImages[0].digest" -o tsv)
+          echo "Digest: $DIGEST"
+          az containerapp update -g haushaltskasse-rg -n haushaltskasse \
+            --image "hhkassec1k7wx.azurecr.io/haushaltskasse@${DIGEST}" \
+            --set-env-vars APP_VERSION=${GITHUB_SHA::7} \
+            --query "properties.latestRevisionName" -o tsv
+
+      - name: Health-Check (Version live?)
+        run: |
+          set -euo pipefail
+          KURZ=${GITHUB_SHA::7}
+          for i in 1 2 3 4 5 6; do
+            sleep 15
+            ANTWORT=$(curl -s https://haushaltskasse.happyfield-4f41987c.germanywestcentral.azurecontainerapps.io/health || true)
+            echo "Versuch $i: $ANTWORT"
+            if echo "$ANTWORT" | grep -q "$KURZ"; then
+              echo "OK — Version $KURZ ist live."
+              exit 0
+            fi
+          done
+          echo "FEHLER: Version $KURZ wurde nicht bestätigt."
+          exit 1

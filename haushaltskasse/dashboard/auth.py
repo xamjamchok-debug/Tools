@@ -62,6 +62,26 @@ def https_only() -> bool:
     return os.getenv("HAUSHALT_HTTPS_ONLY", "0") == "1"
 
 
+def erzwinge_produktions_config() -> None:
+    """#63 — Fail-hard statt Warnung: in Produktion (HTTPS_ONLY=1) MUSS Auth konfiguriert sein.
+
+    Vorher startete die App bei fehlendem Passwort-Hash einfach OHNE Login (nur eine
+    Konsolen-Warnung) — ein Deploy mit verlorener Env-Var hätte die Finanzdaten offen ins
+    Internet gestellt. Jetzt: Start verweigern. Lokal (HTTPS_ONLY=0) bleibt alles wie gehabt.
+    """
+    if not https_only():
+        return
+    fehlt = []
+    if not auth_aktiv():
+        fehlt.append("HAUSHALT_APP_USER/HAUSHALT_APP_PASSWORD_HASH")
+    if not os.getenv("HAUSHALT_SESSION_SECRET"):
+        fehlt.append("HAUSHALT_SESSION_SECRET")
+    if fehlt:
+        raise RuntimeError(
+            f"[auth] Produktionsmodus (HAUSHALT_HTTPS_ONLY=1), aber es fehlt: {', '.join(fehlt)} "
+            "— Start verweigert, sonst stünde das Dashboard OHNE Login im Netz.")
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     """Schützt alle Routen außer OEFFENTLICH/static. API -> 401, Views -> Redirect auf /login."""
 

@@ -68,26 +68,29 @@ def init_db(conn: psycopg.Connection | None = None) -> None:
 
 
 def kennzahlen(conn: psycopg.Connection | None = None) -> dict:
-    """Kern-Kennzahlen in Euro: Realsaldo, Summe Rücklagen, verfügbarer Saldo.
+    """Kern-Kennzahlen in Euro: Realsaldo, Summe Rücklagen, Forderungen, verfügbarer Saldo.
 
     Realsaldo       = Summe ALLER Buchungen auf realen Konten (konto_id gesetzt) —
                       inkl. Startsaldo, Umbuchungen, Wertpapiere, Zinsen. Das ist das
                       tatsächlich auf den Konten liegende Vermögen (Rücklagen sind
                       virtuell und haben konto_id = NULL, zählen hier nicht mit).
-    Summe Rücklagen = Summe aller 'ruecklage'-Buchungen (Zuführung - Verzehr ± Korrektur).
+    Summe Rücklagen = nur echte Rücklagen-Töpfe (Rolle 'ruecklage') — Fable-Review Befund B7:
+                      vorher zählten die Forderungen (Natalie/Jörg) hier fälschlich mit.
+    Forderungen     = Rolle 'forderung', separat ausgewiesen.
     Verfügbar       = Realsaldo - Summe Rücklagen (was nicht in Töpfen gebunden ist).
     """
+    from ..domain import saldo as _saldo   # lazy: vermeidet Import-Zirkel beim Paket-Init
     own = conn is None
     conn = conn or connect()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE konto_id IS NOT NULL")
-            real = cur.fetchone()[0]
-            cur.execute("SELECT COALESCE(SUM(betrag_cent),0) FROM buchungen WHERE buchungsart='ruecklage'")
-            ruecklagen = cur.fetchone()[0]
+            real = _saldo.summe_konten(cur)
+            ruecklagen = _saldo.summe_ruecklagen(cur)
+            forderungen = _saldo.summe_forderungen(cur)
         return {
             "realsaldo": round(real / 100, 2),
             "summe_ruecklagen": round(ruecklagen / 100, 2),
+            "forderungen": round(forderungen / 100, 2),
             "verfuegbarer_saldo": round((real - ruecklagen) / 100, 2),
         }
     finally:

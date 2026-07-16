@@ -15,6 +15,7 @@ import re
 
 from ..storage.db import connect
 from .abgrenzung import bestimme_buchungsart
+from .gegenbuchung import sync_gegenbuchungen
 from .kategorisierung import kategorisiere
 from .laden import _kategorie_id, _konto_id, _lade_maps, _unterkategorie_id
 from .lokale_config import lade_lokale_config
@@ -39,7 +40,12 @@ def _db_regeln(cur) -> list[tuple]:
 
 
 def _match_db(b: dict, regeln: list[tuple]):
-    """Erste passende DB-Regel → (Kategorie, Unterkategorie), sonst (None, None)."""
+    """Erste passende DB-Regel → (Kategorie, Unterkategorie), sonst (None, None).
+
+    Fable-Review F5: eine Regel prüft NUR ihr eigenes Feld (empfaenger-Regel → Empfänger,
+    verwendungszweck-Regel → Zweck, iban-Regel → Gegen-IBAN). Der frühere Fallback auf
+    „Empfänger+Zweck zusammen" verbreiterte die Teilstring-Fallen (z. B. `arag` → „Garage"
+    im Zweck). Nur Typen ohne eigenes Import-Feld (sepa_ref) suchen im Gesamttext."""
     felder = {
         "empfaenger": b.get("empfaenger", "") or "",
         "verwendungszweck": b.get("verwendungszweck", "") or "",
@@ -47,7 +53,7 @@ def _match_db(b: dict, regeln: list[tuple]):
     }
     gesamt = f"{felder['empfaenger']} {felder['verwendungszweck']}"
     for typ, pat, kat, ukat in regeln:
-        if pat.search(felder.get(typ, gesamt)) or pat.search(gesamt):
+        if pat.search(felder.get(typ) if typ in felder else gesamt):
             return kat, ukat
     return None, None
 
@@ -58,7 +64,9 @@ def importiere_upload(dateiname: str, daten: bytes, conn=None) -> dict:
     own = conn is None
     conn = conn or connect()
     try:
-        cfg = lade_lokale_config()
+        # Config: Datei (PC) oder DB (Container, via `lokale_config --push` gespiegelt).
+        with conn.cursor() as cur0:
+            cfg = lade_lokale_config(cur0)
         with tempfile.TemporaryDirectory() as td:
             pfad = Path(td) / dateiname          # Originalname → Dispatch nach Dateiname
             pfad.write_bytes(daten)
@@ -115,6 +123,12 @@ def importiere_upload(dateiname: str, daten: bytes, conn=None) -> dict:
                     eingefuegt += 1
                 else:
                     uebersprungen += 1
+
+            # #59-Fix: Spiegel-Gegenbuchungen SOFORT synchronisieren (gleiche Transaktion) —
+            # sonst senken topf-pflichtige Import-Ausgaben den Saldo, bis am PC
+            # `gegenbuchung --write` läuft. sync_gegenbuchungen ist idempotent. Bewusst NICHT
+            # korrigiere_stammdaten (liest die lokale Excel-FB, die im Container fehlt).
+            spiegel_stat = sync_gegenbuchungen(cur)
         conn.commit()
 
         real = [b for b in roh if b["buchungsart"] == "real"]
@@ -122,6 +136,7 @@ def importiere_upload(dateiname: str, daten: bytes, conn=None) -> dict:
         return {"datei": dateiname, "erkannt": True, "geparst": len(roh), "eingefuegt": eingefuegt,
                 "uebersprungen": uebersprungen, "real": len(real), "offen": len(offen),
                 "config_fehlt": not cfg["_vorhanden"],
+                "spiegel_aktiv": spiegel_stat["quellen"],
                 "konten": dict(Counter(b["konto"] for b in roh))}
     finally:
         if own:

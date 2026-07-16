@@ -31,6 +31,7 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
+from ..domain.saldo import FB_QUELLEN, SQL_SPIEGEL_BERECHTIGT   # #60: eine Quelle der Regel
 from ..storage.db import connect, init_db
 from .migration_fb import FB_PATH
 
@@ -46,7 +47,6 @@ POSTEN_LANGFRIST = ("Kredit an Großeltern", "Riester-Steuerschuld",
 
 KREDITFINANZIERT = "kreditfinanziert (Großeltern-Darlehen)"
 AUTOHAUS_MUSTER = "%Autohaus Meures%"
-FB_QUELLEN = ("fb-dkb", "fb-kto", "startsaldo")   # alles daraus hat schon Gegenbuchungen
 
 
 # ---------------------------------------------------------------------------
@@ -149,12 +149,10 @@ def sync_eine(cur, real_id: int) -> None:
     Kategorie: falsch zugeordnet einfach umkategorisieren, der Spiegel wandert automatisch mit.
     """
     cur.execute("DELETE FROM buchungen WHERE spiegel_von_id=%s", (real_id,))
-    cur.execute("""
+    cur.execute(f"""
         SELECT b.datum_wert, b.betrag_cent, b.kategorie_id, b.unterkategorie_id
         FROM buchungen b JOIN kategorien k ON k.id=b.kategorie_id
-        WHERE b.id=%s AND b.buchungsart='real' AND b.quelle_import <> ALL(%s)
-          AND k.zaehlt_als='ruecklage'
-          AND COALESCE(b.bemerkung,'') NOT ILIKE 'kreditfinanziert%%'""",
+        WHERE b.id=%s AND {SQL_SPIEGEL_BERECHTIGT}""",
         (real_id, list(FB_QUELLEN)))
     row = cur.fetchone()
     if row:
@@ -166,25 +164,20 @@ def sync_gegenbuchungen(cur) -> dict:
     Berechtigt = Input-Realbuchung (nicht FB), Kategorie mit zaehlt_als='ruecklage',
     nicht kreditfinanziert. Gibt Statistik zurück."""
     # verwaiste Spiegel entfernen (Quelle nicht mehr berechtigt -> z. B. umkategorisiert)
-    cur.execute("""
+    cur.execute(f"""
         DELETE FROM buchungen s
         WHERE s.spiegel_von_id IS NOT NULL
           AND NOT EXISTS (
             SELECT 1 FROM buchungen b JOIN kategorien k ON k.id=b.kategorie_id
-            WHERE b.id = s.spiegel_von_id
-              AND b.buchungsart='real' AND b.quelle_import <> ALL(%s)
-              AND k.zaehlt_als='ruecklage'
-              AND COALESCE(b.bemerkung,'') NOT ILIKE 'kreditfinanziert%%'
+            WHERE b.id = s.spiegel_von_id AND {SQL_SPIEGEL_BERECHTIGT}
           )""", (list(FB_QUELLEN),))
     geloescht = cur.rowcount
 
     # fehlende/veraltete Spiegel anlegen bzw. aktualisieren (Betrag/Kategorie folgen der Quelle)
-    cur.execute("""
+    cur.execute(f"""
         SELECT b.id, b.datum_wert, b.betrag_cent, b.kategorie_id, b.unterkategorie_id
         FROM buchungen b JOIN kategorien k ON k.id=b.kategorie_id
-        WHERE b.buchungsart='real' AND b.quelle_import <> ALL(%s)
-          AND k.zaehlt_als='ruecklage'
-          AND COALESCE(b.bemerkung,'') NOT ILIKE 'kreditfinanziert%%'
+        WHERE {SQL_SPIEGEL_BERECHTIGT}
         ORDER BY b.id""", (list(FB_QUELLEN),))
     quellen = cur.fetchall()
     for bid, datum, betrag, kat_id, ukat_id in quellen:
@@ -210,9 +203,11 @@ def _saldo_bericht(cur) -> None:
 
 
 def lauf(write: bool = False) -> None:
+    from .audit import kennzahlen_json, protokolliere   # #61: Audit + Invarianten-Abschluss
     init_db()   # legt die neuen Spalten idempotent an
     conn = connect()
     try:
+        vorher = kennzahlen_json(conn) if write else ""
         with conn.cursor() as cur:
             print("[gegenbuchung] Stammdaten korrigieren ...")
             for zeile in korrigiere_stammdaten(cur):
@@ -221,12 +216,13 @@ def lauf(write: bool = False) -> None:
             stat = sync_gegenbuchungen(cur)
             print(f"  - {stat['quellen']} Spiegel-Buchungen aktiv, {stat['geloescht']} verwaiste entfernt")
             _saldo_bericht(cur)
-            if write:
-                conn.commit()
-                print("\n[gegenbuchung] committed.\n")
-            else:
-                conn.rollback()
-                print("\n[Vorschau] Rollback – nichts geschrieben. Mit --write ausführen.\n")
+        if write:
+            ok = protokolliere(conn, "gegenbuchung", "--write", vorher)
+            conn.commit()
+            print(f"\n[gegenbuchung] committed. Invarianten: {'OK' if ok else 'VERLETZT (s. oben)'}\n")
+        else:
+            conn.rollback()
+            print("\n[Vorschau] Rollback – nichts geschrieben. Mit --write ausführen.\n")
     finally:
         conn.close()
 

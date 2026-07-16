@@ -190,7 +190,25 @@ def belade_auszuege(cur, konten, kategorien, plan: list[dict]) -> None:
 # ---------------------------------------------------------------------------
 # Orchestrierung
 # ---------------------------------------------------------------------------
-def belade(write: bool = False) -> None:
+def _verlust_inventur(cur) -> list[tuple[str, int]]:
+    """#61-Verriegelung: was würde ein TRUNCATE unwiederbringlich löschen? Alles, was NICHT
+    aus der FB/den input/-Dateien reproduzierbar ist (Fable-Review Befund F2): manuelle und
+    Web-Import-Buchungen, Verteilungen, Bemerkungen/Pins auf reproduzierbaren Zeilen."""
+    cur.execute("""SELECT quelle_import, COUNT(*) FROM buchungen
+                   WHERE quelle_import NOT IN ('fb-dkb','fb-kto','startsaldo','spiegel')
+                   GROUP BY quelle_import ORDER BY 2 DESC""")
+    verlust = list(cur.fetchall())
+    cur.execute("""SELECT COUNT(*) FROM buchungen
+                   WHERE quelle_import IN ('fb-dkb','fb-kto')
+                     AND (kat_pinned OR unterkat_pinned)""")
+    pins = cur.fetchone()[0]
+    if pins:
+        verlust.append(("manuelle Umkategorisierungen (Pins) auf FB-Zeilen", pins))
+    return verlust
+
+
+def belade(write: bool = False, zerstoeren_ok: bool = False) -> None:
+    from .audit import kennzahlen_json, protokolliere
     conn = connect()
     plan: list[dict] = []
     try:
@@ -199,6 +217,20 @@ def belade(write: bool = False) -> None:
             if not konten or not kategorien:
                 print("[FEHLER] Konten/Kategorien fehlen – zuerst 'python -m haushaltskasse.workflows.seed' ausführen.")
                 return
+
+            # --- Verriegelung (#61): die DB ist inzwischen die Quelle der Wahrheit. ---------
+            verlust = _verlust_inventur(cur)
+            if verlust:
+                print("[beladung] ACHTUNG — diese Daten sind NICHT aus FB/input/ reproduzierbar"
+                      " und würden beim Neuaufbau UNWIEDERBRINGLICH gelöscht:")
+                for quelle, n in verlust:
+                    print(f"    {n:5d} × {quelle}")
+                if write and not zerstoeren_ok:
+                    print("\n[beladung] ABBRUCH. Wenn du das wirklich willst: erst ein Backup"
+                          " (pg_dump), dann mit  --zerstoere-manuelle-daten  erneut ausführen.")
+                    return
+
+            vorher = kennzahlen_json(conn) if write else ""
             print(f"[beladung] Stichtag {STICHTAG.isoformat()} — Startsaldo per {STARTSALDO_DATUM}.")
             print("[beladung] TRUNCATE buchungen (Neuaufbau) ...")
             cur.execute("TRUNCATE buchungen RESTART IDENTITY CASCADE")
@@ -208,6 +240,10 @@ def belade(write: bool = False) -> None:
                 conn.rollback()
                 print("\n[Vorschau] Rollback – nichts geschrieben. Mit --write ausführen.\n")
             else:
+                # Audit VOR dem Commit. Hinweis: direkt nach beladung sind die Invarianten
+                # planmäßig verletzt (Spiegel fehlen) — gegenbuchung/allgemein_toepfe müssen
+                # folgen; das erledigt `workflows.reload` in einem Rutsch.
+                protokolliere(conn, "beladung", "--write" + (" --zerstoere-manuelle-daten" if zerstoeren_ok else ""), vorher)
                 conn.commit()
                 print("\n[beladung] committed.\n")
         _bericht(plan)
@@ -241,4 +277,5 @@ def _bericht(plan: list[dict]) -> None:
 
 
 if __name__ == "__main__":
-    belade(write="--write" in sys.argv)
+    belade(write="--write" in sys.argv,
+           zerstoeren_ok="--zerstoere-manuelle-daten" in sys.argv)
