@@ -589,6 +589,70 @@ def delete_posten(posten_id: int):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# #56 Bargeld ("Bar") — Konto Bar (typ sonstiges). Abheben = Umbuchung Giro→Bar
+# (netto 0, Realsaldo unverändert). Ausgeben = manuelle Realbuchung Bar−, Kategorie
+# Haushaltskasse (kein elektronisches Tracking) → verzehrt den Haushaltskasse-Topf.
+# ---------------------------------------------------------------------------
+def _bar_konto_id(cur) -> int:
+    cur.execute("INSERT INTO konten (name, typ) VALUES ('Bar','sonstiges') ON CONFLICT (name) DO NOTHING")
+    cur.execute("SELECT id FROM konten WHERE name='Bar'")
+    return cur.fetchone()[0]
+
+
+class BarAbheben(BaseModel):
+    betrag: str
+    von_konto: str            # Name des realen Kontos, von dem abgehoben wird
+
+
+@app.post("/api/bar/abheben")
+def bar_abheben(a: BarAbheben):
+    from datetime import date
+    cent = _parse_euro(a.betrag)
+    if cent <= 0:
+        return JSONResponse({"ok": False, "fehler": "Betrag muss > 0 sein"}, status_code=400)
+    with db() as conn, conn.cursor() as cur:
+        bar = _bar_konto_id(cur)
+        cur.execute("SELECT id FROM konten WHERE name=%s", (a.von_konto,))
+        row = cur.fetchone()
+        if not row:
+            return JSONResponse({"ok": False, "fehler": "Konto unbekannt"}, status_code=400)
+        giro = row[0]
+        heute = date.today().isoformat()
+        # Zwei Umbuchungs-Zeilen: Giro − / Bar + (beide zählen NICHT als Ausgabe).
+        cur.execute("INSERT INTO buchungen (buchungsart,datum_wert,betrag_cent,konto_id,gegenkonto_id,"
+                    "verwendungszweck,quelle_import) VALUES ('umbuchung',%s,%s,%s,%s,'Bargeldabhebung → Bar','manuell')",
+                    (heute, -cent, giro, bar))
+        cur.execute("INSERT INTO buchungen (buchungsart,datum_wert,betrag_cent,konto_id,gegenkonto_id,"
+                    "verwendungszweck,quelle_import) VALUES ('umbuchung',%s,%s,%s,%s,'Bargeldabhebung (von Konto)','manuell')",
+                    (heute, cent, bar, giro))
+    return {"ok": True, "cent": cent}
+
+
+class BarAusgeben(BaseModel):
+    betrag: str
+    bemerkung: str | None = None
+
+
+@app.post("/api/bar/ausgeben")
+def bar_ausgeben(a: BarAusgeben):
+    from datetime import date
+    cent = _parse_euro(a.betrag)
+    if cent <= 0:
+        return JSONResponse({"ok": False, "fehler": "Betrag muss > 0 sein"}, status_code=400)
+    with db() as conn, conn.cursor() as cur:
+        bar = _bar_konto_id(cur)
+        cur.execute("SELECT id FROM kategorien WHERE name='Haushaltskasse'")
+        hk = cur.fetchone()
+        heute = date.today().isoformat()
+        cur.execute("INSERT INTO buchungen (buchungsart,datum_wert,betrag_cent,konto_id,kategorie_id,"
+                    "empfaenger,verwendungszweck,bemerkung,quelle_import) "
+                    "VALUES ('real',%s,%s,%s,%s,'Bargeld','Bargeld ausgegeben',%s,'manuell') RETURNING id",
+                    (heute, -cent, bar, hk[0] if hk else None, a.bemerkung))
+        sync_eine(cur, cur.fetchone()[0])   # Haushaltskasse-Topf verzehren (Gegenbuchung)
+    return {"ok": True, "cent": cent}
+
+
 if __name__ == "__main__":
     import os
     # Standard: im Heimnetz erreichbar (0.0.0.0) -> Handy/Laptop via http://<PC-IP>:3000.

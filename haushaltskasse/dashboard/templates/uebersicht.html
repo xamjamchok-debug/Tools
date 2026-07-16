@@ -64,6 +64,26 @@
   </form>
 </div>
 
+<div class="card" style="margin-bottom:16px">
+  <h2 style="margin-top:0">💶 Bargeld (Bar)</h2>
+  {% set bar = (u.konten | selectattr('name','equalto','Bar') | list) %}
+  <p class="sub" style="margin-bottom:10px">Aktueller Bargeldbestand:
+    <b>{{ (bar[0].saldo_cent if bar else 0)|euro }}</b> — Abheben = Umbuchung vom Konto (netto 0),
+    Ausgeben = manuell (kein elektronisches Tracking).</p>
+  <div class="toolbar">
+    <span class="small muted">Abheben</span>
+    <input id="bar-ab-betrag" placeholder="Betrag €" style="width:96px" inputmode="decimal">
+    <select id="bar-ab-konto">
+      {% for k in u.konten if k.name != 'Bar' %}<option value="{{ k.name }}">{{ k.name }}</option>{% endfor %}
+    </select>
+    <button onclick="barAbheben()">Konto → Bar</button>
+    <span class="small muted" style="margin-left:16px">Ausgegeben</span>
+    <input id="bar-aus-betrag" placeholder="Betrag €" style="width:96px" inputmode="decimal">
+    <input id="bar-aus-bem" placeholder="Bemerkung (optional)" style="width:150px">
+    <button onclick="barAusgeben()">Bargeld weg</button>
+  </div>
+</div>
+
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
   <div>
     <h2>Reale Konten</h2>
@@ -167,6 +187,20 @@
 {% endblock %}
 
 {% block script %}
+async function barAbheben(){
+  const betrag=document.getElementById('bar-ab-betrag').value;
+  const von_konto=document.getElementById('bar-ab-konto').value;
+  if(!betrag){ flash('Betrag fehlt', true); return; }
+  await postJSON('/api/bar/abheben', {betrag, von_konto});
+  flash('abgehoben'); setTimeout(()=>location.reload(), 500);
+}
+async function barAusgeben(){
+  const betrag=document.getElementById('bar-aus-betrag').value;
+  const bemerkung=document.getElementById('bar-aus-bem').value;
+  if(!betrag){ flash('Betrag fehlt', true); return; }
+  await postJSON('/api/bar/ausgeben', {betrag, bemerkung});
+  flash('gebucht'); setTimeout(()=>location.reload(), 500);
+}
 document.querySelectorAll('#posten-saldo .wert, #posten-langfrist .wert, #merkzettel .wert').forEach(el=>{
   el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); }});
   el.addEventListener('blur', async ()=>{
