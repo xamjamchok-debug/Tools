@@ -1,0 +1,562 @@
+<title>Backlog — Haushaltskasse</title>
+<style>
+  :root{
+    --bg-top:#FFFFFF; --bg-bottom:#DCEAFB;
+    --cover:#DCEAFB; --cover-ink:#123657;
+    --paper:#FFFFFF; --paper-2:#EAF3FC;
+    --ink:#1B2733; --ink-soft:#5B6B7C;
+    --line:#D3E2F1;
+    --accent:#2E6CA6; --accent-soft:rgba(46,108,166,.11); --accent-ring:rgba(46,108,166,.4); --on-accent:#FFFFFF;
+    --bug:#AE3B29; --bug-soft:rgba(174,59,41,.12);
+    --klaerung:#1E7A69; --klaerung-soft:rgba(30,122,105,.12);
+    --prio:#74469C; --prio-soft:rgba(116,70,156,.12);
+    --neutral:#8B93A0; --neutral-soft:rgba(139,147,160,.14);
+    --focus:#1E5C8C;
+    --font-display:Georgia,'Iowan Old Style','Palatino Linotype','Book Antiqua',serif;
+    --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:ui-monospace,'SFMono-Regular','Cascadia Mono',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg-top:#0B121A; --bg-bottom:#081018;
+      --cover:#0E2740; --cover-ink:#D6E6F7;
+      --paper:#10171F; --paper-2:#16202B;
+      --ink:#E4EBF3; --ink-soft:#93A2B4;
+      --line:#26313F;
+      --accent:#6FA8E0; --accent-soft:rgba(111,168,224,.16); --accent-ring:rgba(111,168,224,.5); --on-accent:#0B121A;
+      --bug:#E08B72; --bug-soft:rgba(224,139,114,.14);
+      --klaerung:#5FC2AE; --klaerung-soft:rgba(95,194,174,.14);
+      --prio:#C7A6E0; --prio-soft:rgba(199,166,224,.14);
+      --neutral:#93A0B0; --neutral-soft:rgba(147,160,176,.14);
+      --focus:#7FC3E8;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg-top:#0B121A; --bg-bottom:#081018;
+    --cover:#0E2740; --cover-ink:#D6E6F7;
+    --paper:#10171F; --paper-2:#16202B;
+    --ink:#E4EBF3; --ink-soft:#93A2B4;
+    --line:#26313F;
+    --accent:#6FA8E0; --accent-soft:rgba(111,168,224,.16); --accent-ring:rgba(111,168,224,.5);
+    --bug:#E08B72; --bug-soft:rgba(224,139,114,.14);
+    --klaerung:#5FC2AE; --klaerung-soft:rgba(95,194,174,.14);
+    --prio:#C7A6E0; --prio-soft:rgba(199,166,224,.14);
+    --neutral:#93A0B0; --neutral-soft:rgba(147,160,176,.14);
+    --focus:#7FC3E8;
+  }
+  :root[data-theme="light"]{
+    --bg-top:#FFFFFF; --bg-bottom:#DCEAFB;
+    --cover:#DCEAFB; --cover-ink:#123657;
+    --paper:#FFFFFF; --paper-2:#EAF3FC;
+    --ink:#1B2733; --ink-soft:#5B6B7C;
+    --line:#D3E2F1;
+    --accent:#2E6CA6; --accent-soft:rgba(46,108,166,.11); --accent-ring:rgba(46,108,166,.4); --on-accent:#FFFFFF;
+    --bug:#AE3B29; --bug-soft:rgba(174,59,41,.12);
+    --klaerung:#1E7A69; --klaerung-soft:rgba(30,122,105,.12);
+    --prio:#74469C; --prio-soft:rgba(116,70,156,.12);
+    --neutral:#8B93A0; --neutral-soft:rgba(139,147,160,.14);
+    --focus:#1E5C8C;
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  html{background:var(--bg-bottom);}
+  body{
+    background:linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%) fixed;
+    color:var(--ink); font-family:var(--font-body); min-height:100vh;
+  }
+  ::selection{background:var(--accent-soft);}
+  a{color:inherit;}
+  code{
+    font-family:var(--font-mono); font-size:.88em; background:var(--paper-2);
+    border:1px solid var(--line); border-radius:4px; padding:.05em .35em;
+  }
+  :focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+
+  /* ---------- sticky cover bar ---------- */
+  .cover{
+    position:sticky; top:0; z-index:30;
+    background:var(--cover); color:var(--cover-ink);
+    padding:.85rem 1.25rem;
+    display:flex; align-items:baseline; gap:.9rem; flex-wrap:wrap;
+    border-bottom:1px solid rgba(0,0,0,.25);
+  }
+  .cover h1{
+    font-family:var(--font-display); font-weight:600; font-size:1.35rem;
+    margin:0; letter-spacing:.2px; text-wrap:balance;
+  }
+  .cover .sub{font-size:.82rem; opacity:.78; font-family:var(--font-body);}
+  .version-badge{
+    margin-left:auto; display:flex; align-items:center; gap:.5rem;
+    background:var(--accent-soft); border:1px solid var(--accent-ring);
+    color:var(--cover-ink); padding:.3rem .65rem; border-radius:999px;
+    font-family:var(--font-mono); font-size:.85rem; font-variant-numeric:tabular-nums;
+  }
+  .version-badge b{font-weight:700; letter-spacing:.3px;}
+  .version-badge .stand{opacity:.75; font-size:.78rem;}
+
+  /* ---------- summary strip ---------- */
+  .summary{
+    display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;
+    padding:.75rem 1.25rem; background:var(--paper-2); border-bottom:1px solid var(--line);
+  }
+  .stat{
+    display:flex; align-items:baseline; gap:.35rem;
+    font-size:.82rem; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--line); border-radius:7px;
+    padding:.3rem .55rem;
+  }
+  .stat b{font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--ink); font-size:.92rem;}
+  button.stat{font:inherit; cursor:pointer; appearance:none; -webkit-appearance:none; margin:0;}
+  button.stat:hover{border-color:var(--accent-ring);}
+  button.stat[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent-ring); font-weight:600;}
+  button.stat[aria-pressed="true"] b{color:var(--accent);}
+  .stat.flag-bug{border-color:var(--bug); color:var(--bug);}
+  .stat.flag-bug b{color:var(--bug);}
+  .stat.flag-bug[aria-pressed="true"]{background:var(--bug-soft);}
+  .stat.flag-klaerung{border-color:var(--klaerung); color:var(--klaerung);}
+  .stat.flag-klaerung b{color:var(--klaerung);}
+  .stat.flag-klaerung[aria-pressed="true"]{background:var(--klaerung-soft);}
+
+  /* ---------- filter bar ---------- */
+  .filters{
+    display:flex; gap:.6rem; flex-wrap:wrap; align-items:center;
+    padding:.75rem 1.25rem; border-bottom:1px solid var(--line);
+  }
+  .filters input[type="search"]{
+    font:inherit; font-size:.9rem; padding:.4rem .6rem; border-radius:7px;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink);
+    min-width:200px; flex:1 1 200px;
+  }
+  .filters select{
+    font:inherit; font-size:.85rem; padding:.4rem .5rem; border-radius:7px;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink);
+  }
+  .chip-toggle{
+    font:inherit; font-size:.82rem; cursor:pointer; user-select:none;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink-soft);
+    padding:.32rem .6rem; border-radius:999px; display:inline-flex; gap:.3rem; align-items:center;
+  }
+  .chip-toggle[aria-pressed="true"]{
+    background:var(--accent-soft); border-color:var(--accent-ring); color:var(--ink); font-weight:600;
+  }
+  .chip-toggle.c-bug[aria-pressed="true"]{background:var(--bug-soft); border-color:var(--bug); color:var(--bug);}
+  .chip-toggle.c-klaerung[aria-pressed="true"]{background:var(--klaerung-soft); border-color:var(--klaerung); color:var(--klaerung);}
+  .chip-toggle.c-prio[aria-pressed="true"]{background:var(--prio-soft); border-color:var(--prio); color:var(--prio);}
+  .reset-btn{
+    font:inherit; font-size:.82rem; cursor:pointer; background:none; border:none;
+    color:var(--ink-soft); text-decoration:underline; padding:.3rem .2rem;
+  }
+  .count-note{font-size:.78rem; color:var(--ink-soft); margin-left:auto; white-space:nowrap;}
+
+  /* ---------- table ---------- */
+  .table-wrap{overflow-x:auto; padding:0 1.25rem 1.5rem;}
+  table{border-collapse:collapse; width:100%; min-width:920px; font-size:.88rem;}
+  thead th{
+    position:sticky; top:56px; z-index:20;
+    background:var(--paper-2); border-bottom:1px solid var(--line);
+    text-align:left; font-weight:600; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-soft); padding:.5rem .5rem; white-space:nowrap;
+  }
+  thead th.stage-col{text-align:center; width:2.4rem;}
+  tbody tr.item-row{border-bottom:1px solid var(--line);}
+  tbody tr.item-row:hover{background:var(--paper-2);}
+  tbody td{padding:.55rem .5rem; vertical-align:top;}
+  td.nr{font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--ink-soft); white-space:nowrap;}
+  td.bereich{white-space:nowrap;}
+  .bereich-chip{
+    display:inline-block; font-size:.74rem; padding:.15rem .5rem; border-radius:5px;
+    background:var(--paper-2); border:1px solid var(--line); color:var(--ink-soft); white-space:nowrap;
+  }
+  td.titel{min-width:220px; max-width:340px;}
+  .titel-row{display:flex; gap:.4rem; align-items:baseline;}
+  .titel-text{font-weight:600; line-height:1.35;}
+  .titel-text strong{font-weight:700;}
+  .detail-toggle{
+    font:inherit; font-family:var(--font-mono); font-size:.78rem; cursor:pointer;
+    background:none; border:1px solid var(--line); border-radius:5px; color:var(--ink-soft);
+    padding:.05rem .4rem; line-height:1.5; flex:none;
+  }
+  .detail-toggle:hover{border-color:var(--accent); color:var(--accent);}
+  td.stage-col{text-align:center;}
+  .pip{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:1.5rem; height:1.5rem; border-radius:6px;
+    border:2px solid var(--ink-soft); background:var(--paper);
+    font-size:1rem; font-weight:800; line-height:1; color:transparent;
+  }
+  .pip.checked{
+    background:var(--accent); border-color:var(--accent); color:var(--on-accent);
+  }
+  .pip.current{box-shadow:0 0 0 3px var(--accent-ring);}
+  td.flags{white-space:nowrap;}
+  .flag-chip{
+    display:inline-flex; align-items:center; gap:.25rem; font-size:.74rem;
+    padding:.15rem .45rem; border-radius:999px; margin:.1rem .2rem .1rem 0; white-space:nowrap;
+  }
+  .flag-chip.bug{background:var(--bug-soft); color:var(--bug);}
+  .flag-chip.klaerung{background:var(--klaerung-soft); color:var(--klaerung);}
+  .flag-chip.prio{background:var(--prio-soft); color:var(--prio);}
+  .flag-chip.neutral{background:var(--neutral-soft); color:var(--neutral);}
+  td.bemerkung{min-width:190px;}
+  .bemerkung-input{
+    width:100%; font:inherit; font-size:.85rem; padding:.35rem .5rem;
+    border:1px solid var(--line); border-radius:6px; background:var(--paper); color:var(--ink);
+    resize:vertical; min-height:2.1rem;
+  }
+  .bemerkung-input:focus{border-color:var(--accent);}
+  .bemerkung-saved{font-size:.68rem; color:var(--focus); opacity:0; transition:opacity .3s;}
+  .bemerkung-saved.show{opacity:1;}
+
+  tr.detail-row{display:none;}
+  tr.detail-row.open{display:table-row;}
+  tr.detail-row td{
+    background:var(--paper-2); border-bottom:1px solid var(--line);
+    padding:.75rem 1rem 1rem; font-size:.86rem; line-height:1.55; color:var(--ink-soft);
+  }
+  tr.detail-row .detail-inner{max-width:70ch;}
+  tr.detail-row .note{margin-top:.5rem; font-style:italic;}
+  tr.detail-row .raw-status{
+    margin-top:.6rem; font-family:var(--font-mono); font-size:.76rem; opacity:.7;
+  }
+  tr.item-row.hidden, tr.detail-row.force-hidden{display:none;}
+
+  .legend{
+    padding:.6rem 1.25rem 0; font-size:.78rem; color:var(--ink-soft);
+    display:flex; gap:1rem; flex-wrap:wrap;
+  }
+  .legend span{display:inline-flex; align-items:center; gap:.3rem;}
+
+  .footnote{
+    padding:1rem 1.25rem 2rem; font-size:.78rem; color:var(--ink-soft); max-width:70ch;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .bemerkung-saved{transition:none;}
+  }
+</style>
+
+<div class="cover">
+  <h1>Backlog — Haushaltskasse</h1>
+  <span class="sub">Kästchen-Board · 5 Reifegrad-Stufen je Zeile</span>
+  <div class="version-badge"><span>⛁</span><b id="version-num">v2.8</b><span class="stand">· Stand 2026-07-16</span></div>
+</div>
+
+<div class="summary" id="summary"></div>
+
+<div class="legend">
+  <span>💡 Idee</span><span>📐 Designed</span><span>🔨 Entwickelt</span><span>🚀 Deployed</span><span>👁 Validiert</span>
+  <span style="margin-left:auto">Kästchen = erreichte Stufe (kumulativ), Ring = aktuelle Stufe</span>
+</div>
+
+<div class="filters">
+  <input type="search" id="search" placeholder="Suche: Nr, Bereich, Titel …">
+  <select id="bereich-filter"><option value="">Alle Bereiche</option></select>
+  <button class="chip-toggle" data-stage="0" aria-pressed="false">💡 Idee</button>
+  <button class="chip-toggle" data-stage="1" aria-pressed="false">📐 Designed</button>
+  <button class="chip-toggle" data-stage="2" aria-pressed="false">🔨 Entwickelt</button>
+  <button class="chip-toggle" data-stage="3" aria-pressed="false">🚀 Deployed</button>
+  <button class="chip-toggle" data-stage="4" aria-pressed="false">👁 Validiert</button>
+  <button class="chip-toggle c-bug" data-flag="bug" aria-pressed="false">🐞 Bug</button>
+  <button class="chip-toggle c-klaerung" data-flag="klaerung" aria-pressed="false">❓ Klärung</button>
+  <button class="chip-toggle c-prio" data-flag="prio" aria-pressed="false">⭐ Priorität</button>
+  <button class="reset-btn" id="reset">Filter zurücksetzen</button>
+  <span class="count-note" id="count-note"></span>
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Nr</th>
+      <th>Bereich</th>
+      <th>Titel</th>
+      <th class="stage-col" title="Idee">💡</th>
+      <th class="stage-col" title="Designed">📐</th>
+      <th class="stage-col" title="Entwickelt">🔨</th>
+      <th class="stage-col" title="Deployed">🚀</th>
+      <th class="stage-col" title="Validiert">👁</th>
+      <th>Flags</th>
+      <th>Bemerkung</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+
+<p class="footnote">
+  Quelle: <code>haushaltskasse/docs/BACKLOG.md</code> v2.8 (2026-07-16), 57 Positionen. Die Spalte
+  <strong>Bemerkung</strong> ist frei editierbar und wird nur lokal in diesem Browser gespeichert
+  (localStorage) — sie fließt nicht automatisch ins Backlog-Dokument zurück. Details je Zeile
+  über „▸ Details“ aufklappbar (Umsetzungsweise + Original-Reifegradtext).
+</p>
+
+<script>
+(function(){
+  var STAGES = ['Idee','Designed','Entwickelt','Deployed','Validiert'];
+  var STAGE_ICONS = ['💡','📐','🔨','🚀','👁'];
+  var FLAG_META = {
+    bug:{icon:'🐞',label:'Bug',cls:'bug'},
+    klaerung:{icon:'❓',label:'Klärung offen',cls:'klaerung'},
+    prio:{icon:'⭐',label:'Priorität',cls:'prio'},
+    umbau:{icon:'🔄',label:'Umbau geplant',cls:'neutral'},
+    design:{icon:'🎨',label:'Design offen',cls:'neutral'}
+  };
+
+  function md(s){
+    return s
+      .replace(/\[([^\]]+)\]\([^)]+\)/g,'<code>$1</code>')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>');
+  }
+
+  // nr, bereich, title, detail, stage(0-4), flags[], note, rawStatus
+  var ITEMS = [
+    [1,'Deploy','App online von überall (HTTPS, Login)','Azure Container Apps, scale-to-zero, Image aus ACR `hhkassec1k7wx`, DB Azure-Postgres',4,[],'','👁 Validiert'],
+    [2,'Auth','Login-Schutz `joerg` + Passwort','Session-Cookie + bcrypt',4,[],'','👁 Validiert'],
+    [3,'Rücklagen','**Modell A**: Topf je Unterkategorie, Saldierung geht auf','Migration `allgemein_toepfe.py`: NULL-Rücklagen → „Allgemein“-Topf je Kategorie',4,[],'','👁 Validiert'],
+    [4,'Buchungen','**B1** Saldo/Summe über alle gefilterten Treffer','`queries.buchungen` liefert Summen + Summenzeile im Template',4,[],'','👁 Validiert'],
+    [5,'Buchungen','**B2** Freitext-Bemerkung je Buchung','Schema-Spalte `bemerkung` + Endpoint `/api/buchung/{id}/bemerkung` + editierbare Zelle',4,[],'','👁 Validiert'],
+    [6,'Bug','**Dezimal-Fehler bei Posten** (Beträge ×100 beim Editieren)','`_parse_euro` neu: letzter `.`/`,` = Dezimaltrenner (beide Notationen)',4,[],'','👁 Validiert'],
+    [7,'Infra','Deploy-Fix (charmap-Crash, `:latest` erzeugt keine neue Revision)','`az acr build --no-logs`; Update per **Image-Digest** statt Tag',4,[],'','👁 Validiert'],
+    [8,'Übersicht','**U1** Merkzettel als eigene Box mit Einzelposten','Neue Spalte `vermoegensposten.gruppe`, eigene Box + Summe',4,[],'','👁 Validiert'],
+    [9,'Übersicht','**U2** transparente Saldo-Herleitung (Wasserfall)','**Konkret (User 2026-07-15):** Zeilen mit €: Konten − Rücklagen − Merkzettel = **Frei verfügbar (Liquidität nach Reservierung)**; dann + Forderungen + Posten = Haushalts-Saldo; muss exakt zu den Tabellen aufgehen. **Bug dabei:** aktuelle Rechnung zählt „Posten“ inkl. Merkzettel, zeigt sie aber getrennt → Zahl geht nicht auf („Posten fehlen“). Forderungen-Vorzeichen bestätigen (+/−)',2,['prio'],'Wasserfall geht auf, Merkzettel sichtbar; Forderungen als + gebaut — 1-Zeile flip-bar','⭐ 🔨 Entwickelt'],
+    [10,'Übersicht','**U3** Monatsablauf-Block (Soll vs. Ist, klappbar)','Neuer Accordion-Block, `ruecklagen_baum()` wiederverwenden (verwandt mit #39)',1,[],'','📐 Designed'],
+    [11,'Übersicht','**U4** stichtagsbezogener Gesamtsaldo','Buchungen exakt per `datum_wert≤Stichtag`; Posten zeitlos-konstant + gekennzeichnet.',4,[],'Rechnet korrekt; Abweichung zu KPI-Kacheln ist deren Fehler → #52','👁 Validiert'],
+    [12,'Rücklagen','**R1** Doppelklick aufs Nebenbuch → Rücklagen-/Gegenbuchungen mit laufendem Saldo (altes Kto-Blatt), optional Filter Unterkategorie','Getrennte Nebenbuch-Sicht (`buchungsart=\'ruecklage\'`) via `/nebenbuch/{id}`, `queries.nebenbuch()`',4,[],'','👁 Validiert'],
+    [13,'Rücklagen','**R4** „+ zurücklegen / − entnehmen“ je Topf (= ein-/ausbuchen)','Neuer Endpoint → manuelle `ruecklage`-Buchung (+/−)',1,[],'','📐 Designed'],
+    [14,'Rücklagen/Config','**R3** „Soll“ nur an EINER Stelle editierbar (Config), Rücklagen read-only','Rücklagen-Soll read-only; Editieren nur in Config',4,[],'','👁 Validiert'],
+    [15,'Rücklagen','Saldierung nach Migration prüfen (Bug-Report „Salden Kappes“)','Nach Hard-Refresh verifizieren; sonst gezielt nachsehen',0,['bug'],'','🐞 offen'],
+    [16,'Buchungen','Posten/Rücklagen in Buchungsliste verwirrend','Erklären/kennzeichnen; via B3 ausgeblendet',0,['klaerung'],'','❓ Klärung'],
+    [17,'Buchungen','**B3** Buchungsliste standardmäßig nur reale Buchungen · **B4** besser filtern','Default nur echte Konten, Umschalter „inkl. Rücklagen“; B4-Filter erweitern',4,[],'B3 erledigt · B4 (Filter-Erweiterung) noch 💡 Idee','👁 B3 Validiert · 💡 B4'],
+    [18,'Config','**C1** Config-Seite einklappbar (Accordion)','Klappbare Nebenbücher (via #39 umgesetzt)',4,[],'','👁 Validiert'],
+    [19,'Einnahmen','**E1** Einnahmen explizit (in Monatssaldo)','Aktueller Stand via `ist_einnahme` vom User geprüft; wird trotzdem ersetzt → Einnahme über Vorzeichen (s. #47), „Einnahmen“ kein Topf (#46)',4,['umbau'],'Wird durch #46/#47 ersetzt','👁 Validiert → 🔄 Umbau'],
+    [20,'Kategorien','**K1** schlauere Kategorien/Unterkategorien','KI-gestützt, lernende `mapping_regeln`, Vorschläge bestätigen. Basis steht (#50): 64 Regeln aktiv, Klarnamen live → hier nur noch KI-Vorschlag + Bestätigen',0,[],'','💡 Idee'],
+    [21,'Analyse','**P2** freie Query + Pivot-Ausbau','Read-only SQL-Konsole und/oder KI-Prompt→SQL; Pivot erweitern',0,[],'','💡 Idee'],
+    [22,'Import','**I1** Import neuer Umsätze über die Weboberfläche','CSV-Upload → `pipeline.py`, dedupe, kategorisieren, Gegenbuchungen; Amazon noch `.xls`',3,['prio'],'','⭐ 🚀 Deployed'],
+    [23,'Betrieb','**V1a** Sichtbare Versionsnummer — welcher Stand ist gerade live?','Footer auf jeder Seite: Git-SHA (kurz) + Build-/Deploy-Zeit + Container-Revision, aus Env-Vars (`--set-env-vars APP_VERSION=$(git rev-parse --short HEAD)`), plus `/health` gibt dieselbe Info als JSON zurück.',2,['prio'],'Footer + /health entwickelt; Deploy muss APP_VERSION setzen — heute (2026-07-16) am PC gesetzt und im Footer/`/health` bestätigt','⭐ 🔨 Entwickelt'],
+    [ '23b','Betrieb','**V1b** automatisierte Tests','pytest für Queries/Saldo-Formeln/Endpoints, damit Änderungen abgesichert sind (heute alles manuell gegen die echte DB geprüft)',0,[],'','💡 Idee'],
+    [24,'Betrieb','**P0.3** Azure-Kostenanzeige in der Seite','Cost-Management-API / Schätzung + Warnschwelle',0,[],'','💡 Idee'],
+    [25,'Analyse','**U5** Veränderung Stichtag X → Y (Mittelfluss-Überblick), Default nach Import','Delta = Saldo(Y)−Saldo(X) + Zufluss/Abfluss je Konto/Kategorie/Topf; nach Import X=vor-Import, Y=jetzt',1,[],'','📐 Designed'],
+    [26,'Zeitraum','Start-Abgrenzungsdatum konfigurierbar (statt hart 01.01.2025)','`STICHTAG` in Config editierbar (z. B. 01.01.2026), im Footer sichtbar; Reports-Default',4,[],'','👁 Validiert'],
+    [27,'Rücklagen','Zufluss/Abfluss-Spalten ENTFERNEN — falsch & nicht gebraucht; nur Ist-Saldo je Topf','Spalten raus aus `ruecklagen_baum`/Template; Bewegungen über R1',4,[],'','👁 Validiert'],
+    [28,'Rücklagen','Untertöpfe richtig befüllen (nicht alles in „Allgemein“)','2026-07-16 am PC: %-Ansatz erneut verworfen (Jörg: „das ist zuletzt schiefgegangen“) — deckt sich mit der bereits verworfenen %-Schätzung bei den Soll-Werten (2026-07-15). `workflows/allgemein_verteilen.py` ist fertig gebaut (netto-neutrale Umbuchung Allgemein→Untertopf, Cent-genau, idempotent, Trockenlauf default) und der Trockenlauf am PC lief sauber (Auto 1.371,75€, Sport 456€, Füchschen 14.620,37€, TK 3.524,69€ — nur `--write` **nicht ausgeführt**). Statt fester %-Tabelle datenbasiert tiefer gehen: je Unterkategorie aus der echten Zahlungshistorie (Rhythmus/Fälligkeit je Vertrag) herleiten, analog zur bereits validierten Soll-Formel `Ziel-Bestand = Jahresbetrag × Monate seit letzter Zahlung ÷ 12`.',0,['klaerung'],'Offen: Urlaub (reisebasiert, nicht verteilt) · Garten (unter „Inst“) · fifi/Robbie (Sport)','❓ Klärung'],
+    [29,'Nachbau','Verlauf-, Schulden- & Fuchsbau-Blatt nachbauen (aus alter Excel)','Je ein Bereich: Verlauf (Salden-Zeitreihe), Schulden (Kreditübersicht), Fuchsbau (Immobilie)',0,[],'','💡 Idee'],
+    [30,'Zeitraum/Config','Verlauf etc. pro Jahr fortschreiben','Jahresweise Fortschreibung/Snapshots je Nebenbuch, über Config gesteuert',0,[],'','💡 Idee'],
+    [31,'Analyse','Diagramme','Grafische Auswertungen (Verlauf, Ausgaben je Kat, Monatsvergleich); Skill `dataviz`, CSP-konform',0,[],'','💡 Idee'],
+    [32,'Übersicht','Stichtage für Merkzettel','Merkzettel-/Vermögensposten mit Stichtag/Fälligkeit (baut auf U1/U4 auf)',0,[],'','💡 Idee'],
+    [33,'Betrieb','Backup','Regelmäßige DB-Sicherung (pg_dump / Azure-Backup) + Rückspielweg',0,[],'','💡 Idee'],
+    [34,'Export','Export auf JEDER Sicht (Übersicht · Rücklagen · Reports · Buchungen)','Auf CSV umgestellt (User 2026-07-15) — `dashboard/export.py`, Endpoints `/export/{uebersicht,ruecklagen,reports,buchungen}.csv`, ⬇-CSV-Link in allen 4 Templates. Excel-tauglich: Semikolon + UTF-8-BOM + deutsche Dezimalkommas.',2,[],'getestet, Deploy offen','🔨 Entwickelt'],
+    [35,'Datenmodell','Logik für Großeltern nachbauen (Pflegekonto/Kredit)','Separater Pflegekonto-Bereich + Kredit Großeltern (−135.000), getrennte Buchführung',0,[],'','💡 Idee'],
+    [36,'Demo','Anonymisierte Show-Site','Öffentliche Demo mit anonymisierten/synthetischen Daten',0,[],'','💡 Idee'],
+    [37,'Konten','Eigenes Girokonto in die Berechnungen aufnehmen','Persönliches Girokonto als reales Konto ergänzen (Startsaldo + Import)',0,[],'','💡 Idee'],
+    [38,'Getrennte Sicht','Pendant „Großeltern“ zur Haushaltskasse','Ähnliche, reduzierte Logik, komplett getrennt (eigener Bereich/Datensatz); baut auf #35 auf',0,[],'','💡 Idee'],
+    [39,'Config','Config = monatliche Finanzfluss-Sicht (Einnahmen − Ausgaben = Monats-Saldo, eingeklappt)','`config_fluss`: Einnahmen=Kategorien mit Einnahme-Unterkats / Ausgaben=\'ruecklage\'; Einnahme-Kennzeichen `ist_einnahme`; aufklappen=Pflege',4,['design'],'Design offen → #45','👁 Validiert · 🎨 Design offen'],
+    [40,'Finanzplanung','10-Jahres-Verlaufsplanung — Absprung aus Config; füllbare Tabelle + Diagramm','Jahres-Plan-Tabelle (neues Datenmodell) + Chart (dataviz); Design später',0,[],'nicht jetzt','💡 Idee (nicht jetzt)'],
+    [41,'Rücklagen','Nebenbuch-Ansicht sortierbar (Default: neueste oben)','Klickbare Spaltenköpfe in `nebenbuch.html` / `queries.nebenbuch` (NB_SORT), Saldo bleibt chronologisch',4,[],'','👁 Validiert'],
+    [42,'Import','🐞 Dubletten beim Import (DKB/Amazon) — Dedupe versagte, weil Empfänger quelle-abhängig geschrieben ist','Fix v2: Dedupe-Schlüssel nur datum+betrag+konto (Multiset, Empfänger raus); DKB/Amazon bereinigt (DKB wieder 9.584,90)',3,[],'','🚀 Deployed'],
+    [43,'Buchungen','Import-Zeitstempel je Buchung anzeigen','`queries.buchungen` liefert quelle+erstellt_am → Spalte „Quelle / importiert“',3,[],'','🚀 Deployed'],
+    [44,'Buchungen','Stichtagsbasierte laufende Saldierung in der Buchungsliste','Laufender Konto-Saldo (chronologisch); knifflig wg. Sortierung/Paginierung/mehrere Konten — Design offen',0,[],'Design offen','💡 Idee'],
+    [45,'Config','🎨 Config-Design-Anpassungen (nach Validierung #39)','Darstellung/Layout der Monatsfluss-Sicht nachbessern — konkrete Punkte vom User noch offen',0,[],'','💡 offen'],
+    [46,'Datenmodell','„Einnahmen“ ist KEIN Rücklagen-Topf (User-Entscheid)','Kategorie „Einnahmen“ von `zaehlt_als=\'ruecklage\'` gelöst (kein Topf, keine Gegenbuchung); Einnahmen = positive Realbuchungen. Umgesetzt in `gegenbuchung.ROLLE_AUSGABE=("Einnahmen","Kinder")` → Rolle wird \'ausgabe\', keine Spiegelung. `gegenbuchung --write` am 2026-07-16 am PC gefahren, Saldo-Kontrolle ok',3,[],'Heute (2026-07-16) live geschrieben','🚀 Deployed'],
+    [47,'Config','`ist_einnahme`-Häkchen entfernen — Einnahme am Vorzeichen erkennbar','Häkchen raus; Einnahme/Ausgabe im Monatsplan über Vorzeichen des Soll-Betrags (Gehalt = +). `config_fluss` klassifiziert per Vorzeichen. Annahme (am PC prüfen): negativ/0-Soll-„Ausgabe“-Kategorien bleiben in „Weitere“ (zählen NICHT im Saldo)',2,[],'','🔨 Entwickelt'],
+    [48,'Unterkategorien','„S-Auto/S-Vers“ umbenennen (sprechend) + „Allgemein“ als Rest-Topf behalten','Weitgehend erledigt via #50 (Klarnamen live). Rest: die S-*-Töpfe selbst leben noch (FB-Migrations-Buchungen ohne Empfänger, keine Regel greift) — brauchen KI-Zuordnung (#20) oder manuell',2,[],'Rest offen: S-*-Töpfe brauchen KI-Zuordnung (#20)','🔨 Rest offen'],
+    [49,'Kategorien','Cleanup Kategorien (User-Entscheid)','(a) 3× „Kindergeld“ → 1, als Einnahme (Vorzeichen +, unter Füchschen); (b) Kategorie „Kinder“ entfernen; (c) Unterkategorie „Sparen/Taschengeld“ → Füchschen. `workflows/kategorie_cleanup.py`: idempotent, Trockenlauf default. `--write` am 2026-07-16 am PC gefahren, Saldo-Kontrolle ok',3,[],'Heute (2026-07-16) live geschrieben','🚀 Deployed'],
+    [50,'Kategorien','Sprechende Unterkategorien + Mapping — Klarnamen statt Excel-Kürzel','`workflows/unterkategorien.py`. Live in der DB (2026-07-15): Telefon 23→7 Unterkats, Case-Dubletten zusammengeführt; `mapping_regeln` erstmals befüllt (64 aktiv), 335 Buchungen retroaktiv zugeordnet; Kategorie-Salden unverändert. Setzt #48 um, Basis für #20/#28',2,[],'DB live, Deploy offen','🔨 Entwickelt'],
+    [51,'Übersicht','🐞 „Gesamtvermögen (netto)“ ist irreführend (−328.487 €) — Haus fehlt als Vermögensposten','Langfrist-Posten sind ausschließlich Schulden (DB-Kredit, Großeltern, KfW, Riester); Immobilienwert nirgends erfasst → Kachel ausblenden oder Hausposten pflegen (hängt an #29)',0,['bug'],'','🐞 offen'],
+    [52,'Übersicht','🐞 KPI-Kacheln vs. Stichtagssaldo driften (−15.122,30 ↔ −15.869,16)','Kacheln zählen alle Buchungen, Stichtags-Box nur bis Datum. Ursache: 11 Zuführungen sind auf Monatsende vordatiert (31.07.2026, +11.373,14). Fix: Kacheln ebenfalls stichtaggenau auf „heute“ rechnen',0,['bug'],'','🐞 offen'],
+    [53,'Betrieb','`__TEST_POSTEN__` in der Produktiv-DB (1.234,56)','Steht auf `aktiv=FALSE`, zählt nicht mit — trotzdem löschen',0,[],'','💡 Idee'],
+    [54,'Rücklagen','„Haushaltskasse“ als EIGENTOPF (User-Entscheid, Kategorie „0“)','`gegenbuchung.ROLLE_AUSGABE` ohne Haushaltskasse → Rolle wird `ruecklage`, zählt im Saldo, neue Buchungen erzeugen Gegenbuchung. `gegenbuchung --write` am 2026-07-16 am PC gefahren — Mechanik live.',3,[],'Mechanik live; Start-Topfsaldo + monatliche Zuführung noch offen','🚀 Deployed (Feinschliff offen)'],
+    [55,'Import/Kategorien','🐞 Import nutzt die gelernten `mapping_regeln` NICHT — nur generische STARTER_RULES','Kredite (Deutsche Bank/deuba/kfw) blieben unzugeordnet: STARTER_RULES kennt nur DKB-Überziehungszins, die 64 gelernten DB-Regeln wurden beim Import ignoriert. Fix: `kategorisiere` zusätzlich gegen `mapping_regeln` (DB) laufen lassen; Reihenfolge Regeln→Starter→KI',2,['prio'],'`web_import._db_regeln`/`_match_db`, Vorrang vor STARTER; getestet Judo→Sport','⭐ 🔨 Entwickelt'],
+    [56,'Konten','Position „Bar“ (Bargeldbestand) — reales Konto','Konto „Bar“, im Realsaldo. Abhebung = Umbuchung Giro→Bar (netto 0, auto-erkannt oder manuell). Bargeld-Ausgabe = manuelle Realbuchung Bar −, Kategorie Haushaltskasse',2,[],'Konto Bar auto, `/api/bar/abheben`+`/ausgeben`, Übersicht-Karte; Umbuchung+Topf-Verzehr getestet','🔨 Entwickelt']
+  ];
+
+  var tbody = document.getElementById('tbody');
+  var bereichSet = {};
+  var remarksKey = 'hhkasse-backlog-remarks-v1';
+  var remarks = {};
+  try{ remarks = JSON.parse(localStorage.getItem(remarksKey) || '{}'); }catch(e){ remarks = {}; }
+
+  function saveRemarks(){
+    localStorage.setItem(remarksKey, JSON.stringify(remarks));
+  }
+
+  var rows = [];
+
+  ITEMS.forEach(function(item){
+    var nr=item[0], bereich=item[1], title=item[2], detail=item[3], stage=item[4], flags=item[5], note=item[6], rawStatus=item[7];
+    bereichSet[bereich] = true;
+
+    var tr = document.createElement('tr');
+    tr.className = 'item-row';
+    tr.dataset.nr = nr; tr.dataset.bereich = bereich; tr.dataset.stage = stage;
+    tr.dataset.flags = flags.join(',');
+    tr.dataset.search = (nr+' '+bereich+' '+title+' '+detail).toLowerCase();
+
+    var tdNr = document.createElement('td'); tdNr.className='nr'; tdNr.textContent = '#'+nr;
+    var tdBereich = document.createElement('td'); tdBereich.className='bereich';
+    tdBereich.innerHTML = '<span class="bereich-chip">'+bereich+'</span>';
+
+    var tdTitel = document.createElement('td'); tdTitel.className='titel';
+    var detailId = 'detail-'+nr;
+    tdTitel.innerHTML = '<div class="titel-row"><button class="detail-toggle" data-target="'+detailId+'" aria-expanded="false">▸</button>'+
+      '<span class="titel-text">'+md(title)+'</span></div>';
+
+    tr.appendChild(tdNr); tr.appendChild(tdBereich); tr.appendChild(tdTitel);
+
+    for(var i=0;i<5;i++){
+      var td = document.createElement('td'); td.className='stage-col';
+      var pip = document.createElement('span');
+      pip.className = 'pip' + (i<=stage ? ' checked' : '') + (i===stage ? ' current' : '');
+      pip.title = STAGE_ICONS[i]+' '+STAGES[i];
+      pip.setAttribute('role','img');
+      pip.setAttribute('aria-label', STAGES[i] + (i<=stage ? ' erreicht' : ' offen'));
+      pip.textContent = i<=stage ? '✓' : '';
+      td.appendChild(pip);
+      tr.appendChild(td);
+    }
+
+    var tdFlags = document.createElement('td'); tdFlags.className='flags';
+    tdFlags.innerHTML = flags.map(function(f){
+      var m = FLAG_META[f];
+      return '<span class="flag-chip '+m.cls+'">'+m.icon+' '+m.label+'</span>';
+    }).join('');
+    tr.appendChild(tdFlags);
+
+    var tdBem = document.createElement('td'); tdBem.className='bemerkung';
+    var savedVal = remarks[nr] || '';
+    tdBem.innerHTML = '<textarea class="bemerkung-input" rows="1" data-nr="'+nr+'" placeholder="Notiz …">'+
+      savedVal.replace(/</g,'&lt;') + '</textarea><div class="bemerkung-saved">gespeichert</div>';
+    tr.appendChild(tdBem);
+
+    tbody.appendChild(tr);
+
+    var detailTr = document.createElement('tr');
+    detailTr.className='detail-row'; detailTr.id=detailId;
+    var detailTd = document.createElement('td'); detailTd.colSpan = 10;
+    var inner = '<div class="detail-inner">'+md(detail);
+    if(note){ inner += '<div class="note">'+md(note)+'</div>'; }
+    inner += '<div class="raw-status">Original-Reifegrad: '+rawStatus+'</div></div>';
+    detailTd.innerHTML = inner;
+    detailTr.appendChild(detailTd);
+    tbody.appendChild(detailTr);
+
+    rows.push({tr:tr, detailTr:detailTr, nr:nr, bereich:bereich, stage:stage, flags:flags, search:tr.dataset.search});
+  });
+
+  // detail toggles
+  tbody.addEventListener('click', function(e){
+    var btn = e.target.closest('.detail-toggle');
+    if(!btn) return;
+    var target = document.getElementById(btn.dataset.target);
+    var open = target.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open);
+    btn.textContent = open ? '▾' : '▸';
+  });
+
+  // remarks persistence
+  tbody.addEventListener('input', function(e){
+    var ta = e.target.closest('.bemerkung-input');
+    if(!ta) return;
+    remarks[ta.dataset.nr] = ta.value;
+    saveRemarks();
+    var note = ta.parentElement.querySelector('.bemerkung-saved');
+    note.classList.add('show');
+    clearTimeout(note._t);
+    note._t = setTimeout(function(){ note.classList.remove('show'); }, 1200);
+  });
+
+  // bereich filter options
+  var bereichSelect = document.getElementById('bereich-filter');
+  Object.keys(bereichSet).sort().forEach(function(b){
+    var opt = document.createElement('option'); opt.value=b; opt.textContent=b;
+    bereichSelect.appendChild(opt);
+  });
+
+  // summary stats
+  var summaryEl = document.getElementById('summary');
+  var stageCounts = [0,0,0,0,0];
+  var flagCounts = {bug:0, klaerung:0, prio:0};
+  rows.forEach(function(r){
+    stageCounts[r.stage]++;
+    r.flags.forEach(function(f){ if(flagCounts[f]!==undefined) flagCounts[f]++; });
+  });
+  var summaryHtml = '';
+  STAGES.forEach(function(s,i){
+    summaryHtml += '<button type="button" class="stat" data-stage="'+i+'" aria-pressed="false">'+STAGE_ICONS[i]+' '+s+' <b>'+stageCounts[i]+'</b></button>';
+  });
+  summaryHtml += '<button type="button" class="stat flag-bug" data-flag="bug" aria-pressed="false">🐞 Bugs offen <b>'+flagCounts.bug+'</b></button>';
+  summaryHtml += '<button type="button" class="stat flag-klaerung" data-flag="klaerung" aria-pressed="false">❓ Klärung offen <b>'+flagCounts.klaerung+'</b></button>';
+  summaryHtml += '<span class="stat">Gesamt <b>'+rows.length+'</b></span>';
+  summaryEl.innerHTML = summaryHtml;
+
+  // filtering
+  var state = {search:'', bereich:'', flags:{}, stages:{}};
+  var countNote = document.getElementById('count-note');
+
+  function applyFilters(){
+    var visible = 0;
+    var activeStages = Object.keys(state.stages).filter(function(k){ return state.stages[k]; });
+    rows.forEach(function(r){
+      var match = true;
+      if(state.search && r.search.indexOf(state.search) === -1) match = false;
+      if(state.bereich && r.bereich !== state.bereich) match = false;
+      if(activeStages.length && activeStages.indexOf(String(r.stage)) === -1) match = false;
+      Object.keys(state.flags).forEach(function(f){
+        if(state.flags[f] && r.flags.indexOf(f) === -1) match = false;
+      });
+      r.tr.classList.toggle('hidden', !match);
+      r.detailTr.classList.toggle('force-hidden', !match);
+      if(match) visible++;
+    });
+    countNote.textContent = visible + ' von ' + rows.length + ' Positionen';
+  }
+
+  document.getElementById('search').addEventListener('input', function(e){
+    state.search = e.target.value.trim().toLowerCase();
+    applyFilters();
+  });
+  bereichSelect.addEventListener('change', function(e){
+    state.bereich = e.target.value;
+    applyFilters();
+  });
+
+  function syncPressed(attr, key, val){
+    document.querySelectorAll('['+attr+'="'+key+'"]').forEach(function(el){
+      el.setAttribute('aria-pressed', String(val));
+    });
+  }
+
+  document.body.addEventListener('click', function(e){
+    var flagBtn = e.target.closest('[data-flag]');
+    if(flagBtn){
+      var f = flagBtn.dataset.flag;
+      var pressed = !(state.flags[f]);
+      state.flags[f] = pressed;
+      syncPressed('data-flag', f, pressed);
+      applyFilters();
+      return;
+    }
+    var stageBtn = e.target.closest('[data-stage]');
+    if(stageBtn){
+      var s = stageBtn.dataset.stage;
+      var pressedS = !(state.stages[s]);
+      state.stages[s] = pressedS;
+      syncPressed('data-stage', s, pressedS);
+      applyFilters();
+    }
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    state = {search:'', bereich:'', flags:{}, stages:{}};
+    document.getElementById('search').value = '';
+    bereichSelect.value = '';
+    document.querySelectorAll('[data-flag], [data-stage]').forEach(function(btn){
+      btn.setAttribute('aria-pressed','false');
+    });
+    applyFilters();
+  });
+
+  applyFilters();
+})();
+</script>

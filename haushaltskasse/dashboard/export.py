@@ -40,8 +40,6 @@ def uebersicht_zeilen(u: dict, stand: str) -> list[Zeile]:
     z.append(["Kennzahl", "Betrag €"])
     z.append(["Freier Haushalts-Saldo (Liquidität nach Reservierungen)", euro(u["saldo_cent"])])
     z.append(["Realsaldo (echtes Geld auf allen Konten)", euro(u["realsaldo_cent"])])
-    z.append(["Gesamtvermögen (Konten + Posten + Langfrist, OHNE Immobilie)",
-              euro(u["gesamtvermoegen_cent"])])
     z.append(["Rücklagen gebunden", euro(u["ruecklagen_cent"])])
     z.append(["Forderungen (Natalie/Jörg)", euro(u["forderung_cent"])])
     z += [[], ["Konten", "Betrag €"]]

@@ -12,9 +12,12 @@
   <div class="card kpi"><div class="label">Realsaldo (Konten)</div>
     <div class="val {{ 'pos' if u.realsaldo_cent>=0 else 'neg' }}">{{ u.realsaldo_cent|euro }}</div>
     <div class="small muted">echtes Geld auf allen Konten</div></div>
-  <div class="card kpi"><div class="label">Gesamtvermögen (netto)</div>
-    <div class="val {{ 'pos' if u.gesamtvermoegen_cent>=0 else 'neg' }}">{{ u.gesamtvermoegen_cent|euro }}</div>
-    <div class="small muted">Konten + alle Posten (inkl. Haus/Kredite)</div></div>
+  <div class="card kpi"><div class="label">Posten</div>
+    <div class="val {{ 'pos' if u.posten_saldo_summe_cent>=0 else 'neg' }}">{{ u.posten_saldo_summe_cent|euro }}</div>
+    <div class="small muted">ETF, Anlage Großeltern … (im Saldo)</div></div>
+  <div class="card kpi"><div class="label">Merkzettel</div>
+    <div class="val {{ 'neg' if u.merkzettel_summe_cent<0 else 'muted' }}">{{ u.merkzettel_summe_cent|euro }}</div>
+    <div class="small muted">vorgemerkte künftige Kosten</div></div>
   <div class="card kpi"><div class="label">Rücklagen gebunden</div>
     <div class="val">{{ u.ruecklagen_cent|euro }}</div></div>
   <div class="card kpi"><div class="label">Forderungen (Natalie/Jörg)</div>
@@ -22,7 +25,7 @@
 </div>
 
 <div class="card" style="margin-bottom:16px">
-  <h2 style="margin-top:0">Herleitung: Liquidität → frei verfügbar → Haushalts-Saldo</h2>
+  <h2 style="margin-top:0">Herleitung: Liquidität → Haushalts-Saldo</h2>
   <table style="max-width:520px">
     <tr><td>Konten (echtes Geld, alle Konten)</td>
         <td class="num">{{ u.konten_cent|euro }}</td></tr>
@@ -30,9 +33,6 @@
         <td class="num neg">{{ (-u.ruecklagen_cent)|euro }}</td></tr>
     <tr><td>Merkzettel (vorgemerkte künftige Kosten)</td>
         <td class="num {{ 'neg' if u.merkzettel_summe_cent<0 else 'muted' }}">{{ u.merkzettel_summe_cent|euro }}</td></tr>
-    <tr style="border-top:2px solid var(--border)">
-        <td><b>= Frei verfügbar</b> <span class="small muted">(Liquidität nach Reservierung)</span></td>
-        <td class="num"><b class="{{ 'pos' if u.frei_verfuegbar_cent>=0 else 'neg' }}">{{ u.frei_verfuegbar_cent|euro }}</b></td></tr>
     <tr><td>+ Forderungen (Natalie/Jörg schulden der Kasse)</td>
         <td class="num">{{ u.forderung_cent|euro }}</td></tr>
     <tr><td>+ Posten im Saldo (ETF, Anlage Großeltern …)</td>
