@@ -3,9 +3,10 @@
 {% block content %}
 <h1>Config — Monatlicher Finanzfluss</h1>
 <p class="sub">Einnahmen + Forderungen − Ausgaben = Monats-Saldo. Nebenbücher sind eingeklappt; Klick
-  klappt Details &amp; Pflege auf (Soll, Unterkategorien, Rolle, Einnahme-Kennzeichen).
-  Die <b>Rolle</b> bestimmt den Block — ein Rücklagen-Topf bleibt bei den Ausgaben, auch wenn er
-  eine Einnahme-Unterkategorie hat (z. B. Füchschen/Kindergeld).</p>
+  klappt Details &amp; Pflege auf (Soll, Unterkategorien, Rolle).
+  <b>Einnahme oder Ausgabe erkennt die App am Vorzeichen des Soll-Betrags</b> (Gehalt = +).
+  Die <b>Rolle</b> bestimmt den Block — ein Rücklagen-Topf bleibt bei den Ausgaben, auch wenn
+  sein Soll positiv ist (z. B. Füchschen/Kindergeld).</p>
 
 <div class="grid kpis">
   <div class="card kpi"><div class="label">Einnahmen / Monat</div>
@@ -51,19 +52,17 @@
         </label>
       </div>
       <table>
-        <tr><th>Unterkategorie</th><th class="num">Soll/Mon</th><th>Einnahme?</th><th></th></tr>
+        <tr><th>Unterkategorie</th><th class="num">Soll/Mon</th><th></th></tr>
         {% for u in k.unterkategorien %}
         <tr>
           <td><input style="width:100%;max-width:280px" value="{{ u.name }}"
                      onchange="renameUkat({{ u.id }}, this)"></td>
           <td class="num"><input class="ruecklage-inp" value="{{ u.soll_cent|eurozahl }}"
                      onchange="saveSoll('unterkategorie', {{ u.id }}, this)"> €</td>
-          <td><label class="small"><input type="checkbox" {{ 'checked' if u.ist_einnahme }}
-                     onchange="toggleEinnahme({{ u.id }}, this)" style="width:auto"> Einnahme</label></td>
           <td class="num"><button class="ghost" onclick="delUkat({{ u.id }})">✕</button></td>
         </tr>
         {% endfor %}
-        <tr><td colspan="4">
+        <tr><td colspan="3">
           <div class="toolbar" style="margin:4px 0 0">
             <input id="nu-{{ k.id }}" placeholder="Neue Unterkategorie…" style="flex:1;min-width:180px">
             <button onclick="addUkat({{ k.id }})">+ Unterkategorie</button>
@@ -78,7 +77,7 @@
 <div class="card scroll" style="margin-bottom:6px"><table>
   {% for k in fluss.einnahmen %}{{ kat_block(k, k.einnahme_soll_cent, 'pos') }}{% endfor %}
   {% if not fluss.einnahmen %}<tr><td colspan="2" class="muted small">Noch keine Einnahme-Position.
-    Klapp z. B. „Jörg" auf und hake „Einnahme" bei Gehalt an.</td></tr>{% endif %}
+    Trag bei einer Kategorie (Rolle „Ausgabe/kein Topf") ein positives Soll ein — z. B. Gehalt.</td></tr>{% endif %}
   <tr><td><b>Summe Einnahmen</b></td><td class="num pos"><b>{{ fluss.einnahmen_summe_cent|euro }}</b></td></tr>
 </table></div>
 
@@ -134,10 +133,6 @@ async function saveDefaultUkat(katId, sel){
 }
 async function saveSoll(ebene, id, inp){
   await postJSON('/api/'+ebene+'/'+id+'/ruecklage', {betrag: inp.value});
-  flash('gespeichert'); setTimeout(()=>location.reload(), 400);
-}
-async function toggleEinnahme(uid, cb){
-  await postJSON('/api/unterkategorie/'+uid+'/einnahme', {wert: cb.checked});
   flash('gespeichert'); setTimeout(()=>location.reload(), 400);
 }
 async function saveStichtag(inp){

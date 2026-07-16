@@ -446,51 +446,49 @@ def config_baum(cur) -> list[dict]:
 def config_fluss(cur) -> dict:
     """#39 — monatliche Finanzfluss-Sicht: Einnahmen − Ausgaben = Monats-Saldo.
 
-    Die **Rolle (`zaehlt_als`) entscheidet**, nicht das Einnahme-Häkchen — sonst rutscht ein
-    Rücklagen-Topf in die Einnahmen, nur weil er eine Einnahme-Unterkategorie hat
+    Die **Rolle (`zaehlt_als`) entscheidet zuerst**, erst danach das Vorzeichen — sonst rutscht
+    ein Rücklagen-Topf in die Einnahmen, nur weil sein Soll positiv ist
     (Füchschen/Kindergeld, User-Korrektur 2026-07-15).
 
     Ausgaben     = Nebenbücher mit Rolle 'ruecklage', Soll = Kategorie-Soll.
     Forderungen  = Rolle 'forderung' (Natalie/Jörg) — zählen im Monats-Saldo mit ihrem
                    Kategorie-Soll und Vorzeichen (User-Wunsch: im Monatsfluss mit aufnehmen).
-    Einnahmen    = übrige Kategorien mit ≥1 Einnahme-Unterkategorie; Einnahme-Soll = Σ Soll
-                   dieser Unterkategorien, ersatzweise das Kategorie-Soll, falls die
-                   Unterkategorien kein Soll tragen.
-    Weitere      = Rest (Rolle 'ausgabe' ohne Einnahme) — nur zur Pflege, zählt NICHT im Saldo.
+    Einnahmen    = übrige Kategorien mit POSITIVEM Planwert (#47: Einnahme am Vorzeichen,
+                   kein `ist_einnahme`-Häkchen mehr). Planwert = Kategorie-Soll, ersatzweise
+                   Σ Soll der Unterkategorien.
+    Weitere      = Rest (Rolle 'ausgabe' mit Soll ≤ 0) — nur zur Pflege, zählt NICHT im Saldo.
 
     Monats-Saldo = Einnahmen + Forderungen − Ausgaben.
-    Jede Kategorie trägt ALLE ihre Unterkategorien (mit Soll, ist_einnahme, quelle) fürs Aufklappen/Pflegen.
+    Jede Kategorie trägt ALLE ihre Unterkategorien (mit Soll, quelle) fürs Aufklappen/Pflegen.
     """
     cur.execute("""SELECT id, name, zaehlt_als, monatliche_ruecklage_cent, default_unterkategorie_id
                    FROM kategorien WHERE aktiv ORDER BY name""")
     kats = {i: {"id": i, "name": n, "zaehlt_als": z, "soll_cent": s, "default_ukat_id": d,
                 "unterkategorien": [], "einnahme_soll_cent": 0}
             for i, n, z, s, d in cur.fetchall()}
-    cur.execute("""SELECT id, kategorie_id, name, monatliche_ruecklage_cent, ist_einnahme, quelle
+    cur.execute("""SELECT id, kategorie_id, name, monatliche_ruecklage_cent, quelle
                    FROM unterkategorien ORDER BY name""")
-    for i, kid, n, s, ie, qu in cur.fetchall():
+    for i, kid, n, s, qu in cur.fetchall():
         if kid in kats:
             kats[kid]["unterkategorien"].append(
-                {"id": i, "name": n, "soll_cent": s, "ist_einnahme": ie, "quelle": qu})
-            if ie:
-                kats[kid]["einnahme_soll_cent"] += s
+                {"id": i, "name": n, "soll_cent": s, "quelle": qu})
 
+    # #47 — Einnahme/Ausgabe am VORZEICHEN des Soll-Betrags (Gehalt = +, geplante Ausgaben = −),
+    # kein `ist_einnahme`-Häkchen mehr. Die Rolle schlägt weiter das Vorzeichen: ein
+    # Rücklagen-Topf bleibt Ausgabe und eine Forderung bleibt Forderung — auch mit + Soll.
     einnahmen, ausgaben, forderungen, weitere = [], [], [], []
     for k in kats.values():
+        # Planwert der Kategorie: eigenes Soll, ersatzweise Summe der Unterkategorie-Solls.
+        k["plan_cent"] = k["soll_cent"] or sum(u["soll_cent"] for u in k["unterkategorien"])
         if k["zaehlt_als"] == "ruecklage":
-            ausgaben.append(k)                    # Rolle schlägt Einnahme-Häkchen
+            ausgaben.append(k)
         elif k["zaehlt_als"] == "forderung":
             forderungen.append(k)
-        elif any(u["ist_einnahme"] for u in k["unterkategorien"]):
+        elif k["plan_cent"] > 0:                   # positives Soll = Einnahme
+            k["einnahme_soll_cent"] = k["plan_cent"]
             einnahmen.append(k)
-        else:
+        else:                                      # 0/negativ: nur Pflege, zählt nicht im Saldo
             weitere.append(k)
-
-    # Trägt die Einnahme-Unterkategorie kein Soll, gilt das Kategorie-Soll — sonst zählt
-    # eine Einnahme mit 0, obwohl auf der Kategorie ein Betrag steht.
-    for k in einnahmen:
-        if not k["einnahme_soll_cent"]:
-            k["einnahme_soll_cent"] = k["soll_cent"]
 
     ein_summe = sum(k["einnahme_soll_cent"] for k in einnahmen)
     aus_summe = sum(k["soll_cent"] for k in ausgaben)

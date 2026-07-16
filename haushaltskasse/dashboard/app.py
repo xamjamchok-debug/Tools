@@ -460,18 +460,6 @@ def topf_umbuchen(u: Umbuchung):
     return {"ok": True, "cent": cent}
 
 
-class Flag(BaseModel):
-    wert: bool
-
-
-@app.post("/api/unterkategorie/{unterkategorie_id}/einnahme")
-def set_ukat_einnahme(unterkategorie_id: int, f: Flag):
-    """#39 — Unterkategorie als Einnahme-Position (Gehalt/Taschengeld) markieren/entmarkieren."""
-    with db() as conn, conn.cursor() as cur:
-        cur.execute("UPDATE unterkategorien SET ist_einnahme=%s WHERE id=%s", (f.wert, unterkategorie_id))
-    return {"ok": True}
-
-
 class Wert(BaseModel):
     wert: str
 
