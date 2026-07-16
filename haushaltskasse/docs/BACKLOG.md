@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 2.2 · Stand 2026-07-15**
+**Version 2.3 · Stand 2026-07-15**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -68,4 +68,4 @@ Bei jeder inhaltlichen Änderung dieser Datei die Version hochzählen (1.0 → 1
 | 53 | Betrieb | **`__TEST_POSTEN__` in der Produktiv-DB** (1.234,56) | Steht auf `aktiv=FALSE`, zählt nicht mit — trotzdem löschen | 💡 Idee |
 | 54 | Rücklagen | **„Haushaltskasse" als EIGENTOPF** (User-Entscheid, Kategorie „0") | `gegenbuchung.ROLLE_AUSGABE` ohne Haushaltskasse → Rolle wird `ruecklage`, zählt im Saldo, neue Buchungen erzeugen Gegenbuchung. **Wirkt nach `gegenbuchung --write` am PC.** Offen: Start-Topfsaldo + monatliche Zuführung setzen | 🔨 Code fertig (Re-Run+Deploy offen) |
 | 55 | Import/Kategorien | 🐞 **Import nutzt die gelernten `mapping_regeln` NICHT** — nur generische `STARTER_RULES` (Code) | Deshalb blieben z. B. **Kredite (Deutsche Bank/deuba/kfw) unzugeordnet**: STARTER_RULES kennt nur DKB-Überziehungszins, die 64 gelernten DB-Regeln werden beim Import ignoriert, und im Container fehlt `lokale_config`. Fix: `kategorisiere` zusätzlich gegen `mapping_regeln` (DB) laufen lassen; Reihenfolge Regeln→Starter→KI | ⭐ 🐞 offen |
-| 56 | Übersicht/Konten | **Position „Bar" fehlt** (User: muss sichtbar sein) | Bargeld als eigene Position zeigen — als **Konto „Bar"** (typ sonstiges, im Realsaldo) ODER als **Vermögensposten** (manuell gepflegt). Entscheidung offen (s. Rückfrage) | ❓ Klärung |
+| 56 | Konten | **Position „Bar"** (Bargeldbestand) — reales Konto | Konto „Bar" (typ `sonstiges`/neu `bar`), im Realsaldo. **Abhebung** = Umbuchung Giro→Bar (Giro −, Bar +, netto 0; aus Import erkennbar: „Bargeldauszahlung"/„Geldautomat"/„GA " → auto-Umbuchung, oder manuell). **Bargeld-Ausgabe** = manuelle Realbuchung Bar −, Kategorie Haushaltskasse (kein elektronisches Tracking) → braucht „Bargeld ausgegeben"-Eingabe | 📐 Designed |
