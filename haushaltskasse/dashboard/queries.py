@@ -442,28 +442,24 @@ def config_fluss(cur) -> dict:
     # #47 — Einnahme/Ausgabe am VORZEICHEN des Soll-Betrags (Gehalt = +, geplante Ausgaben = −),
     # kein `ist_einnahme`-Häkchen mehr. Die Rolle schlägt weiter das Vorzeichen: ein
     # Rücklagen-Topf bleibt Ausgabe und eine Forderung bleibt Forderung — auch mit + Soll.
-    einnahmen, ausgaben, forderungen, weitere = [], [], [], []
+    # #58 (User 2026-07-17): KEIN Einnahmen-Block mehr. Alle Zuflüsse (Gehalt, Kindergeld …)
+    # laufen als Forderungen. Rücklage-Töpfe = Ausgaben, alles andere = Forderungen;
+    # nur 0/negativ ohne Forderungs-Rolle bleibt „Weitere" (reine Pflege, zählt nicht).
+    ausgaben, forderungen, weitere = [], [], []
     for k in kats.values():
-        # Planwert der Kategorie: eigenes Soll, ersatzweise Summe der Unterkategorie-Solls.
         k["plan_cent"] = k["soll_cent"] or sum(u["soll_cent"] for u in k["unterkategorien"])
         if k["zaehlt_als"] == "ruecklage":
             ausgaben.append(k)
-        elif k["zaehlt_als"] == "forderung":
+        elif k["zaehlt_als"] == "forderung" or k["plan_cent"] > 0:
             forderungen.append(k)
-        elif k["plan_cent"] > 0:                   # positives Soll = Einnahme
-            k["einnahme_soll_cent"] = k["plan_cent"]
-            einnahmen.append(k)
-        else:                                      # 0/negativ: nur Pflege, zählt nicht im Saldo
+        else:
             weitere.append(k)
 
-    ein_summe = sum(k["einnahme_soll_cent"] for k in einnahmen)
     aus_summe = sum(k["soll_cent"] for k in ausgaben)
-    ford_summe = sum(k["soll_cent"] for k in forderungen)
-    return {"einnahmen": einnahmen, "ausgaben": ausgaben,
-            "forderungen": forderungen, "weitere": weitere,
-            "einnahmen_summe_cent": ein_summe, "ausgaben_summe_cent": aus_summe,
-            "forderungen_summe_cent": ford_summe,
-            "saldo_cent": ein_summe + ford_summe - aus_summe}
+    ford_summe = sum(k["plan_cent"] for k in forderungen)
+    return {"ausgaben": ausgaben, "forderungen": forderungen, "weitere": weitere,
+            "ausgaben_summe_cent": aus_summe, "forderungen_summe_cent": ford_summe,
+            "saldo_cent": ford_summe - aus_summe}
 
 
 def stichtag(cur) -> str:

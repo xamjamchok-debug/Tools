@@ -2,15 +2,12 @@
 {% block titel %} · Config{% endblock %}
 {% block content %}
 <h1>Config — Monatlicher Finanzfluss</h1>
-<p class="sub">Einnahmen + Forderungen − Ausgaben = Monats-Saldo. Nebenbücher sind eingeklappt; Klick
-  klappt Details &amp; Pflege auf (Soll, Unterkategorien, Rolle).
-  <b>Einnahme oder Ausgabe erkennt die App am Vorzeichen des Soll-Betrags</b> (Gehalt = +).
-  Die <b>Rolle</b> bestimmt den Block — ein Rücklagen-Topf bleibt bei den Ausgaben, auch wenn
-  sein Soll positiv ist (z. B. Füchschen/Kindergeld).</p>
+<p class="sub">Forderungen − Ausgaben = Monats-Saldo. Alle Zuflüsse (Gehalt, Kindergeld …) laufen als
+  <b>Forderungen</b> — einen eigenen „Einnahmen"-Block gibt es nicht mehr. Die <b>Rolle</b> bestimmt
+  den Block: Rücklagen-Töpfe = Ausgaben, Forderungen (Rolle „Forderung" oder positives Soll) zählen
+  mit Vorzeichen im Saldo. Klick klappt die Pflege auf (Soll, Unterkategorien, Rolle).</p>
 
 <div class="grid kpis">
-  <div class="card kpi"><div class="label">Einnahmen / Monat</div>
-    <div class="val pos">{{ fluss.einnahmen_summe_cent|euro }}</div></div>
   <div class="card kpi"><div class="label">Forderungen / Monat</div>
     <div class="val {{ 'pos' if fluss.forderungen_summe_cent>=0 else 'neg' }}">
       {{ fluss.forderungen_summe_cent|euro }}</div></div>
@@ -73,26 +70,18 @@
   </tr>
 {% endmacro %}
 
-<h2 style="color:var(--pos)">▼ Einnahmen</h2>
-<div class="card scroll" style="margin-bottom:6px"><table>
-  {% for k in fluss.einnahmen %}{{ kat_block(k, k.einnahme_soll_cent, 'pos') }}{% endfor %}
-  {% if not fluss.einnahmen %}<tr><td colspan="2" class="muted small">Noch keine Einnahme-Position.
-    Trag bei einer Kategorie (Rolle „Ausgabe/kein Topf") ein positives Soll ein — z. B. Gehalt.</td></tr>{% endif %}
-  <tr><td><b>Summe Einnahmen</b></td><td class="num pos"><b>{{ fluss.einnahmen_summe_cent|euro }}</b></td></tr>
-</table></div>
-
 <h2 style="color:var(--neg)">▲ Ausgaben (Nebenbücher)</h2>
 <div class="card scroll" style="margin-bottom:6px"><table>
   {% for k in fluss.ausgaben %}{{ kat_block(k, k.soll_cent, 'neg') }}{% endfor %}
   <tr><td><b>Summe Ausgaben</b></td><td class="num neg"><b>{{ fluss.ausgaben_summe_cent|euro }}</b></td></tr>
 </table></div>
 
-<h2>⇄ Forderungen (Natalie / Jörg)</h2>
+<h2>⇄ Forderungen & Zuflüsse (Gehalt · Kindergeld · Natalie · Jörg)</h2>
 <div class="card scroll" style="margin-bottom:6px"><table>
   {% for k in fluss.forderungen %}
-    {{ kat_block(k, k.soll_cent, 'pos' if k.soll_cent>=0 else 'neg') }}
+    {{ kat_block(k, k.plan_cent, 'pos' if k.plan_cent>=0 else 'neg') }}
   {% endfor %}
-  {% if not fluss.forderungen %}<tr><td colspan="2" class="muted small">Keine Forderungs-Kategorie.</td></tr>{% endif %}
+  {% if not fluss.forderungen %}<tr><td colspan="2" class="muted small">Keine Forderung/Zufluss.</td></tr>{% endif %}
   <tr><td><b>Summe Forderungen</b></td>
     <td class="num {{ 'pos' if fluss.forderungen_summe_cent>=0 else 'neg' }}">
       <b>{{ fluss.forderungen_summe_cent|euro }}</b></td></tr>
@@ -102,8 +91,7 @@
 
 <div class="card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
   <div><b style="font-size:16px">Monats-Saldo</b>
-    <div class="small muted">Einnahmen {{ fluss.einnahmen_summe_cent|euro }}
-      + Forderungen {{ fluss.forderungen_summe_cent|euro }}
+    <div class="small muted">Forderungen {{ fluss.forderungen_summe_cent|euro }}
       − Ausgaben {{ fluss.ausgaben_summe_cent|euro }}</div></div>
   <b style="font-size:22px" class="{{ 'pos' if fluss.saldo_cent>=0 else 'neg' }}">{{ fluss.saldo_cent|euro }}</b>
 </div>
