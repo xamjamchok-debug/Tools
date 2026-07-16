@@ -137,10 +137,14 @@ def uebersicht(cur) -> dict:
         (forderungen if za == "forderung" else ruecklagen_toepfe).append(
             {"name": n, "ist_cent": ist})
 
+    # #9 Wasserfall: Liquidität nach Reservierung = Konten − Rücklagen − Merkzettel.
+    # (merkzettel_summe ist bereits vorzeichenbehaftet, i. d. R. negativ → reduziert.)
+    frei_verfuegbar = hs["konten_cent"] - hs["ruecklagen_cent"] + merkzettel_summe
     return {**hs, "konten": konten,
             "posten_saldo": posten_saldo, "posten_langfrist": posten_langfrist,
             "merkzettel": merkzettel, "merkzettel_summe_cent": merkzettel_summe,
             "posten_saldo_summe_cent": posten_saldo_summe,
+            "frei_verfuegbar_cent": frei_verfuegbar,
             "ruecklagen_toepfe": ruecklagen_toepfe, "forderungen": forderungen}
 
 

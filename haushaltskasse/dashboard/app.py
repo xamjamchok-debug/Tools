@@ -8,6 +8,7 @@ Umkategorisieren, Rücklagen-Soll und Vermögensposten werden hier direkt bearbe
 """
 from __future__ import annotations
 
+import os
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -105,12 +106,26 @@ def _stichtag_global() -> str:
 TEMPLATES.env.globals["stichtag_global"] = _stichtag_global
 
 
+def _app_version() -> dict:
+    """#23 V1a — welcher Stand ist live? Werte setzt der Deploy per Env-Var
+    (`--set-env-vars APP_VERSION=$(git rev-parse --short HEAD) APP_BUILD_TIME=...`).
+    Container-Revision liefert Azure automatisch als CONTAINER_APP_REVISION."""
+    return {
+        "version": os.getenv("APP_VERSION", "dev"),
+        "build": os.getenv("APP_BUILD_TIME", ""),
+        "revision": os.getenv("CONTAINER_APP_REVISION", ""),
+    }
+
+
+TEMPLATES.env.globals["app_version"] = _app_version
+
+
 # ---------------------------------------------------------------------------
 # Auth (P0.1) — Login/Logout/Health
 # ---------------------------------------------------------------------------
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {"ok": True, **_app_version()}
 
 
 @app.get("/login", response_class=HTMLResponse)

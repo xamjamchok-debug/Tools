@@ -21,9 +21,30 @@
     <div class="val">{{ u.forderung_cent|euro }}</div></div>
 </div>
 
-<p class="small muted">Rechnung: Konten {{ u.konten_cent|euro }} + Posten {{ u.posten_cent|euro }}
-  + Forderungen {{ u.forderung_cent|euro }} − Rücklagen {{ u.ruecklagen_cent|euro }}
-  = <b>{{ u.saldo_cent|euro }}</b>. &nbsp; Langfristig separat: {{ u.langfrist_cent|euro }}.</p>
+<div class="card" style="margin-bottom:16px">
+  <h2 style="margin-top:0">Herleitung: Liquidität → frei verfügbar → Haushalts-Saldo</h2>
+  <table style="max-width:520px">
+    <tr><td>Konten (echtes Geld, alle Konten)</td>
+        <td class="num">{{ u.konten_cent|euro }}</td></tr>
+    <tr><td>Rücklagen-Töpfe (zweckgebunden)</td>
+        <td class="num neg">{{ (-u.ruecklagen_cent)|euro }}</td></tr>
+    <tr><td>Merkzettel (vorgemerkte künftige Kosten)</td>
+        <td class="num {{ 'neg' if u.merkzettel_summe_cent<0 else 'muted' }}">{{ u.merkzettel_summe_cent|euro }}</td></tr>
+    <tr style="border-top:2px solid var(--border)">
+        <td><b>= Frei verfügbar</b> <span class="small muted">(Liquidität nach Reservierung)</span></td>
+        <td class="num"><b class="{{ 'pos' if u.frei_verfuegbar_cent>=0 else 'neg' }}">{{ u.frei_verfuegbar_cent|euro }}</b></td></tr>
+    <tr><td>+ Forderungen (Natalie/Jörg schulden der Kasse)</td>
+        <td class="num">{{ u.forderung_cent|euro }}</td></tr>
+    <tr><td>+ Posten im Saldo (ETF, Anlage Großeltern …)</td>
+        <td class="num">{{ u.posten_saldo_summe_cent|euro }}</td></tr>
+    <tr style="border-top:2px solid var(--border)">
+        <td><b>= Haushalts-Saldo</b></td>
+        <td class="num"><b class="{{ 'pos' if u.saldo_cent>=0 else 'neg' }}">{{ u.saldo_cent|euro }}</b></td></tr>
+  </table>
+  <p class="small muted" style="margin-bottom:0">Langfristig separat (nicht im Saldo): {{ u.langfrist_cent|euro }}.
+    Forderungen als Guthaben (+) gerechnet. Merkzettel-Summe {{ u.merkzettel_summe_cent|euro }} ist hier
+    sichtbar verrechnet (das war vorher in „Posten" versteckt).</p>
+</div>
 
 <div class="card" style="margin-bottom:16px">
   <form method="get" class="toolbar" style="margin:0">
