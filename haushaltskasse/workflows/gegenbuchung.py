@@ -36,7 +36,9 @@ from .migration_fb import FB_PATH
 
 # --- Kategorie-Rollen (Rest bleibt 'ruecklage') -----------------------------
 ROLLE_FORDERUNG = ("Natalie", "Jörg")
-ROLLE_AUSGABE = ("Haushaltskasse", "Einnahmen", "Kinder")
+# Haushaltskasse ist jetzt ein EIGENER Rücklagen-Topf (Kategorie „0") → NICHT mehr hier.
+# 'Einnahmen' bleibt ohne Topf (#46); 'Kinder' entfällt mit dem Cleanup (#49).
+ROLLE_AUSGABE = ("Einnahmen", "Kinder")
 
 # --- Vermögensposten, die NICHT in den Haushalts-Saldo zählen (langfristig) --
 POSTEN_LANGFRIST = ("Kredit an Großeltern", "Riester-Steuerschuld",
