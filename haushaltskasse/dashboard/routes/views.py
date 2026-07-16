@@ -18,6 +18,17 @@ def health():
     return {"ok": True, **app_version()}
 
 
+@router.get("/backlog", response_class=HTMLResponse)
+def backlog_board():
+    """Das Roadmap-Board (aus docs/BACKLOG.md generiert) direkt in der App zeigen."""
+    from pathlib import Path
+    pfad = Path(__file__).resolve().parents[2] / "docs" / "backlog-board.html"
+    try:
+        return HTMLResponse(pfad.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return HTMLResponse("<p>Backlog-Board nicht gefunden.</p>", status_code=404)
+
+
 # ---------------------------------------------------------------------------
 # Auth (P0.1) — Login/Logout
 # ---------------------------------------------------------------------------

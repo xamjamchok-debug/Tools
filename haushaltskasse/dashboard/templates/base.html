@@ -5,27 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haushaltskasse{% block titel %}{% endblock %}</title>
 <style>
+  /* Weiß-blaue Papier-Optik wie das Backlog-Board; Gold als feine Hervorhebungs-Linie. */
   :root{
-    --bg:#f6f7f9; --card:#ffffff; --text:#181b20; --muted:#6b7280; --border:#e4e7eb;
-    --accent:#2563eb; --accent-soft:#eff4ff; --pos:#15803d; --neg:#dc2626; --head:#f0f2f5;
+    --bg-top:#ffffff; --bg-bottom:#dceafb;
+    --card:#ffffff; --card-2:#eaf3fc; --text:#1b2733; --muted:#5b6b7c; --border:#d3e2f1;
+    --accent:#2e6ca6; --accent-soft:#e7f0fa; --hi:#d8a21a; --hi-soft:#f6ecc9;
+    --pos:#1e7a69; --neg:#ae3b29; --head:#eaf3fc;
   }
   @media (prefers-color-scheme:dark){
-    :root{ --bg:#0f1115; --card:#171a1f; --text:#e6e8eb; --muted:#9aa1ab; --border:#2a2f37;
-      --accent:#4b8bff; --accent-soft:#182233; --pos:#4ade80; --neg:#f87171; --head:#1d2128; }
+    :root{ --bg-top:#0b121a; --bg-bottom:#081018;
+      --card:#10171f; --card-2:#16202b; --text:#e4ebf3; --muted:#93a2b4; --border:#26313f;
+      --accent:#6fa8da; --accent-soft:#16283c; --hi:#e6b84a; --hi-soft:#2a2413;
+      --pos:#48b79c; --neg:#e0705e; --head:#16202b; }
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);
+  body{margin:0;min-height:100vh;color:var(--text);
+    background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom)) fixed;
     font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
   a{color:var(--accent);text-decoration:none}
   header{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
   nav{max-width:1180px;margin:0 auto;display:flex;gap:2px;align-items:center;padding:0 16px}
   nav .brand{font-weight:700;margin-right:20px;padding:14px 0;letter-spacing:-.02em}
-  nav a{padding:14px 14px;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
-  nav a.active{color:var(--text);border-bottom-color:var(--accent)}
+  nav a{padding:14px 14px;color:var(--muted);border-bottom:3px solid transparent;font-weight:500}
+  nav a.active{color:var(--text);border-bottom-color:var(--hi)}   /* Gold = du bist hier */
   nav a:hover{color:var(--text)}
   main{max-width:1180px;margin:24px auto;padding:0 16px}
   h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:26px 0 10px;color:var(--muted);
-    text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+    text-transform:uppercase;letter-spacing:.04em;font-weight:600;
+    border-left:3px solid var(--hi);padding-left:9px}   /* feine Gold-Linie markiert die Sektion */
   .sub{color:var(--muted);margin:0 0 18px;font-size:14px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
   .grid{display:grid;gap:14px}
@@ -66,6 +73,7 @@
   <a href="/reports"    class="{{ 'active' if tab=='reports' else '' }}">Reports</a>
   <a href="/config"     class="{{ 'active' if tab=='config' else '' }}">Config</a>
   <a href="/import"     class="{{ 'active' if tab=='import' else '' }}">Import</a>
+  <a href="/backlog"    target="_blank" title="Roadmap-Board (neuer Tab)">Backlog ↗</a>
   <a href="#" style="margin-left:auto;color:var(--muted)"
      onclick="fetch('/logout',{method:'POST'}).then(()=>location='/login');return false">Abmelden</a>
 </nav></header>
