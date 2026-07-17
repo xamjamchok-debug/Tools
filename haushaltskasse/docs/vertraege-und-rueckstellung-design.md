@@ -196,10 +196,46 @@ Die Zahlen bestätigen es:
 **Alle Einzahlungen kommen aus der Excel-Beladung** — und die reicht bis **31.07.2026**.
 Der **Verzehr läuft dagegen automatisch weiter** (Spiegel bei jedem Import).
 
-> ### 🛑 **Ab August 2026 wird nur noch entnommen und nie mehr eingezahlt.**
+> ### 🛑 **Sobald die Excel-Daten enden, wird nur noch entnommen und nie mehr eingezahlt.**
 > Die Töpfe leeren sich, der Haushaltssaldo driftet — **nicht** wegen eines Rechenfehlers, sondern
 > weil die zentrale Funktion der alten Excel-Kasse in der App fehlt. **Das ist der wichtigste
 > offene Punkt — vor Verträgen, vor Kategorien.**
+
+### ✅ Entwarnung zum Zeitpunkt (Jörg, 2026-07-17): **es driftet erst ab September**
+
+> Jörg: *„Ich habe noch den besonderen Trick gemacht, dass wir jetzt einen Monat in Urlaub fahren
+> und ich die Rücklagen für den nächsten Monat, für den **August**, schon gestellt habe. Deswegen
+> siehst du diese vordatierten Werte. **Das kommt jetzt nur einmal vor** … ich ging davon aus, dass
+> ich das im Urlaub nicht machen kann. **Dennoch möchte ich die jetzige Rückstellung behalten.**"*
+
+**Die August-Rücklage ist bereits gestellt** (noch Excel-basiert, bewusst vorgezogen wegen Urlaub).
+**⇒ Der Drift beginnt erst ab 09/2026**, nicht im August. Etwas Luft — der Punkt bleibt aber Nr. 1.
+
+**🚫 Nicht anfassen:** Diese Stellung bleibt **unverändert** (Jörgs ausdrücklicher Wunsch —
+„sonst verwirrt mich das nur noch mehr").
+
+### 🎁 Und sie ist die **Bauanleitung** für den Lauf
+
+Die 10 Buchungen vom **31.07.2026** (`quelle_import='fb-kto'`, alle auf **Allgemein**) zeigen
+exakt, wie der Excel-Lauf rechnete — **8 von 10 stimmen centgenau mit dem Config-Soll**:
+
+| Nebenbuch | gestellt 31.07. | Config-Soll | |
+|---|---|---|---|
+| Auto · Inst · Jörg · Kredit · Sport · Telefon · TK · Vers | = Soll | = Soll | ✅ **exakt** |
+| Nebenkosten | 300,00 | 320,00 | ⚠️ 20 weniger |
+| Urlaub | 1.250,14 | 600,00 | ⚠️ 650,14 mehr (Urlaubs-Sonderzahlung?) |
+| **Haushaltskasse** | **— nicht gestellt** | **1.402,00** | ⚠️ **fehlt ganz** |
+| Füchschen | — | **0,00** | ⚠️ kein Soll hinterlegt |
+
+**Damit ist der Lauf testbar:** Nachbau muss für 08/2026 dieselben Zahlen produzieren.
+Und die Regel „alles auf Allgemein" bestätigt Jörgs Beschreibung — es gibt ja noch keine Verträge.
+
+**Offene Fragen aus dem Vergleich** (nicht dringend, aber vor dem ersten echten Lauf zu klären):
+- **Haushaltskasse** hat Soll 1.402, wurde aber **nie gestellt** — Absicht (laufende Ausgaben statt
+  Rücklage) oder Lücke?
+- **Füchschen** hat **Soll 0**, obwohl OGS + Essensgeld monatlich rund 475 € fest laufen — soll das
+  Nebenbuch ein Soll bekommen, oder laufen Kinderkosten bewusst ohne Rücklage?
+- Nebenkosten/Urlaub: waren die Abweichungen Absicht (Sonderzahlung) oder Handkorrekturen?
 
 ## Die „Position Rücklage" — **brauchen wir nicht** (Jörgs eigene Erkenntnis)
 
@@ -240,9 +276,11 @@ der Topf nur nach unten läuft.
 | Trockenlauf | Default, wie bei allen Workflows |
 | Nachvollzieh­barkeit | Lauf wird in `admin_laeufe` protokolliert (#61) |
 
-> ⚠️ **Achtung Historie:** Bis einschließlich 07/2026 kommen die Einzahlungen aus `fb-kto`.
-> Der erste echte Lauf darf also **frühestens 08/2026** buchen, sonst wird der Juli doppelt
-> befüllt. Der Lauf muss prüfen, ob für den Monat schon Einzahlungen existieren.
+> ⚠️ **Achtung Historie — der erste echte Lauf darf frühestens 09/2026 buchen.**
+> Der Juli kam aus `fb-kto`, und **der August ist bereits vorab gestellt** (Jörgs Urlaubs-Trick,
+> gebucht am 31.07.). Ein Lauf für 08/2026 würde den August **doppelt** befüllen.
+> **Pflicht:** Der Lauf prüft je Nebenbuch/Monat, ob **schon eine Einzahlung existiert** —
+> egal aus welcher Quelle (`fb-kto`, `manuell`, `rueckstellung`) — und überspringt sie dann.
 
 ---
 
