@@ -5,6 +5,27 @@
 
 ---
 
+## 🔒 Grundprinzipien (Jörg 2026-07-17, unverhandelbar)
+
+Diese drei Sätze gelten über allem anderen — sie definieren, was der Rücklagensaldo *ist*:
+
+1. **Der Rücklagensaldo bleibt, wie er ist.** Er wird NUR angefasst, wenn (a) Jörg es manuell tut
+   oder (b) der monatliche **Rückstellungslauf** ihn bildet. Kein Import, keine Erkennung, keine
+   Zuordnung, kein automatischer Prozess verändert den Saldo. (Deckt sich mit #76: Verzehr läuft
+   automatisch, Einzahlung nur durch den Lauf oder von Hand.)
+
+2. **Nicht verteiltes Budget liegt auf der Position „Allgemein"** je Nebenbuch. Das ist der Rest
+   des Nebenbuch-Solls, der (noch) keinem Untertopf/Vertrag zugeordnet ist. Er kann später verteilt
+   ODER für **unregelmäßige Zahlungen** verwendet werden (Puffer). „Allgemein" ist damit kein
+   Fehler, sondern der bewusste Sammel-/Puffertopf. (Vgl. #77: S-Töpfe = Allgemein.)
+
+3. **Alle Buchungen eines Nebenbuchs zusammen sollen die Rücklage bilden.** Stimmt die Summe der
+   tatsächlichen Buchungen nicht mit der gebildeten Rücklage überein, muss es eine **Wahrnehmung**
+   (sichtbare Anzeige/Warnung) geben. Jörg behandelt sie dann bewusst — indem er **entweder eine
+   Überbuchung akzeptiert ODER die Rücklage erhöht**. Nie still automatisch ausgleichen.
+
+---
+
 ## Deine drei Vorgaben
 
 1. **Rückstellung auf erkanntem Rhythmus** — nicht manuell gepflegt, nicht geschätzt.

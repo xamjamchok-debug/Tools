@@ -102,6 +102,18 @@
   {% for k in fluss.weitere %}{{ kat_block(k, k.soll_cent, 'muted') }}{% endfor %}
 </table></div>
 {% endif %}
+
+<h2>➕ Neues Nebenbuch anlegen</h2>
+<div class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:24px">
+  <input id="nk-name" placeholder="Name des Nebenbuchs…" style="flex:1;min-width:200px">
+  <select id="nk-rolle">
+    <option value="ruecklage">Ausgabe / Rücklage</option>
+    <option value="forderung">Forderung / Zufluss</option>
+    <option value="ausgabe">zählt nicht im Saldo</option>
+  </select>
+  <button onclick="addKat()">+ Nebenbuch</button>
+  <span class="small muted">Unterkategorien danach im aufgeklappten Block anlegen.</span>
+</div>
 {% endblock %}
 
 {% block script %}
@@ -144,5 +156,12 @@ async function addUkat(katId){
   if(!name){ flash('Name fehlt', true); return; }
   await postJSON('/api/unterkategorie', {kategorie_id: katId, name});
   flash('angelegt'); setTimeout(()=>location.reload(), 400);
+}
+async function addKat(){
+  const name = document.getElementById('nk-name').value.trim();
+  if(!name){ flash('Name fehlt', true); return; }
+  const zaehlt_als = document.getElementById('nk-rolle').value;
+  await postJSON('/api/kategorie', {name, zaehlt_als});
+  flash('Nebenbuch angelegt'); setTimeout(()=>location.reload(), 500);
 }
 {% endblock %}

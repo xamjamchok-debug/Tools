@@ -18,6 +18,13 @@ def health():
     return {"ok": True, **app_version()}
 
 
+@router.get("/releasenotes", response_class=HTMLResponse)
+def view_releasenotes(request: Request):
+    """Detaillierte Release Notes — was in jeder Version dazukam (Jörg-Wunsch)."""
+    return TEMPLATES.TemplateResponse(request, "releasenotes.html",
+                                      {"request": request, "tab": "releasenotes"})
+
+
 @router.get("/backlog", response_class=HTMLResponse)
 def backlog_board():
     """Das Roadmap-Board (aus docs/BACKLOG.md generiert) direkt in der App zeigen."""

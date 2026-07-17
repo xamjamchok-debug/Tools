@@ -5,22 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haushaltskasse{% block titel %}{% endblock %}</title>
 <style>
-  /* Weiß-blaue Papier-Optik wie das Backlog-Board; Gold als feine Hervorhebungs-Linie. */
+  /* Helle Weiß-Blau-Gelb-Papier-Optik — bewusst IMMER hell (auch bei Handy-Dark-Mode),
+     damit die Ansicht überall gleich und freundlich wirkt (Jörg-Wunsch 2026-07-17). */
   :root{
-    --bg-top:#ffffff; --bg-bottom:#dceafb;
-    --card:#ffffff; --card-2:#eaf3fc; --text:#1b2733; --muted:#5b6b7c; --border:#d3e2f1;
-    --accent:#2e6ca6; --accent-soft:#e7f0fa; --hi:#d8a21a; --hi-soft:#f6ecc9;
-    --pos:#1e7a69; --neg:#ae3b29; --head:#eaf3fc;
-  }
-  @media (prefers-color-scheme:dark){
-    :root{ --bg-top:#0b121a; --bg-bottom:#081018;
-      --card:#10171f; --card-2:#16202b; --text:#e4ebf3; --muted:#93a2b4; --border:#26313f;
-      --accent:#6fa8da; --accent-soft:#16283c; --hi:#e6b84a; --hi-soft:#2a2413;
-      --pos:#48b79c; --neg:#e0705e; --head:#16202b; }
+    --bg-top:#ffffff; --bg-mid:#eef5fd; --bg-bottom:#fbf6e6;
+    --card:#ffffff; --card-2:#f2f7fd; --text:#1b2733; --muted:#5b6b7c; --border:#dbe7f4;
+    --accent:#2e6ca6; --accent-soft:#eaf2fb; --hi:#d8a21a; --hi-soft:#fbf3d6;
+    --pos:#1e7a69; --neg:#ae3b29; --head:#f2f7fd;
   }
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;color:var(--text);
-    background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom)) fixed;
+    background:linear-gradient(165deg,var(--bg-top) 0%,var(--bg-mid) 58%,var(--bg-bottom) 100%) fixed;
     font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
   a{color:var(--accent);text-decoration:none}
   header{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
@@ -62,6 +57,15 @@
   .flash{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--pos);
     color:#022c14;padding:8px 16px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
   .flash.show{opacity:1}
+  .menu{position:relative}
+  .menu>summary{cursor:pointer;list-style:none;color:var(--muted);padding:14px 6px}
+  .menu>summary::-webkit-details-marker{display:none}
+  .menu>summary:hover,.menu[open]>summary{color:var(--text)}
+  .menu-inhalt{position:absolute;right:0;top:100%;background:var(--card);
+    border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);
+    min-width:170px;padding:5px;z-index:30;display:flex;flex-direction:column}
+  .menu-inhalt a{padding:8px 12px;border-radius:6px;border:none;color:var(--text)}
+  .menu-inhalt a:hover{background:var(--accent-soft)}
 </style>
 </head>
 <body>
@@ -74,9 +78,14 @@
   <a href="/reports"    class="{{ 'active' if tab=='reports' else '' }}">Reports</a>
   <a href="/config"     class="{{ 'active' if tab=='config' else '' }}">Config</a>
   <a href="/import"     class="{{ 'active' if tab=='import' else '' }}">Import</a>
-  <a href="/backlog"    target="_blank" title="Roadmap-Board (neuer Tab)">Backlog ↗</a>
-  <a href="#" style="margin-left:auto;color:var(--muted)"
-     onclick="fetch('/logout',{method:'POST'}).then(()=>location='/login');return false">Abmelden</a>
+  <details class="menu" style="margin-left:auto">
+    <summary>Menü ▾</summary>
+    <div class="menu-inhalt">
+      <a href="/backlog" target="_blank">Backlog ↗</a>
+      <a href="/releasenotes" class="{{ 'active' if tab=='releasenotes' else '' }}">Release Notes</a>
+      <a href="#" onclick="fetch('/logout',{method:'POST'}).then(()=>location='/login');return false">Abmelden</a>
+    </div>
+  </details>
 </nav></header>
 <main>{% block content %}{% endblock %}</main>
 <footer style="max-width:1180px;margin:8px auto 30px;padding:0 16px;color:var(--muted);font-size:12px">

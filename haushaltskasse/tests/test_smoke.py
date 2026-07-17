@@ -6,7 +6,7 @@ import pytest
 from starlette.testclient import TestClient
 
 SEITEN = ["/health", "/", "/ruecklagen", "/vertraege", "/buchungen", "/reports", "/config",
-          "/import", "/login", "/export/uebersicht.csv", "/export/ruecklagen.csv",
+          "/import", "/releasenotes", "/login", "/export/uebersicht.csv", "/export/ruecklagen.csv",
           "/export/reports.csv", "/export/buchungen.csv"]
 
 

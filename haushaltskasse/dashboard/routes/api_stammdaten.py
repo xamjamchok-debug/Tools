@@ -118,3 +118,26 @@ def neue_unterkategorie(nu: NeueUnterkategorie):
                         (nu.kategorie_id, nu.name.strip()))
             row = cur.fetchone()
     return {"ok": True, "id": row[0]}
+
+
+class NeueKategorie(BaseModel):
+    name: str
+    zaehlt_als: str = "ruecklage"   # ruecklage | forderung | ausgabe
+
+
+@router.post("/api/kategorie")
+def neue_kategorie(nk: NeueKategorie):
+    """Neues Nebenbuch (Kategorie) per Freitext anlegen (Jörg-Wunsch 2026-07-17)."""
+    name = nk.name.strip()
+    if not name:
+        return JSONResponse({"ok": False, "fehler": "Name darf nicht leer sein"}, status_code=400)
+    if nk.zaehlt_als not in ("ruecklage", "forderung", "ausgabe"):
+        return JSONResponse({"ok": False, "fehler": "unbekannte Rolle"}, status_code=400)
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("""INSERT INTO kategorien (name, zaehlt_als, ist_nebenbuch)
+                       VALUES (%s,%s,TRUE)
+                       ON CONFLICT (name) DO NOTHING RETURNING id""", (name, nk.zaehlt_als))
+        row = cur.fetchone()
+        if not row:
+            return JSONResponse({"ok": False, "fehler": "Nebenbuch gibt es schon"}, status_code=400)
+    return {"ok": True, "id": row[0]}
