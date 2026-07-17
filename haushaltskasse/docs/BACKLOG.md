@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 3.9 · Stand 2026-07-17**
+**Version 3.10 · Stand 2026-07-17**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).
@@ -12,8 +12,10 @@ Stand) und kannte den PC-Fortschritt nicht — ihre Dateien `docs/backlog.md` (B
 Neufassung von `docs/unterkategorien-vorschlag.md` wurden daher **nicht gemergt** (Kollision mit
 dieser Datei bzw. mit dem längst umgesetzten #50). **Inhaltlich übernommen:** B1 → **#67**,
 B2 → **#68**, B4 → Richtungsentscheid an **#28**, B3 → bereits durch **#56** beantwortet (kein
-To-do), B5 → **#69**. Lehre: Handy-Sessions künftig auf dem aktuellen Branch starten, nicht auf
-`master` (→ Merge nach master).
+To-do), B5 → **#69**, Entscheidungsprinzip „Bündeln vs. Einzeln" + Fragen F1–F6 → **#70**
+(gerettet in `unterkategorien-vorschlag.md`). Lehre: Handy-Sessions künftig auf dem aktuellen
+Branch starten, nicht auf `master` — **`master` ist seit 2026-07-17 auf dem echten Stand
+(Commit `33b0fdc`), damit tritt genau dieses Problem nicht wieder auf.**
 
 **✅ FABLE DEEP-DIVE-II P1–P9 DEPLOYT (2026-07-16, Commit `4ab5b9a`, Rev `0000012`, `/health`=4ab5b9a):**
 Der große Refactor (in einer hängengebliebenen Fable-Session gebaut, uncommittet vorgefunden) ist
@@ -101,3 +103,4 @@ master-Auto-Deploy verifizieren; `lokale_config --push` in die DB (sonst Contain
 | 67 | Übersicht | ⭐ **Monatsbewegung (Δ) je Unterkonto in den Fokus — nicht nur der Endsaldo** (User 2026-07-17, Handy-Handover B1) | **Beobachtung Jörg:** Seit dem Import wird sauber gegen die Rücklagenposition verrechnet — fachlich richtig, aber der **Saldo bewegt sich optisch kaum noch**; man sieht nicht mehr, dass sich im Monat etwas geändert hat. **Ziel:** die **monatliche Bewegung** (Zu-/Abfluss) ist die maßgebliche, prominente Kennzahl, **insbesondere je Unterkonto/Untertopf** — nicht der Endsaldo. Richtung (noch zu schärfen): (a) Übersicht zeigt je Unterkonto *Bewegung im Monat* (Δ) **neben** dem Saldo, (b) die Rücklagen-Verrechnung als **eigene Bewegungszeile** führen statt still gegen den Saldo zu buchen (nachvollziehbar/Audit-Trail), (c) Monatswechsel-Ansicht „Was hat sich diesen Monat je Unterkonto bewegt?". Bezug: Saldo-Drill-Down + Rückstellungs-Transparenz; eng verzahnt mit #28 (B4) und #68. Achtung Abgrenzung: #27 hat Zufluss/Abfluss-**Spalten** entfernt (waren falsch berechnet) — hier geht es um eine **korrekt hergeleitete** Monats-Δ, nicht um deren Rückkehr | 💡 Idee |
 | 68 | Rücklagen | **Rücklagen-Übersicht klickbar → direkt zur Buchung** (User 2026-07-17, Handy-Handover B2) | **Wunsch:** von der Übersichts-/Rücklagenzeile per Klick in die **zugehörigen Einzelbuchungen** des Topfes springen (Drill-down Aggregat → gefilterte Buchungsliste). Umsetzung: Topf-Zeile in `ruecklagen_baum`/`uebersicht.html` auf die bestehende gefilterte Buchungsansicht verlinken (Filter nach Kategorie/Unterkategorie existiert bereits) — klein umrissen, kein neues Backend nötig. Ergänzt #41 (Nebenbuch sortierbar) | 💡 Idee |
 | 69 | Kategorien | ❓ **Versicherungs-(Unter-)Kategorien prüfen — „da stimmt etwas nicht"** (User 2026-07-17, Handy-Handover B5) | **Beobachtung Jörg:** bei **Versicherungen** stimmen die Kategorien/Unterkategorien nicht. #50 hat hier bereits umgestellt (`AutoVers`/`zurich`/`RLV` → `KFZ-Versicherung`/`Leben/BU`) — unklar ist, ob der Befund **davor** stammt (dann evtl. schon erledigt) oder ob das Ergebnis **danach** noch falsch ist. **Nächster Schritt:** Ist-Stand aus der Live-DB ziehen (welche Versicherungs-Unterkategorien + welche `mapping_regeln` greifen), Jörg gegenlesen lassen, dann korrigieren. **Teilstring-Falle beachten:** `arag` matcht „G**arag**e" — Muster in Langform. Bezug: #50, #20 | ❓ Klärung (Ist-Stand erheben) |
+| 70 | Kategorien | ❓ **Offene Design-Fragen F1–F6 zu den Unterkategorien beantworten** (aus Handy-Handover 2026-07-17) | Die Handy-Session hat ein **Entscheidungsprinzip „Bündeln vs. Einzeln"** formuliert (Verpflichtung/Person/Verlauf wichtig → einzeln; austauschbar/Alltag/nur Summe → bündeln) — das gab es im PC-Stand nicht und ist als Nachtrag in [unterkategorien-vorschlag.md](unterkategorien-vorschlag.md) gerettet. Dort warten **F1–F6** auf Jörgs Antwort: F1 KFZ-Vers unter Auto oder Versicherungen (→#69) · F2 Kinder-Betreuung je Kind oder gemeinsam · F3 welche Policen existieren (=#69) · F4 Lebensmittel/Drogerie als laufende Bereiche (**teils schon erledigt**) · F5 fehlende Wunsch-Kategorie · **F6 Sport bündeln oder einzeln — echter Widerspruch:** #50/„Geklärt 2026-07-15" bündelt auf *eine* Unterkat *Fitnessstudio*, die Handy-Session will *Fitness Natalie/Mainz/Kinder* **einzeln** („dann sieht man es deutlicher"). Nach der Faustregel spräche Person+Vertrag für **einzeln** → wäre eine Nachjustierung von #50 (live), kein Neubau | ❓ Klärung (wartet auf Jörg) |

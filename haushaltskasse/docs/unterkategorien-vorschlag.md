@@ -102,3 +102,57 @@
 
 ## Offen
 - **Amazon** verteilt sich über viele Nebenbücher — hier hilft später die Bemerkung/KI je Bestellung.
+
+---
+
+# Nachtrag: Entscheidungsprinzip „Bündeln vs. Einzeln" (aus der Handy-Session 2026-07-17)
+
+> **Herkunft:** Die Handy-Session (Branch `claude/subcategory-reserve-visibility-yvsqlx`) lief auf
+> dem alten `master` und kannte diese Datei nicht — sie hat einen eigenen Vorschlag geschrieben.
+> Der ist inhaltlich größtenteils von #50 überholt, **aber dieses Prinzip und die Fragen F1–F5
+> existieren nur dort** und sind hier gerettet. Der Rest des Handy-Dokuments wurde verworfen.
+
+## Die Faustregel
+
+Bisher landete vieles pauschal in großen Töpfen. Die Leitfrage je Empfänger: **bekommt er eine
+eigene Unterkategorie — oder wandert er in einen Sammeltopf?**
+
+| Frage | Ja → **Einzeln** | Nein → **Bündeln** |
+|---|---|---|
+| Ist es eine **eigene Verpflichtung**, die man einzeln beobachten/kündigen will? | eigener Vertrag, Police, Mitgliedschaft | spontaner Alltagskauf |
+| Ist es einer **bestimmten Person** zuordenbar (welches Kind, Natalie…)? | ja, Zuordnung ist relevant | egal, wer |
+| Ist der Empfänger mit anderen im selben Zweck **austauschbar**? | nein, spezifisch | ja, beliebig ersetzbar |
+| Will ich den **Verlauf je Empfänger** sehen? | ja | Summe reicht |
+| Wie **häufig** und **gleichartig** sind die Buchungen? | selten/vertraglich | häufig/gleichartig |
+
+> Kurz: **Verpflichtung / Person / Verlauf wichtig → einzeln.**
+> **Austauschbar / Alltag / nur Summe zählt → bündeln.**
+
+Beispiele aus Jörgs eigener Formulierung: Lebensmittel → **bündeln** (ob EDEKA, Aldi oder Lidl ist
+egal). Fitnessstudios → **einzeln** (Natalie, Mainz und die Kinder sind verschiedene Verpflichtungen).
+Kinder: **Essensgeld** (Kita + Schule zusammen) getrennt von **Betreuung** (OGS-/Kita-Gebühr) —
+nicht alles pauschal auf „Kinderkosten".
+
+## ⚠️ Widerspruch zu klären: Sport/Fitness
+
+Die beiden Sessions sagen hier **das Gegenteil**, das muss Jörg entscheiden:
+
+- **Diese Datei oben („Geklärt", 2026-07-15):** „fifi" & „Robbie" → **eine** Unterkategorie
+  *Fitnessstudio*; die alten kommen nicht mehr vor, nur die Historie ist betroffen.
+- **Handy-Session (2026-07-17):** Fitness **einzeln je Person/Standort** — *Fitness Natalie*,
+  *Fitness Mainz*, *Sport Kinder* — „dann sieht man es deutlicher"; nur *Sport sonstige*
+  (Schwimmbad-Eintritt o. Ä.) wird gebündelt.
+
+Nach der Faustregel oben spräche **Person + eigener Vertrag → einzeln** für die Handy-Variante.
+Betrifft #50 (bereits live) → wäre eine Nachjustierung der Unterkategorien, nicht ein Neubau.
+
+## Offene Fragen (bitte direkt hier beantworten)
+
+| # | Frage | Antwort (Jörg) | Anmerkung aus dem PC-Stand |
+|---|---|---|---|
+| F1 | KFZ-Versicherung: unter **Auto** oder unter **Versicherungen**? | | offen — betrifft #69 |
+| F2 | Betreuung Kinder: **je Kind** getrennt oder ein gemeinsamer Topf? | | offen |
+| F3 | Welche **Versicherungs-Policen** existieren aktuell konkret? | | = #69, Ist-Stand aus der Live-DB ziehen |
+| F4 | Sollen **Lebensmittel/Drogerie** als laufende Bereiche geführt werden? | | **teils erledigt** — stehen oben schon als Unterkats unter *Haushaltskasse* |
+| F5 | Fehlt eine Kategorie, die du dir schon lange wünschst? | | offen |
+| F6 | **Sport: bündeln oder einzeln?** (s. Widerspruch oben) | | neu aus dem Abgleich |
