@@ -39,10 +39,11 @@ Unterkategorie sein, dann sieht man's deutlicher") ist hier direkt umsetzbar:
 | Sportverein Wachtberg 1922 e.V. | 2 | Verein/Mitgliedschaft | **Sportverein Wachtberg** | Einzeln | | |
 | *(Schwimmbad, Eintritte, spontan)* | — | — | **Sport sonstige** | Bündeln | | |
 
-> ❓ **Frage:** Der monatliche Empfänger mit n=17 ist eine Einzelperson — ist das **dein** Studio/Trainer,
-> oder das von jemand anderem? Danach benenne ich den Topf.
-> ❓ Du sagtest „Natalie, **Mainz** oder von den Kindern" — ein Studio in **Mainz** finde ich in den
-> Daten nicht. Läuft das über einen anderen Empfänger oder bar?
+> ✅ **Geklärt (Jörg, 2026-07-17): „Studio Mainz gibt es nicht."** Das war ein Verhörer der
+> Spracheingabe — vermutlich „Natalie, **meins** oder von den Kindern". Passt zu den Daten:
+> es gibt genau **zwei** Studio-Zahlungen (eine monatliche + Natalie) plus die Kinder-Vereine.
+> ❓ **Bleibt offen:** Der monatliche Empfänger (n=17, Einzelperson) — ist das **dein** Trainer/Studio?
+> Dann heißt der Topf *Fitness Jörg*.
 
 ---
 
@@ -103,17 +104,22 @@ Du wolltest selbst nachschauen. Hier ist der **Ist-Stand aus der DB**, das spart
 | ADAC Autoversicherung AG *(2 Schreibweisen)* | 5 | Vers → KFZ-Versicherung | Dublette zusammenführen | | |
 | ARAG SE | **1** | Vers → Rechtsschutz | nur 1× (10/2025) — jährlich, 2026 offen? | | |
 | Provinzial Versicherung AG | **1** | Vers → Gebäude | nur 1× (09/2025) — jährlich, 2026 offen? | | |
-| ⚠️ HanseMerkur *Krankenzusatz* | 5 | **Vers** → Sonstige Versicherung | **Widerspruch** ↓ | | |
-| ⚠️ Envivas *Krankenversicherung* | 19 | **TK** → Krankenkasse | **Widerspruch** ↓ | | |
+| ✅ HanseMerkur — **Brillenversicherung** | 5 | Vers → *Sonstige Versicherung* | **Vorschlag: eigener Topf „Brillen/Sehhilfe"** | | |
+| Envivas *Krankenzusatz* | 19 | **TK** → Krankenkasse | bleibt (s. u.) | | |
 | ❌ **Hausrat** | **0** | — | **fehlt komplett** | | |
 
-> ⚠️ **Der Kern des Problems:** Du hast **zwei Krankenzusatz-Versicherungen in zwei verschiedenen
-> Kategorien** — Envivas unter **TK**, HanseMerkur unter **Vers**. Eine von beiden muss umziehen.
-> **Was willst du:** beide unter *TK/Gesundheit* (Logik: „alles Gesundheit zusammen") oder beide
-> unter *Vers* (Logik: „alles mit Police zusammen")?
+> ✅ **Korrektur (Jörg, 2026-07-17):** *„HanseMerkur ist keine Krankenzusatzversicherung, das ist
+> die **Brillenversicherung**."* — Damit ist **mein vorheriger Befund hinfällig.** Ich hatte
+> behauptet, du hättest „zwei gleichartige Krankenzusatz-Versicherungen in zwei Kategorien".
+> Stimmt nicht: Envivas = Krankenzusatz (gehört zu **TK**), HanseMerkur = Brillen. **Kein
+> Widerspruch, keine Umbuchung nötig.** Der Firmenname („HanseMerkur *Speziale
+> Krankenversicherung* AG") hatte mich in die Irre geführt — genau deshalb diese Liste.
+> ❓ **Was bleibt:** Sie liegt in *Sonstige Versicherung*. Nach deiner Regel (je Police = eigene
+> Unterkategorie) wäre **„Brillen/Sehhilfe"** sauberer. Und: gehört sie fachlich eher zu
+> **TK/Gesundheit** als zu *Vers*? Deine Entscheidung.
 > ❓ **Hausrat fehlt** — hast du keine, oder läuft sie über einen Empfänger, den ich nicht als
 > Versicherung erkenne? (Bei Gebäudeversicherung + Haus wäre Hausrat üblich.)
-> ❓ **Deine alte Frage F1: KFZ-Versicherung unter *Auto* oder unter *Vers*?** Heute: *Vers*.
+> ❓ **Deine alte Frage: KFZ-Versicherung unter *Auto* oder unter *Vers*?** Heute: *Vers*.
 > Für *Auto* spricht „alle Autokosten auf einen Blick", für *Vers* „alle Policen auf einen Blick".
 > ⚠️ **Achtung Automatik:** *ADAC-Mitgliedschaft* (Auto) und *ADAC Autoversicherung* (Vers) sind
 > **zwei verschiedene Sachen** — ein Muster `adac` würde beide fangen. Ich trenne sie sauber.
@@ -129,7 +135,7 @@ Hier ist heute schon alles einzeln und nach deiner Regel richtig — nur gegenle
 | Mobilfunk/Internet | Telekom (18), Telefonica (18), 1&1 (12) | je Anbieter einzeln | | |
 | Streaming/Software | Amazon Digital (44), Amazon Media (33), Audible (9), Adobe (9), YouTube (5), Anthropic (4), Microsoft, Google Play | **je Dienst einzeln** (kündbar!) | | |
 | Rundfunk | WDR | einzeln | | |
-| Strom | Naturwerke (25), MAINGAU (9), Tibber (2) | **ein Topf „Strom"** — Anbieter wechseln ständig | | |
+| Strom | Naturwerke (25), **MAINGAU (9)**, Tibber (2) | **ein Topf „Strom"** — Anbieter wechseln ständig | | |
 | Wasser | enewa (19) | einzeln *(geprüft: ist wirklich Wasser)* | | |
 | Müll | RSAG (6), Gemeinde Wachtberg (21) | einzeln | | |
 | Kredite | Deutsche Bank (67), KfW (2) | je Kredit einzeln | | |
@@ -140,24 +146,78 @@ Hier ist heute schon alles einzeln und nach deiner Regel richtig — nur gegenle
 
 ---
 
-## 6. Das größte ungelöste Problem: **PayPal**
+## 6. PayPal — **gelöst, entgegen der ersten Einschätzung** ✅
 
-**PayPal verdeckt den echten Empfänger.** In der DB steht überall nur „PayPal Europe S.a.r.l." —
-in **vier verschiedenen Kategorien**: Auto/Parken (54!), Haushaltskasse (123), Telefon/Abos (36),
-Nebenkosten, Urlaub. Zusammen **über 200 Buchungen**.
+> **Jörg (2026-07-17):** „PayPal und Amazon werden Problem sein … das werd ich wahrscheinlich immer
+> manuell machen müssen, weil da kann alles Mögliche dahinter sein. **Details siehst Du ja nicht.**"
+>
+> **Nachgeprüft — bei PayPal stimmt das zum Glück nicht.** Der Händler steht **im Verwendungszweck**,
+> in einem festen Format:
+> `1050392172454/PP.4645.PP/. EasyPark GmbH, Ihr Einkauf bei EasyPark GmbH`
+>
+> **Testlauf über alle 220 PayPal-Buchungen: 217 automatisch aufgelöst = 98 %.**
+> Dahinter stecken nur **66 verschiedene Händler** — also ~66 Regeln statt 220× manuell klicken,
+> und sie greifen **dauerhaft auch bei jedem künftigen Import**.
 
-Solange das so ist, kann **keine** Empfänger-Regel greifen — der Empfänger *ist* PayPal.
-Der echte Händler steht (wenn überhaupt) im **Verwendungszweck**.
+**Die echten Händler hinter PayPal:**
+
+| Händler | n | → Kategorie/Unterkategorie | OK? | Bemerkung |
+|---|---|---|:--:|---|
+| **EasyPark GmbH** | **54** | Auto → **Parken** *(heute schon richtig!)* | | |
+| Google Payment Ireland *(2 Schreibweisen)* | 46 | ❓ **Telefon → Streaming & Software?** | | |
+| SPIEGEL-Verlag | 13 | Telefon → **Presse** *(neuer Topf?)* | | |
+| Adobe Systems Software Ireland | 11 | Telefon → Streaming & Software | | |
+| Verlag Der Tagesspiegel | 8 | Telefon → **Presse** | | |
+| General-Anzeiger Bonn | 2 | Telefon → **Presse** | | |
+| DB Vertrieb GmbH | 4 | ❓ **Bahn/Reise — wohin?** | | |
+| Verifone Payments | 5 | ❓ unklar (Zahlungsdienstleister) | | |
+| Tchibo, eBay, AliExpress, Coolblue, Tractive, Distriphot, RE-INvent, Sellhelp, Kompf, Aura Home, TRADEINN, Muller Online | je 1–3 | Haushaltskasse → **Konsum/Onlinekauf** | | |
+| OpenAI Ireland | 2 | Telefon → Streaming & Software | | |
+| Sportograf | 2 | Sport? | | |
+| ADAC Autoversicherung | 2 | Vers → KFZ-Versicherung | | |
+| *3 Buchungen* | 3 | nicht auflösbar (u. a. „ADD TO BALANCE" = PayPal-Aufladung) | | |
+
+> ✅ **Mein Fehlalarm zurückgenommen:** Ich hatte vermutet, die 54 PayPal-Buchungen unter
+> *Auto/Parken* seien eine Fehlregel. **Sind sie nicht** — das ist **EasyPark**, die Park-App.
+> Die Zuordnung ist korrekt und bleibt.
+> ❓ **Google Payment (46×)** ist der größte Brocken: Play-Store-Käufe/Abos. Sollen die alle in
+> einen Topf („Google/Apps"), oder störts dich, dass da Verschiedenes drinsteckt?
+> ❓ **Presse** (Spiegel + Tagesspiegel + General-Anzeiger = 23×) — eigener Topf oder zu den Abos?
+
+---
+
+## 6b. Amazon — **hier hast du recht: bleibt manuell** ⚠️
+
+Bei Amazon steht **kein Händler und kein Artikel** im Verwendungszweck, nur die Bestellnummer:
+
+```
+302-1391286-9493130 AMZN Mktp DE 324IZX6BHJC04RES
+Sonstige Ausgaben / Sonstige Ausgaben
+```
+
+Bei **457 Amazon-Buchungen** (Payments 354 + EU 97 + Mktp 6) ist das viel. Deine Einschätzung
+stimmt: aus der Bankbuchung allein ist nicht erkennbar, ob das Klopapier, ein Buch oder ein
+Werkzeug war.
+
+**Aber es gibt einen Ausweg — die Bestellnummer ist ein Schlüssel:**
 
 | Möglichkeit | Was das heißt | OK? | Bemerkung |
 |---|---|:--:|---|
-| **A** — Verwendungszweck auswerten | Ich schaue, ob dort der Händler steht, und baue die Regeln darauf | | |
-| **B** — PayPal-Umsätze separat importieren | PayPal-Kontoauszug als eigene Quelle (wie DKB/Amazon) — genauer, aber Arbeit | | |
-| **C** — so lassen | „PayPal (unklar)" bleibt ein Sammeltopf | | |
+| **A** — Amazon-Bestellexport nutzen | Amazon liefert eine CSV mit **Bestellnummer + Artikelname**. Über die Bestellnummer (steht ja in der Buchung!) ließe sich der Artikel automatisch dranhängen → Kategorie wird ableitbar. **Setzt voraus, dass du den Export ziehst.** | | |
+| **B** — Bemerkungsfeld manuell | Du schreibst bei Bedarf selbst dazu, was es war (Feld existiert schon) | | |
+| **C** — Sammeltopf „Amazon/Konsum" lassen | wie heute | | |
 
-> ❓ Auffällig: **54 PayPal-Buchungen hängen unter Auto/Parken.** Parkst du wirklich so viel per
-> PayPal — oder ist das eine Fehlregel, die alle PayPal-Zahlungen nach „Parken" schiebt?
-> **Das würde ich zuerst prüfen wollen.**
+> 💡 **A ist realistisch** — der Amazon-Umsatzexport steht ohnehin auf der Liste (der alte
+> `.xls`-Parser soll auf CSV umgestellt werden). Wenn du den Export einmal ziehst, kann ich testen,
+> ob die Bestellnummern zusammenpassen. **Willst du das?**
+
+---
+
+> ✅ **Bestätigt (Jörg, 2026-07-17):** *„MAINGAU war ein Stromanbieter gewesen in der Historie."*
+> → gehört korrekt in den Strom-Topf, ist nur nicht mehr aktuell (letzte Buchung 05/2025).
+> Für den **Soll-Wert** zählt nur der laufende Anbieter — die alten sind reine Historie.
+> ✅ **Ebenfalls geprüft:** `enewa` ist **kein** Stromanbieter, sondern **Wasser** (im
+> Verwendungszweck steht wörtlich „Wasser 25.00 EUR") → Zuordnung stimmt.
 
 ---
 
