@@ -28,7 +28,7 @@ from __future__ import annotations
 import re
 import statistics
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date, timedelta
 
 from ..storage.db import connect
@@ -47,17 +47,12 @@ MONATE_JE_RHYTHMUS = {
     "halbjaehrlich": 6,
     "jaehrlich": 12,
 }
-MIN_ZAHLUNGEN = 3          # darunter ist kein Rhythmus belegbar
-BEENDET_NACH_RHYTHMEN = 2  # letzte Zahlung > 2 Rhythmen her -> beendet
-# Ein Vertrag zahlt immer ungefähr dasselbe. Alltagskäufe (Lebensmittel, Drogerie)
-# passieren zwar auch "monatlich", schwanken aber stark -> das ist der Unterschied.
-# Maß: mediane absolute Abweichung / Median. 0 = immer derselbe Betrag.
-MAX_STREUUNG = 0.15
-# Ein Vertrag bucht EINMAL pro Rhythmus ab. Tanken ist der Grenzfall, der die
-# Streuungsprüfung überlebt (immer volltanken = ähnlicher Betrag, jeden Monat) —
-# aber 3x im Monat an derselben Tankstelle ist kein Abo. 1.4 lässt Verschiebungen
-# um den Monatswechsel (28./1.) durch, ohne Alltagskäufe zu erlauben.
-MAX_ZAHLUNGEN_JE_PERIODE = 1.4
+MIN_ZAHLUNGEN = 2          # quartalsweise hat im Halbjahr nur 2 Zahlungen
+BEENDET_NACH_RHYTHMEN = 4  # erst > 4 Rhythmen ohne Zahlung -> beendet (Kredite laufen weiter,
+                           # auch wenn der Import mal 2 Monate hinterherhängt)
+KERN_TOLERANZ = 0.15       # Zahlungen bis ±15 % vom Kern-Betrag gehören zum selben Vertrag
+MIN_KERN_ANTEIL = 0.25     # der Kern-Betrag muss ≥25 % aller Zahlungen stellen — sonst ist es
+                           # ein Alltagskauf (Lebensmittel: kein Betrag wiederholt sich dominant)
 
 
 def _zweck_kern(zweck: str | None, stabile_nummern: frozenset[str] = frozenset()) -> str:
@@ -123,25 +118,30 @@ def _monatssummen(zahlungen: list[tuple]) -> list[tuple[date, int]]:
     return [(date(j, m, 1), summe) for (j, m), summe in sorted(je_monat.items())]
 
 
-def _streuung(betraege: list[int]) -> float:
-    """Wie stabil ist der Betrag? (mediane absolute Abweichung / Median)
+def _kern_zahlungen(zahlungen: list[tuple]) -> list[tuple]:
+    """Filtert die Zahlungen auf den **wiederkehrenden Kern-Betrag** herunter.
 
-    Unterscheidet **Vertrag** von **Alltagskauf** — und zwar an den **Einzelbeträgen**,
-    nicht an der Monatssumme. Das ist der springende Punkt:
+    Der springende Punkt bei echten Verträgen mit „Rauschen":
+      Judo-Club:   22 · 22 · 22 · 47(Prüfung) · 22 · 152(Lehrgang) · 22 …
+                   -> Kern-Betrag 22 kehrt wieder, die Extras sind Beiwerk.
+      dm-Drogerie: 12 · 46 · 9 · 33 · 7 …
+                   -> kein Betrag dominiert -> kein Vertrag.
 
-      OGS-Beitrag:  235,00 · 235,00 · 235,00 …        -> Streuung ~0    -> Vertrag
-      dm-Drogerie:   12,34 ·  45,67 ·   8,90 …        -> Streuung hoch  -> Alltagskauf
-
-    Die *Monatssumme* ist bei dm nämlich durchaus stabil (~270 €/Monat) — wer nur die
-    betrachtet, hält die Drogerie für einen Vertrag und legt dafür Rücklagen an.
-
-    Median-basiert (nicht Standardabweichung), damit einzelne Ausreißer wie
-    Nachzahlungen oder Wechselmonate das Urteil nicht kippen.
+    Vorgehen: auf ganze Euro runden, häufigsten Wert (Modus) nehmen, alle Zahlungen
+    im Fenster ±15 % zurückgeben. Toleranz fängt Kursschwankungen (Claude/Adobe in USD)
+    und Rundungen. So überleben Abos mit leicht schwankendem Betrag, während
+    Lebensmittel/Tanken (kein dominanter Wert) herausfallen.
     """
-    med = statistics.median(betraege)
-    if med == 0:
-        return 1.0
-    return statistics.median([abs(b - med) for b in betraege]) / abs(med)
+    if not zahlungen:
+        return []
+    euros = [round(z[1] / 100) for z in zahlungen if z[1] > 0]
+    if not euros:
+        return []
+    modus = Counter(euros).most_common(1)[0][0]
+    if modus == 0:
+        return []
+    fenster = max(modus * KERN_TOLERANZ, 1.0)
+    return [z for z in zahlungen if abs(z[1] / 100 - modus) <= fenster]
 
 
 def _rhythmus(abstaende: list[int]) -> tuple[str, int | None]:
@@ -167,7 +167,7 @@ def erkenne(cur, stichtag: date | None = None) -> list[dict]:
         LEFT JOIN kategorien k      ON k.id = b.kategorie_id
         WHERE b.buchungsart = 'real'
           AND b.spiegel_von_id IS NULL
-          AND b.betrag_cent < 0
+          AND b.betrag_cent <> 0
           AND b.unterkategorie_id IS NOT NULL
           AND COALESCE(TRIM(b.empfaenger), '') <> ''
         ORDER BY b.datum_wert
@@ -176,18 +176,30 @@ def erkenne(cur, stichtag: date | None = None) -> list[dict]:
     zeilen = cur.fetchall()
     stabil = _stabile_nummern(zeilen)
 
+    # Eingang und Ausgang getrennt gruppieren: das Kindergeld (+) darf nicht mit einer
+    # gleichnamigen Ausgabe (−) verschmelzen. Die Richtung ist Teil der Identität.
     gruppen: dict[tuple, list] = defaultdict(list)
     for empf, zweck, datum, betrag, ukat_id, ukat, kat in zeilen:
         key = empf.strip()[:60]
-        schluessel = (key, _zweck_kern(zweck, stabil.get(key, frozenset())), ukat_id)
+        richtung = "eingang" if betrag > 0 else "ausgang"
+        schluessel = (key, _zweck_kern(zweck, stabil.get(key, frozenset())), ukat_id, richtung)
         gruppen[schluessel].append((datum, abs(betrag), ukat, kat))
 
     kandidaten = []
-    for (empf, kern, ukat_id), zahlungen in gruppen.items():
+    for (empf, kern, ukat_id, richtung), zahlungen in gruppen.items():
         if len(zahlungen) < MIN_ZAHLUNGEN:
             continue
-        # Rhythmus über MONATSSUMMEN, nicht über Einzelzahlungen (s. _monatssummen).
-        monate = _monatssummen(zahlungen)
+
+        # 1. Kern-Betrag herausschälen (Extras/Rauschen ignorieren, s. _kern_zahlungen).
+        kern_zahlungen = _kern_zahlungen(zahlungen)
+        if len(kern_zahlungen) < MIN_ZAHLUNGEN:
+            continue
+        if len(kern_zahlungen) / len(zahlungen) < MIN_KERN_ANTEIL:
+            continue  # kein dominanter Betrag -> Alltagskauf (Lebensmittel/Tanken)
+
+        # 2. Rhythmus über die MONATSSUMMEN des Kerns — zwei Kinder an einem Träger
+        #    im selben Monat sind EIN Monatsbetrag (Essensgeld 2×60 -> 120/Monat).
+        monate = _monatssummen(kern_zahlungen)
         if len(monate) < MIN_ZAHLUNGEN:
             continue
         monats_daten = [m[0] for m in monate]
@@ -195,22 +207,11 @@ def erkenne(cur, stichtag: date | None = None) -> list[dict]:
                      for i in range(len(monats_daten) - 1)]
         rhythmus, med_tage = _rhythmus(abstaende)
         if rhythmus == "unregelmaessig":
-            continue  # kein Vertrag -> keine Rückstellung
+            continue  # kein erkennbarer Takt -> keine Rückstellung
 
-        # Entscheidend: streuen die EINZELBETRÄGE? (s. _streuung)
-        streuung = _streuung([z[1] for z in zahlungen])
-        if streuung > MAX_STREUUNG:
-            continue  # Alltagskauf, kein Vertrag (Lebensmittel, Drogerie)
-
-        # Bucht die Gruppe wirklich nur einmal je Rhythmus ab? (s. MAX_ZAHLUNGEN_JE_PERIODE)
-        perioden = max(len(monate) / MONATE_JE_RHYTHMUS.get(rhythmus, 1), 1)
-        if len(zahlungen) / perioden > MAX_ZAHLUNGEN_JE_PERIODE:
-            continue  # mehrfach je Periode -> Alltagskauf (Tanken), kein Vertrag
-
-        # Rate/Bestand rechnen aber auf der MONATSSUMME — zwei Kinder an einem Träger
-        # sind ein Monatsbetrag.
         median_cent = int(statistics.median([m[1] for m in monate]))
-        letzte = max(z[0] for z in zahlungen)   # echtes Datum, nicht Monatsanfang
+        letzte = max(z[0] for z in kern_zahlungen)
+        erste = min(z[0] for z in kern_zahlungen)
         tage_her = (stichtag - letzte).days
         beendet = tage_her > (med_tage or 30) * BEENDET_NACH_RHYTHMEN
         naechste = letzte + timedelta(days=med_tage or 30)
@@ -224,20 +225,68 @@ def erkenne(cur, stichtag: date | None = None) -> list[dict]:
                 "kategorie": zahlungen[0][3],
                 "muster_empfaenger": empf[:60],
                 "muster_zweck": kern[:60] or None,
+                "richtung": richtung,
                 "rhythmus": rhythmus,
                 "betrag_median_cent": median_cent,
                 "letzte_zahlung": letzte,
+                "erste_zahlung": erste,
                 "naechste_faellig": naechste,
                 "status": "beendet" if beendet else "erkannt",
                 "zahlungen": len(zahlungen),
+                "kern_zahlungen": len(kern_zahlungen),
                 "monate": len(monate),
-                "streuung": streuung,
+                "med_tage": med_tage or 30,
                 "monatsrate_cent": monatsrate(median_cent, rhythmus),
             }
         )
+    kandidaten = _fuehre_fortsetzungen_zusammen(kandidaten, stichtag)
     _mache_namen_eindeutig(kandidaten)
     kandidaten.sort(key=lambda k: (k["kategorie"] or "", -k["monatsrate_cent"]))
     return kandidaten
+
+
+def _fuehre_fortsetzungen_zusammen(kandidaten: list[dict], stichtag: date) -> list[dict]:
+    """Denselben Vertrag zusammenführen, wenn der Verwendungszweck mittendrin wechselt.
+
+    Ab Juni ändert die Bank bei manchen Buchungen den Zweck-Text (Kindergeld, der große
+    Deutsche-Bank-Kredit) — dadurch entstünden zwei Verträge à 777 bzw. à 1542, die sich
+    beim Bestätigen **doppeln** würden. Zusammengeführt wird nur, wenn: gleicher
+    Empfänger + Topf + Richtung, Betrag ±10 %, und die Zeiträume **nicht überlappen**
+    (der eine läuft aus, wo der andere beginnt). Zwei parallele Tranchen (Kredit 299 UND
+    305, beide Jan–Mai) überlappen -> bleiben getrennt.
+    """
+    # Empfänger-Anfang statt Volltext: Kindergeld verliert ab Juni den Zusatz „Fuchskaule 27",
+    # ist aber derselbe Zahler. 12 Zeichen trennen „MAINGAU Ener" von „Tibber Deuts" (bleiben
+    # getrennt), fassen aber „Hemmerling, " und „Deutsche Ban" je zusammen.
+    def _praefix(k):
+        return k["muster_empfaenger"][:12].lower()
+
+    kandidaten.sort(key=lambda k: (_praefix(k), k["unterkategorie_id"],
+                                   k["richtung"], k["erste_zahlung"]))
+    ergebnis: list[dict] = []
+    for k in kandidaten:
+        ziel = None
+        for e in ergebnis:
+            if (_praefix(e) == _praefix(k)
+                    and e["unterkategorie_id"] == k["unterkategorie_id"]
+                    and e["richtung"] == k["richtung"]
+                    and abs(e["betrag_median_cent"] - k["betrag_median_cent"])
+                        <= 0.10 * max(e["betrag_median_cent"], k["betrag_median_cent"])
+                    and k["erste_zahlung"] > e["letzte_zahlung"]):   # zeitlich anschließend
+                ziel = e
+                break
+        if ziel is None:
+            ergebnis.append(k)
+            continue
+        # k ist die Fortsetzung von ziel -> Kennzahlen des jüngeren Laufs übernehmen.
+        ziel["zahlungen"] += k["zahlungen"]
+        ziel["kern_zahlungen"] += k["kern_zahlungen"]
+        ziel["letzte_zahlung"] = k["letzte_zahlung"]
+        ziel["naechste_faellig"] = k["naechste_faellig"]
+        ziel["muster_zweck"] = k["muster_zweck"]   # der aktuelle Zweck-Text
+        tage_her = (stichtag - ziel["letzte_zahlung"]).days
+        ziel["status"] = "beendet" if tage_her > ziel["med_tage"] * BEENDET_NACH_RHYTHMEN else "erkannt"
+    return ergebnis
 
 
 def _mache_namen_eindeutig(kandidaten: list[dict]) -> None:
@@ -297,10 +346,11 @@ def speichere(cur, kandidaten: list[dict]) -> int:
         cur.execute(
             """INSERT INTO vertraege
                  (name, beschreibung, unterkategorie_id, muster_empfaenger, muster_zweck,
-                  rhythmus, betrag_median_cent, letzte_zahlung, naechste_faellig, status, quelle)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'auto')""",
+                  richtung, rhythmus, betrag_median_cent, letzte_zahlung, naechste_faellig,
+                  status, quelle)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'auto')""",
             (k["name"], k["beschreibung"], k["unterkategorie_id"], k["muster_empfaenger"],
-             k["muster_zweck"], k["rhythmus"], k["betrag_median_cent"],
+             k["muster_zweck"], k["richtung"], k["rhythmus"], k["betrag_median_cent"],
              k["letzte_zahlung"], k["naechste_faellig"], k["status"]),
         )
         neu += 1
@@ -320,7 +370,8 @@ def main() -> None:
             kat = k["kategorie"]
             print(f"  ### {kat}")
         marker = " [BEENDET]" if k["status"] == "beendet" else ""
-        print(f"    {k['name'][:32]:<32} {k['rhythmus']:<14} "
+        pfeil = "＋ EIN" if k["richtung"] == "eingang" else "－ aus"
+        print(f"    {k['name'][:32]:<32} {pfeil} {k['rhythmus']:<14} "
               f"{k['betrag_median_cent']/100:>9.2f} € -> Rate {k['monatsrate_cent']/100:>8.2f} €/Mon"
               f"  ({k['zahlungen']}x, zuletzt {k['letzte_zahlung']}){marker}")
         print(f"        -> {k['kategorie']} / {k['unterkategorie']}")

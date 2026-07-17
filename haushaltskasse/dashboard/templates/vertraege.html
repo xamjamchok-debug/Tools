@@ -50,12 +50,18 @@
       <td>Config-Soll (deine Steuerung)</td>
       <td class="num">{{ k.soll_cent|euro }}</td>
     </tr>
+    {% if k.summe_eingang_cent %}
     <tr>
-      <td>bestätigte Verträge fordern</td>
-      <td class="num">{{ k.summe_rate_cent|euro }}</td>
+      <td>＋ Eingänge (z. B. Kindergeld)</td>
+      <td class="num">{{ k.summe_eingang_cent|euro }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <td>－ Ausgänge (bestätigte Verträge)</td>
+      <td class="num">{{ k.summe_ausgang_cent|euro }}</td>
     </tr>
     <tr class="{{ 'minus' if k.rest_cent < 0 else '' }}">
-      <td><b>{{ 'Unterdeckung' if k.rest_cent < 0 else 'Rest → Allgemein' }}</b></td>
+      <td><b>{% if k.rest_cent < 0 %}Unterdeckung/Monat{% elif k.summe_eingang_cent %}Überschuss/Monat → Topf wächst{% else %}Rest → Allgemein{% endif %}</b></td>
       <td class="num"><b>{{ k.rest_cent|euro }}</b></td>
     </tr>
     {% if k.reichweite_monate is not none %}
@@ -80,8 +86,9 @@
     </tr></thead>
     <tbody>
     {% for v in k.vertraege %}
-      <tr class="status-{{ v.status }}">
-        <td contenteditable data-feld="name" data-id="{{ v.id }}">{{ v.name }}</td>
+      <tr class="status-{{ v.status }} richtung-{{ v.richtung }}">
+        <td contenteditable data-feld="name" data-id="{{ v.id }}">
+          {% if v.richtung == 'eingang' %}<span class="ein" title="Eingang">＋</span> {% endif %}{{ v.name }}</td>
         <td contenteditable data-feld="beschreibung" data-id="{{ v.id }}"
             class="sub">{{ v.beschreibung or '' }}</td>
         <td>
@@ -142,6 +149,8 @@
   .pill.schief { background:#fef7e0; color:#8a6d00 }
   .pill.beendet, .pill.ignoriert { background:#f1f3f4; color:#5f6368 }
   tr.status-beendet td, tr.status-ignoriert td { opacity:.5 }
+  tr.richtung-eingang { background:#f2f9f4 }
+  .ein { color:#137333; font-weight:700 }
   .schalter { display:block; margin:.4rem 0 .9rem; font-size:.85rem; color:var(--muted) }
   .aktionen button { padding:.1rem .45rem; margin-right:.2rem }
   .hinweis { padding:.6rem .9rem; border-radius:6px; background:#e8f0fe }

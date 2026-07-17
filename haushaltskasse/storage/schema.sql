@@ -209,6 +209,10 @@ CREATE TABLE IF NOT EXISTS vertraege (
     rhythmus            TEXT NOT NULL DEFAULT 'unregelmaessig'
                         CHECK (rhythmus IN ('monatlich','quartalsweise','halbjaehrlich','jaehrlich','unregelmaessig')),
     betrag_median_cent  BIGINT NOT NULL DEFAULT 0,          -- Median, nicht Mittelwert (Ausreißer!)
+    -- Ein Nebenbuch hat nicht nur Ausgänge: das Kindergeld (777/Monat) fließt als
+    -- 'eingang' in Füchschen und deckt die OGS-/Essensgeld-Ausgänge. Für die
+    -- Deckel-/Reichweiten-Rechnung zählt der NETTO-Fluss (Ausgang − Eingang).
+    richtung            TEXT NOT NULL DEFAULT 'ausgang' CHECK (richtung IN ('ausgang','eingang')),
     letzte_zahlung      DATE,
     naechste_faellig    DATE,
     -- erkannt -> vom User bestätigt (Entscheid D: "Vertrag erst nach Bestätigung")
@@ -231,6 +235,11 @@ DROP INDEX IF EXISTS idx_vertraege_identitaet;
 ALTER TABLE vertraege DROP CONSTRAINT IF EXISTS vertraege_name_unterkategorie_id_key;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vertraege_identitaet
     ON vertraege (muster_empfaenger, COALESCE(muster_zweck, ''), unterkategorie_id);
+
+-- Nachrüstung für bestehende DBs (Spalte kam nach dem ersten CREATE dazu):
+-- Ein Nebenbuch hat auch Eingänge (Kindergeld +777 in Füchschen), nicht nur Ausgänge.
+ALTER TABLE vertraege ADD COLUMN IF NOT EXISTS richtung TEXT NOT NULL DEFAULT 'ausgang'
+    CHECK (richtung IN ('ausgang','eingang'));
 
 -- #75: Schiefstellung je Nebenbuch bewusst erlauben (User 2026-07-17).
 -- FALSE (Default): fordern die Verträge mehr als das Config-Soll -> harte Warnung,

@@ -83,7 +83,10 @@
   📅 Daten-Abgrenzung ab <b>{{ stichtag_global() }}</b> — Einzelbuchungen ab diesem Stichtag, davor Startsalden.
   <span class="muted">(änderbar unter Config)</span>
   {% set v = app_version() %}
-  <span style="float:right" title="Build {{ v.build }} · Revision {{ v.revision }}">v {{ v.version }}</span>
+  <span style="float:right" title="Git-Stand {{ v.version }}">
+    {% if v.revision %}<b>{{ v.revision.split('--')[-1] }}</b>{% endif %}
+    · {{ v.version }}{% if v.build %} · {{ v.build }}{% endif %}
+  </span>
 </footer>
 <div class="flash" id="flash"></div>
 <script>

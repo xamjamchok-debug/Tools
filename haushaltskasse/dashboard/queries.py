@@ -502,7 +502,7 @@ def vertraege(cur, nur_aktive: bool = False) -> dict:
     """
     cur.execute(f"""
         SELECT v.id, v.name, v.beschreibung, v.rhythmus, v.betrag_median_cent,
-               v.letzte_zahlung, v.naechste_faellig, v.status, v.quelle,
+               v.letzte_zahlung, v.naechste_faellig, v.status, v.quelle, v.richtung,
                v.muster_empfaenger, v.muster_zweck,
                u.id, u.name, k.id, k.name, k.monatliche_ruecklage_cent,
                k.schiefstellung_erlaubt, {_RATE_SQL} AS rate_cent
@@ -510,24 +510,28 @@ def vertraege(cur, nur_aktive: bool = False) -> dict:
         JOIN unterkategorien u ON u.id = v.unterkategorie_id
         JOIN kategorien k      ON k.id = u.kategorie_id
         {"WHERE v.status = 'bestaetigt'" if nur_aktive else ""}
-        ORDER BY k.name, u.name, rate_cent DESC
+        ORDER BY k.name, u.name, v.richtung, rate_cent DESC
     """)
     je_kat: dict[int, dict] = {}
-    for (vid, name, beschr, rhy, median, letzte, faellig, status, quelle,
+    for (vid, name, beschr, rhy, median, letzte, faellig, status, quelle, richtung,
          m_empf, m_zweck, uid, uname, kid, kname, kat_soll, schief, rate) in cur.fetchall():
         kat = je_kat.setdefault(kid, {
             "kategorie_id": kid, "kategorie": kname, "soll_cent": kat_soll,
-            "schiefstellung_erlaubt": schief, "vertraege": [], "summe_rate_cent": 0,
+            "schiefstellung_erlaubt": schief, "vertraege": [],
+            "summe_ausgang_cent": 0, "summe_eingang_cent": 0,
         })
         kat["vertraege"].append({
             "id": vid, "name": name, "beschreibung": beschr, "rhythmus": rhy,
-            "betrag_cent": median, "rate_cent": rate, "letzte_zahlung": letzte,
-            "naechste_faellig": faellig, "status": status, "quelle": quelle,
-            "muster_empfaenger": m_empf, "muster_zweck": m_zweck,
+            "betrag_cent": median, "rate_cent": rate, "richtung": richtung,
+            "letzte_zahlung": letzte, "naechste_faellig": faellig, "status": status,
+            "quelle": quelle, "muster_empfaenger": m_empf, "muster_zweck": m_zweck,
             "unterkategorie_id": uid, "unterkategorie": uname,
         })
         if status == "bestaetigt":
-            kat["summe_rate_cent"] += rate
+            if richtung == "eingang":
+                kat["summe_eingang_cent"] += rate
+            else:
+                kat["summe_ausgang_cent"] += rate
 
     # Ist-Bestand je Topf -> für die Reichweite bei erlaubter Schiefstellung.
     cur.execute("""
@@ -539,11 +543,15 @@ def vertraege(cur, nur_aktive: bool = False) -> dict:
     kats = []
     for k in je_kat.values():
         k["bestand_cent"] = bestand.get(k["kategorie_id"], 0)
-        k["rest_cent"] = k["soll_cent"] - k["summe_rate_cent"]   # < 0 -> Unterdeckung
+        # NETTO-Bedarf = was rausgeht minus was reinkommt (Kindergeld deckt Ausgänge!).
+        k["netto_bedarf_cent"] = k["summe_ausgang_cent"] - k["summe_eingang_cent"]
+        # Was der Topf pro Monat wirklich gewinnt/verliert: Config-Soll + Eingang − Ausgang.
+        # > 0 -> Rest geht nach Allgemein / Topf wächst · < 0 -> echte Unterdeckung.
+        k["rest_cent"] = k["soll_cent"] - k["netto_bedarf_cent"]
         k["reichweite_monate"] = None
         if k["rest_cent"] < 0 and k["bestand_cent"] > 0:
             k["reichweite_monate"] = int(k["bestand_cent"] / abs(k["rest_cent"]))
-        # Ampel: ok -> passt · schief -> Unterdeckung, aber erlaubt · warnung -> hart
+        # Ampel: ok -> passt/wächst · schief -> Unterdeckung, aber erlaubt · warnung -> hart
         if k["rest_cent"] >= 0:
             k["ampel"] = "ok"
         else:
