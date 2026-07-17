@@ -137,18 +137,26 @@ def view_buchungen(request: Request, konto: str = "", kategorie_id: str = "",
 
 @router.get("/reports", response_class=HTMLResponse)
 def view_reports(request: Request, von: str = "", bis: str = "",
-                 modus: str = "ausgabe", ebene: str = "kategorie"):
+                 modus: str = "ausgabe", ebene: str = "kategorie", nur_kategorie: str = ""):
     if modus not in ("ausgabe", "einnahme", "netto"):
         modus = "ausgabe"
     if ebene not in ("kategorie", "unterkategorie"):
         ebene = "kategorie"
+    nur_kat_id = int(nur_kategorie) if nur_kategorie.isdigit() else None
+    nur_kat_name = ""
     with db() as conn, conn.cursor() as cur:
         von = von or q.stichtag(cur)      # #26: Default-Von aus den Einstellungen
-        piv = q.pivot(cur, von=von, bis=bis or None, modus=modus, ebene=ebene)
+        piv = q.pivot(cur, von=von, bis=bis or None, modus=modus, ebene=ebene,
+                      nur_kategorie_id=nur_kat_id)
         top = q.top_empfaenger(cur, von=von)
+        if nur_kat_id is not None:
+            cur.execute("SELECT name FROM kategorien WHERE id=%s", (nur_kat_id,))
+            row = cur.fetchone()
+            nur_kat_name = row[0] if row else ""
     return TEMPLATES.TemplateResponse(request, "reports.html", {
         "request": request, "tab": "reports", "piv": piv, "top": top,
-        "von": von, "bis": bis, "modus": modus, "ebene": ebene})
+        "von": von, "bis": bis, "modus": modus, "ebene": ebene,
+        "nur_kategorie": nur_kategorie, "nur_kat_name": nur_kat_name})
 
 
 @router.get("/config", response_class=HTMLResponse)

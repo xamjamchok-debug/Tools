@@ -38,6 +38,27 @@ def js(s: str) -> str:
     return s.strip().replace("\\", "\\\\").replace("'", "\\'")
 
 
+def parse_version() -> tuple[str, str]:
+    """Version + Stand aus Zeile ``**Version 3.20 · Stand 2026-07-17**`` der BACKLOG.md."""
+    for ln in BACKLOG.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"\*\*Version\s+([\d.]+)\s+·\s+Stand\s+([\d-]+)\*\*", ln.strip())
+        if m:
+            return m.group(1), m.group(2)
+    return "?", "?"
+
+
+def sync_version(anzahl: int) -> None:
+    """Version-Badge, Stand und Quelle-Zeile im Board an die BACKLOG.md angleichen."""
+    ver, stand = parse_version()
+    html = BOARD.read_text(encoding="utf-8")
+    html = re.sub(r'(<b id="version-num">)v[\d.]+(</b>)', rf'\g<1>v{ver}\g<2>', html)
+    html = re.sub(r'(<span class="stand">· Stand )[\d-]+(</span>)', rf'\g<1>{stand}\g<2>', html)
+    html = re.sub(r'v[\d.]+ \(\d{4}-\d\d-\d\d\), \d+ Positionen',
+                  f'v{ver} ({stand}), {anzahl} Positionen', html)
+    BOARD.write_text(html, encoding="utf-8")
+    print(f"  Version-Badge synchronisiert: v{ver} · Stand {stand} · {anzahl} Positionen.")
+
+
 def parse_backlog() -> list[str]:
     zeilen = BACKLOG.read_text(encoding="utf-8").splitlines()
     items, warnungen = [], []
@@ -77,4 +98,5 @@ if __name__ == "__main__":
     if len(items) < 20:
         sys.exit(f"Nur {len(items)} Items geparst — verdächtig, Abbruch.")
     splice(items)
+    sync_version(len(items))
     print("  backlog-board.html aktualisiert.")

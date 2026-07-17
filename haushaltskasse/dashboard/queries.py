@@ -275,15 +275,22 @@ _PIVOT_MODUS = {
 
 
 def pivot(cur, von: str = STICHTAG, bis: str | None = None,
-          modus: str = "ausgabe", ebene: str = "kategorie") -> dict:
+          modus: str = "ausgabe", ebene: str = "kategorie",
+          nur_kategorie_id: int | None = None) -> dict:
     """Pivot: Zeilen = Kategorien (oder Unterkategorien), Spalten = Monate, Werte je Modus.
 
     modus: 'ausgabe' | 'einnahme' | 'netto'. ebene: 'kategorie' | 'unterkategorie'.
-    Rückgabe: monate[], zeilen[{label, kategorie_id, unterkategorie_id, monate{YYYY-MM: cent}, summe}],
-    spalten_summe{monat: cent}, gesamt.
+    nur_kategorie_id: auf EIN Nebenbuch einschränken (für den Doppelklick-Drill Kategorie →
+    deren Unterkategorien). Rückgabe: monate[], zeilen[{label, kategorie_id, unterkategorie_id,
+    monate{YYYY-MM: cent}, summe}], spalten_summe{monat: cent}, gesamt.
     """
     bis = bis or date.today().isoformat()
     betrag = _PIVOT_MODUS.get(modus, _PIVOT_MODUS["ausgabe"])
+    params: list = [von, bis]
+    filter_sql = ""
+    if nur_kategorie_id is not None:
+        filter_sql = "AND b.kategorie_id = %s"
+        params.append(nur_kategorie_id)
     cur.execute(f"""
         SELECT b.kategorie_id, b.unterkategorie_id,
                COALESCE(k.name, '(nicht zugeordnet)') AS kname, u.name AS uname,
@@ -293,10 +300,10 @@ def pivot(cur, von: str = STICHTAG, bis: str | None = None,
         LEFT JOIN kategorien k ON k.id = b.kategorie_id
         LEFT JOIN unterkategorien u ON u.id = b.unterkategorie_id
         WHERE b.buchungsart='real' AND b.quelle_import <> 'startsaldo'
-          AND b.datum_wert >= %s AND b.datum_wert <= %s
+          AND b.datum_wert >= %s AND b.datum_wert <= %s {filter_sql}
         GROUP BY b.kategorie_id, b.unterkategorie_id, k.name, u.name,
                  to_char(date_trunc('month', b.datum_wert), 'YYYY-MM')
-    """, (von, bis))
+    """, params)
 
     monate: set = set()
     zeilen: dict = {}
@@ -311,8 +318,9 @@ def pivot(cur, von: str = STICHTAG, bis: str | None = None,
             label = kname
             drill = {"kategorie_id": kid}
         z = zeilen.setdefault(key, {"label": label, **drill, "monate": {}, "summe": 0})
-        z["monate"][monat] = z["monate"].get(monat, 0) + (wert or 0)
-        z["summe"] += (wert or 0)
+        w = int(wert or 0)   # Decimal -> int (JSON-serialisierbar für die Grafik)
+        z["monate"][monat] = z["monate"].get(monat, 0) + w
+        z["summe"] += w
 
     monate = sorted(monate)
     # Ausgaben (negativ) aufsteigend = größter Betrag zuerst; sonst absteigend.

@@ -5,7 +5,15 @@
      title="Pivot in der eingestellten Sicht als CSV (Excel-tauglich)"
      onclick="location='/export/reports.csv'+location.search;return false">⬇ CSV</a></h1>
 <p class="sub">Zeilen = {{ 'Unterkategorien' if ebene=='unterkategorie' else 'Kategorien' }}, Spalten = Monate.
-  <b>Doppelklick</b> auf eine Zelle öffnet die Einzelbuchungen (Kategorie × Monat).</p>
+  Häkchen wählt aus, was in der <b>Grafik</b> erscheint · <b>Doppelklick</b>
+  {% if ebene=='kategorie' %}auf eine Kategorie öffnet deren Unterkategorien{% else %}auf eine Zelle öffnet die Buchungen{% endif %}.</p>
+
+{% if nur_kat_name %}
+<p class="hinweis" style="padding:.5rem .9rem;border-radius:8px;background:var(--accent-soft);border:1px solid var(--border)">
+  Nebenbuch <b>{{ nur_kat_name }}</b> → Unterkategorien.
+  <a href="/reports?ebene=kategorie&modus={{ modus }}&von={{ von }}&bis={{ bis }}">← alle Kategorien</a>
+</p>
+{% endif %}
 
 <form class="toolbar" method="get">
   <label class="small">von <input type="date" name="von" value="{{ von }}"></label>
@@ -18,42 +26,52 @@
     <option value="kategorie" {{ 'selected' if ebene=='kategorie' }}>je Kategorie</option>
     <option value="unterkategorie" {{ 'selected' if ebene=='unterkategorie' }}>je Unterkategorie</option>
   </select>
+  {% if nur_kategorie %}<input type="hidden" name="nur_kategorie" value="{{ nur_kategorie }}">{% endif %}
   <button type="submit">Anwenden</button>
 </form>
 
+{% if piv.zeilen %}
+<div class="card" style="margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <b>Verlauf</b>
+    <span class="small">
+      <button type="button" class="ghost" onclick="alleReihen(true)">alle</button>
+      <button type="button" class="ghost" onclick="alleReihen(false)">keine</button>
+      <label><input type="checkbox" id="alsBalken" onchange="zeichne()"> Balken</label>
+    </span>
+  </div>
+  <div id="chart" style="width:100%;overflow-x:auto"></div>
+  <div id="legende" class="legende"></div>
+</div>
+{% endif %}
+
 <div class="card scroll"><table>
   <tr>
+    <th></th>
     <th style="position:sticky;left:0;background:var(--head)">{{ 'Unterkategorie' if ebene=='unterkategorie' else 'Kategorie' }}</th>
     {% for m in piv.monate %}<th class="num">{{ m }}</th>{% endfor %}
-    <th class="num">Verlauf</th>
     <th class="num">Summe</th>
   </tr>
   {% for z in piv.zeilen %}
-  {% set rowmax = (z.monate.values() | map('abs') | list | max) or 1 %}
   <tr>
-    <td style="position:sticky;left:0;background:var(--card);cursor:pointer" title="Alle Buchungen dieser Zeile im Zeitraum"
-        ondblclick="drill('{{ z.kategorie_id or '' }}','{{ z.unterkategorie_id or '' }}','')">{{ z.label }}</td>
+    <td style="text-align:center"><input type="checkbox" class="reihe" data-i="{{ loop.index0 }}" checked onchange="zeichne()"></td>
+    <td style="position:sticky;left:0;background:var(--card);cursor:pointer"
+        title="{{ 'Doppelklick: Unterkategorien dieses Nebenbuchs' if ebene=='kategorie' else 'Doppelklick: Buchungen dieser Zeile' }}"
+        ondblclick="{% if ebene=='kategorie' %}drillUnterkat('{{ z.kategorie_id or '' }}'){% else %}drillBuchung('{{ z.kategorie_id or '' }}','{{ z.unterkategorie_id or '' }}',''){% endif %}">
+      <span class="farbe" id="farbe-{{ loop.index0 }}"></span>{{ z.label }}</td>
     {% for m in piv.monate %}
       {% set v = z.monate.get(m) %}
       <td class="num {{ 'neg' if v and v<0 else ('pos' if v and v>0 else 'muted') }}"
-          style="cursor:pointer" ondblclick="drill('{{ z.kategorie_id or '' }}','{{ z.unterkategorie_id or '' }}','{{ m }}')">
+          style="cursor:pointer" ondblclick="drillBuchung('{{ z.kategorie_id or '' }}','{{ z.unterkategorie_id or '' }}','{{ m }}')">
         {{ v|euro if v else '·' }}</td>
     {% endfor %}
-    <td>
-      <div style="display:flex;align-items:flex-end;gap:1px;height:22px">
-        {% for m in piv.monate %}{% set v = z.monate.get(m) or 0 %}
-        <i title="{{ m }}: {{ v|euro }}" style="flex:1;background:var(--accent);opacity:.55;
-           height:{{ (100 * (v|abs) / rowmax)|round(0) }}%;min-height:1px"></i>{% endfor %}
-      </div>
-    </td>
     <td class="num {{ 'neg' if z.summe<0 else 'pos' }}"><b>{{ z.summe|euro }}</b></td>
   </tr>
   {% endfor %}
   {% if not piv.zeilen %}<tr><td colspan="{{ piv.monate|length + 3 }}" class="muted small">Keine Daten im Zeitraum.</td></tr>{% endif %}
   <tr style="border-top:2px solid var(--border)">
-    <td style="position:sticky;left:0;background:var(--head)"><b>Summe</b></td>
+    <td></td><td style="position:sticky;left:0;background:var(--head)"><b>Summe</b></td>
     {% for m in piv.monate %}<td class="num"><b>{{ piv.spalten_summe[m]|euro }}</b></td>{% endfor %}
-    <td></td>
     <td class="num"><b>{{ piv.gesamt|euro }}</b></td>
   </tr>
 </table></div>
@@ -67,21 +85,94 @@
     <td class="num muted">{{ t.n }}</td></tr>
   {% endfor %}
 </table></div>
-{% endblock %}
 
-{% block script %}
-function drill(kid, uid, monat){
+<script id="pivot-daten" type="application/json">
+{{ {"monate": piv.monate,
+    "reihen": (piv.zeilen | map(attribute='label') | list),
+    "werte": (piv.zeilen | map(attribute='monate') | list)} | tojson }}
+</script>
+
+<style>
+  .farbe{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle;background:transparent}
+  .legende{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px;font-size:.82rem}
+  .legende span{display:flex;align-items:center;gap:6px}
+  .legende i{width:12px;height:12px;border-radius:2px;display:inline-block}
+  .ghost{padding:.1rem .5rem}
+</style>
+
+<script>
+const PALETTE = ['#2e6ca6','#1e7a69','#d8a21a','#74469c','#ae3b29','#0f8f96','#c2751a','#3b6ea5','#7a9e1e','#a0508c'];
+const DATA = JSON.parse(document.getElementById('pivot-daten').textContent);
+const monate = DATA.monate;
+// werte[reihe] = {monat: cent}; in Arrays je Monat (euro) umwandeln.
+const reihen = DATA.reihen.map((label,i)=>({
+  label, farbe: PALETTE[i % PALETTE.length],
+  werte: monate.map(m => (DATA.werte[i][m]||0)/100)
+}));
+// Farbpunkte in der Tabelle setzen.
+reihen.forEach((r,i)=>{ const el=document.getElementById('farbe-'+i); if(el) el.style.background=r.farbe; });
+
+function gewaehlt(){
+  return [...document.querySelectorAll('.reihe')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
+}
+function alleReihen(an){ document.querySelectorAll('.reihe').forEach(c=>c.checked=an); zeichne(); }
+
+function zeichne(){
+  const sel = gewaehlt();
+  const box = document.getElementById('chart'), leg=document.getElementById('legende');
+  if(!monate.length || !sel.length){ box.innerHTML='<p class="muted small">Nichts ausgewählt.</p>'; leg.innerHTML=''; return; }
+  const balken = document.getElementById('alsBalken').checked;
+  const W = Math.max(560, monate.length*90), H=260, L=64, R=16, T=14, B=42;
+  const iw=W-L-R, ih=H-T-B;
+  let min=0, max=0;
+  sel.forEach(i=>reihen[i].werte.forEach(v=>{ if(v<min)min=v; if(v>max)max=v; }));
+  if(max===min){ max=min+1; }
+  const x = j => L + (monate.length>1 ? j*iw/(monate.length-1) : iw/2);
+  const xb = j => L + (j+0.5)*iw/monate.length;
+  const y = v => T + ih - (v-min)/(max-min)*ih;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="system-ui" font-size="11">`;
+  // 0-Linie + Achsen
+  const y0 = y(0);
+  s += `<line x1="${L}" y1="${y0}" x2="${W-R}" y2="${y0}" stroke="var(--border)"/>`;
+  [max, (max+min)/2, min].forEach(v=>{ const yy=y(v);
+    s += `<text x="${L-6}" y="${yy+3}" text-anchor="end" fill="var(--muted)">${Math.round(v)}</text>`;
+    s += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="var(--border)" opacity=".4"/>`; });
+  monate.forEach((m,j)=>{ const xx = balken?xb(j):x(j);
+    s += `<text x="${xx}" y="${H-B+16}" text-anchor="middle" fill="var(--muted)">${m.slice(2)}</text>`; });
+  // Reihen
+  sel.forEach(i=>{ const r=reihen[i];
+    if(balken){
+      const bw = iw/monate.length/Math.max(sel.length,1)*0.8;
+      const off = sel.indexOf(i);
+      r.werte.forEach((v,j)=>{ const bx=L+j*iw/monate.length + off*bw + bw*0.15;
+        const yy=y(v), h=Math.abs(y0-yy);
+        s += `<rect x="${bx}" y="${Math.min(yy,y0)}" width="${bw*0.85}" height="${h}" fill="${r.farbe}" opacity=".85"/>`; });
+    } else {
+      const pts = r.werte.map((v,j)=>`${x(j)},${y(v)}`).join(' ');
+      s += `<polyline points="${pts}" fill="none" stroke="${r.farbe}" stroke-width="2"/>`;
+      r.werte.forEach((v,j)=> s += `<circle cx="${x(j)}" cy="${y(v)}" r="2.5" fill="${r.farbe}"/>`);
+    }
+  });
+  s += `</svg>`;
+  box.innerHTML = s;
+  leg.innerHTML = sel.map(i=>`<span><i style="background:${reihen[i].farbe}"></i>${reihen[i].label}</span>`).join('');
+}
+
+function drillUnterkat(kid){
+  if(!kid) return;
+  const p = new URLSearchParams(location.search);
+  p.set('ebene','unterkategorie'); p.set('nur_kategorie', kid);
+  location = '/reports?'+p.toString();
+}
+function drillBuchung(kid, uid, monat){
   const p = new URLSearchParams();
   if(kid) p.set('kategorie_id', kid); else p.set('offen','1');
   if(uid) p.set('unterkategorie_id', uid);
-  if(monat){
-    const [y,m] = monat.split('-').map(Number);
-    const letzter = new Date(y, m, 0).getDate();
-    p.set('von', monat+'-01');
-    p.set('bis', monat+'-'+String(letzter).padStart(2,'0'));
-  } else {
-    p.set('von', '{{ von }}');{% if bis %} p.set('bis','{{ bis }}');{% endif %}
-  }
+  if(monat){ const [y,m]=monat.split('-').map(Number); const letzter=new Date(y,m,0).getDate();
+    p.set('von',monat+'-01'); p.set('bis',monat+'-'+String(letzter).padStart(2,'0'));
+  } else { p.set('von','{{ von }}');{% if bis %} p.set('bis','{{ bis }}');{% endif %} }
   location = '/buchungen?'+p.toString();
 }
+zeichne();
+</script>
 {% endblock %}
