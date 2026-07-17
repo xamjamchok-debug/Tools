@@ -26,6 +26,31 @@ Diese drei Sätze gelten über allem anderen — sie definieren, was der Rückla
 
 ---
 
+## 🧩 Regelmäßig ≠ Vertrag + der große Config-Abgleich (Jörg 2026-07-17)
+
+**(A) Regelmäßig, aber kein Vertrag.** ALDI, DM, Kosmetik, Lebensmittel sind **regelmäßige
+Zahlungen ohne Vertragscharakter**. Die automatische Erkennung erzeugt hier zwangsläufig Fehltreffer
+(Shell, Aldi tauchten als „Vertrag" auf). **Lösung (Jörgs eigener Vorschlag):** Ein **Behälter kann
+zweierlei sein** — ein echter *Vertrag* (Rhythmus, feste Gebühr) **oder** ein **Budget-/Sammeltopf**
+für regelmäßiges Alltagsgeld. Jörg legt einen **manuellen** Behälter „Lebensmittel" / „Kosmetik" an,
+zieht die passenden Buchungen (per Drag&Drop/Tipp) hinein und setzt einen **Budget-Betrag** — ganz
+ohne erkannten Rhythmus. Damit bekommen auch Alltagsausgaben eine saubere Rückstellung, ohne dass
+die Automatik sie fälschlich als Vertrag führt. *(Fehltreffer der Erkennung einfach ignorieren, den
+Sammeltopf manuell bauen.)*
+
+**(B) Der große Abgleich: Verträge + alte Untertöpfe → Config.** Irgendwann müssen **alle** Behälter
+(erkannte Verträge, manuelle Sammeltöpfe, die bestehenden „Allgemein"-/alten Untertöpfe) **in die
+Config** — als die Aufschlüsselung dessen, was ein Nebenbuch monatlich zurücklegt. **Eiserne Regel:
+Die heutigen Config-Werte je Nebenbuch werden RESPEKTIERT** (Jörgs Steuerung, Prinzip 1). Weil die
+Summe der Behälter fast nie exakt dem Nebenbuch-Soll entspricht, entstehen **viele Abweichungen →
+viele Wahrnehmungen** (Prinzip 3). Jörg löst jede bewusst: **Überbuchung akzeptieren** (Behälter
+fordern mehr, ist ok — z. B. Schiefstellung Füchschen) **ODER Rücklage erhöhen** (Nebenbuch-Soll
+anheben). **Nie still ausgleichen.** Das ist ein **konzentrierter, eigener Arbeitsschritt** — nicht
+nebenbei, sondern Nebenbuch für Nebenbuch durchgehen. Reihenfolge: erst Behälter sauber zuordnen
+(#78), dann diesen Abgleich, dann erst der Rückstellungslauf (#76) bucht auf der abgeglichenen Basis.
+
+---
+
 ## Deine drei Vorgaben
 
 1. **Rückstellung auf erkanntem Rhythmus** — nicht manuell gepflegt, nicht geschätzt.

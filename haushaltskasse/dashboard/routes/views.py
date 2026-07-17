@@ -69,10 +69,12 @@ def logout(request: Request):
 def view_uebersicht(request: Request, stichtag: str = ""):
     with db() as conn, conn.cursor() as cur:
         u = q.uebersicht(cur)
+        baum = q.ruecklagen_baum(cur)   # für die aufklappbare Rücklagen-Sicht in der Übersicht
         st = None
         if stichtag and re.fullmatch(r"\d{4}-\d{2}-\d{2}", stichtag.strip()):
             st = q.haushaltssaldo_per_stichtag(cur, stichtag.strip())
-        ctx = {"request": request, "tab": "uebersicht", "u": u, "st": st, "stichtag": stichtag}
+        ctx = {"request": request, "tab": "uebersicht", "u": u, "baum": baum,
+               "st": st, "stichtag": stichtag}
     return TEMPLATES.TemplateResponse(request, "uebersicht.html", ctx)
 
 

@@ -123,13 +123,14 @@ def ruecklagen_baum(cur) -> list[dict]:
     einzelnen Bewegungen sieht man per Doppelklick in der Nebenbuch-Ansicht (nebenbuch()).
     """
     cur.execute("""
-        SELECT k.id, k.name, k.monatliche_ruecklage_cent,
+        SELECT k.id, k.name, k.monatliche_ruecklage_cent, k.zaehlt_als,
                COALESCE((SELECT SUM(b.betrag_cent) FROM buchungen b
                          WHERE b.kategorie_id = k.id AND b.buchungsart='ruecklage'), 0) AS ist
         FROM kategorien k WHERE k.aktiv ORDER BY k.name
     """)
-    kats = [{"id": i, "name": n, "soll_cent": soll, "ist_cent": ist, "unterkategorien": []}
-            for i, n, soll, ist in cur.fetchall()]
+    kats = [{"id": i, "name": n, "soll_cent": soll, "zaehlt_als": za, "ist_cent": ist,
+             "unterkategorien": []}
+            for i, n, soll, za, ist in cur.fetchall()]
     kat_by_id = {k["id"]: k for k in kats}
 
     cur.execute("""

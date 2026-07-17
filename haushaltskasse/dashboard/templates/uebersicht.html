@@ -6,23 +6,39 @@
 <p class="sub">Freier Haushalts-Saldo: reale Konten + Posten − Rücklagen-Töpfe + Forderungen.</p>
 
 <div class="grid kpis">
-  <div class="card kpi"><div class="label">Freier Haushalts-Saldo</div>
-    <div class="val {{ 'pos' if u.saldo_cent>=0 else 'neg' }}">{{ u.saldo_cent|euro }}</div>
-    <div class="small muted">Liquidität nach Reservierungen</div></div>
-  <div class="card kpi"><div class="label">Realsaldo (Konten)</div>
+  <div class="card kpi hero"><div class="label">Freier Haushalts-Saldo</div>
+    <div class="val">{{ u.saldo_cent|euro }}</div>
+    <div class="small">Liquidität nach Reservierungen</div></div>
+  <div class="card kpi k-green"><div class="label">Realsaldo (Konten)</div>
     <div class="val {{ 'pos' if u.realsaldo_cent>=0 else 'neg' }}">{{ u.realsaldo_cent|euro }}</div>
     <div class="small muted">echtes Geld auf allen Konten</div></div>
-  <div class="card kpi"><div class="label">Posten</div>
+  <div class="card kpi k-blue"><div class="label">Posten</div>
     <div class="val {{ 'pos' if u.posten_saldo_summe_cent>=0 else 'neg' }}">{{ u.posten_saldo_summe_cent|euro }}</div>
     <div class="small muted">ETF, Anlage Großeltern … (im Saldo)</div></div>
-  <div class="card kpi"><div class="label">Merkzettel</div>
+  <div class="card kpi k-gold"><div class="label">Merkzettel</div>
     <div class="val {{ 'neg' if u.merkzettel_summe_cent<0 else 'muted' }}">{{ u.merkzettel_summe_cent|euro }}</div>
     <div class="small muted">vorgemerkte künftige Kosten</div></div>
-  <div class="card kpi"><div class="label">Rücklagen gebunden</div>
-    <div class="val">{{ u.ruecklagen_cent|euro }}</div></div>
-  <div class="card kpi"><div class="label">Forderungen (Natalie/Jörg)</div>
-    <div class="val">{{ u.forderung_cent|euro }}</div></div>
+  <div class="card kpi k-lila"><div class="label">Rücklagen gebunden</div>
+    <div class="val">{{ u.ruecklagen_cent|euro }}</div>
+    <div class="small muted">zweckgebunden in Töpfen</div></div>
+  <div class="card kpi k-teal"><div class="label">Forderungen (Natalie/Jörg)</div>
+    <div class="val">{{ u.forderung_cent|euro }}</div>
+    <div class="small muted">schulden der Kasse (+)</div></div>
 </div>
+
+<style>
+  /* Farbflächen für die KPI-Kacheln (Jörg-Wunsch 2026-07-17: „bisschen bunt highlighten"). */
+  .kpi{position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kpi-akz,var(--accent))}
+  .kpi.k-green{background:linear-gradient(180deg,rgba(30,122,105,.09),transparent 70%);--kpi-akz:var(--pos)}
+  .kpi.k-blue {background:linear-gradient(180deg,rgba(46,108,166,.10),transparent 70%);--kpi-akz:var(--accent)}
+  .kpi.k-gold {background:linear-gradient(180deg,rgba(216,162,26,.14),transparent 70%);--kpi-akz:var(--hi)}
+  .kpi.k-lila {background:linear-gradient(180deg,rgba(116,70,156,.10),transparent 70%);--kpi-akz:#74469c}
+  .kpi.k-teal {background:linear-gradient(180deg,rgba(20,140,150,.10),transparent 70%);--kpi-akz:#0f8f96}
+  .kpi.hero{background:linear-gradient(145deg,var(--accent),#20517e);color:#fff;--kpi-akz:var(--hi)}
+  .kpi.hero .label,.kpi.hero .small{color:rgba(255,255,255,.85)}
+  .kpi.hero .val{color:#fff}
+</style>
 
 <div class="card" style="margin-bottom:16px">
   <h2 style="margin-top:0">Herleitung: Liquidität → Haushalts-Saldo</h2>
@@ -37,10 +53,16 @@
         <td class="num {{ 'pos' if u.forderung_cent>=0 else 'neg' }}">{{ u.forderung_cent|euro }}</td></tr>
     <tr><td>+ Posten im Saldo (ETF, Anlage Großeltern …)</td>
         <td class="num {{ 'pos' if u.posten_saldo_summe_cent>=0 else 'neg' }}">{{ u.posten_saldo_summe_cent|euro }}</td></tr>
-    <tr style="border-top:2px solid var(--border)">
+    <tr class="ergebnis">
         <td><b>= Haushalts-Saldo</b></td>
         <td class="num"><b class="{{ 'pos' if u.saldo_cent>=0 else 'neg' }}">{{ u.saldo_cent|euro }}</b></td></tr>
   </table>
+  <style>
+    .ergebnis td{background:var(--accent-soft);border-top:2px solid var(--accent);
+                 border-bottom:none;font-size:1.05em;padding-top:10px;padding-bottom:10px}
+    .ergebnis td:first-child{border-radius:8px 0 0 8px}
+    .ergebnis td:last-child{border-radius:0 8px 8px 0}
+  </style>
   <p class="small muted" style="margin-bottom:0">Langfristig separat (nicht im Saldo): {{ u.langfrist_cent|euro }}.
     Forderungen als Guthaben (+) gerechnet. Merkzettel-Summe {{ u.merkzettel_summe_cent|euro }} ist hier
     sichtbar verrechnet (das war vorher in „Posten" versteckt).</p>
@@ -77,14 +99,36 @@
     </table></div>
 
     <h2 style="margin-top:24px">Rücklagen-Töpfe (aktueller Stand)</h2>
+    <p class="small muted" style="margin-top:-4px">Tipp klappt Unterkategorien auf/zu ·
+      <b>Doppeltipp</b> öffnet die Buchungen · Aktionen (zurücklegen/entnehmen/umbuchen) im
+      <a href="/ruecklagen">Reiter Rücklagen</a>.</p>
     <div class="card scroll"><table>
       <tr><th>Topf</th><th class="num">Stand</th></tr>
-      {% for t in u.ruecklagen_toepfe %}
-      <tr><td>{{ t.name }}</td>
-        <td class="num {{ 'pos' if t.ist_cent>=0 else 'neg' }}">{{ t.ist_cent|euro }}</td></tr>
+      {% for k in baum if k.zaehlt_als != 'forderung' %}
+      <tr data-kat="{{ k.id }}" style="cursor:pointer" title="Tipp: auf/zu · Doppeltipp: Buchungen"
+          onclick="toggleTopf({{ k.id }})" ondblclick="location='/nebenbuch/{{ k.id }}'">
+        <td><span class="caret" id="ct-{{ k.id }}">{% if k.unterkategorien %}▸{% else %}&nbsp;{% endif %}</span>
+          {{ k.name }}
+          {% if k.unterkategorien %}<span class="tag">{{ k.unterkategorien|length }}</span>{% endif %}</td>
+        <td class="num {{ 'pos' if k.ist_cent>=0 else 'neg' }}">{{ k.ist_cent|euro }}</td></tr>
+      {% for u2 in k.unterkategorien %}
+      <tr class="ukat-{{ k.id }}" style="display:none;cursor:pointer"
+          title="Doppeltipp: Buchungen dieser Unterkategorie"
+          ondblclick="location='/nebenbuch/{{ k.id }}?unterkategorie_id={{ u2.id }}'">
+        <td style="padding-left:28px" class="muted">{{ u2.name }}</td>
+        <td class="num {{ 'pos' if u2.ist_cent>=0 else 'neg' }}">{{ u2.ist_cent|euro }}</td></tr>
+      {% endfor %}
       {% endfor %}
       <tr><td><b>Summe Rücklagen (gebunden)</b></td><td class="num"><b>{{ u.ruecklagen_cent|euro }}</b></td></tr>
     </table></div>
+    <script>
+      function toggleTopf(kid){
+        const rows=document.querySelectorAll('.ukat-'+kid);
+        const auf = rows.length && rows[0].style.display==='none';
+        rows.forEach(r=> r.style.display = auf ? '' : 'none');
+        const c=document.getElementById('ct-'+kid); if(c && c.textContent.trim()) c.textContent = auf ? '▾' : '▸';
+      }
+    </script>
 
     <h2 style="margin-top:24px">Forderungen</h2>
     <div class="card scroll"><table>
