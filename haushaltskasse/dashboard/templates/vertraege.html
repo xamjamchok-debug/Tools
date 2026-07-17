@@ -9,13 +9,34 @@
 
 <form class="toolbar" method="post" action="/vertraege/erkennen">
   <button type="submit">Verträge jetzt neu erkennen</button>
+  <button type="button" onclick="document.getElementById('nv-box').classList.toggle('an')">+ Neuer Vertrag</button>
   <span class="sub" style="margin-left:.8rem">
-    Sucht nach Rhythmus in den Buchungen. Ändert <b>keine</b> Soll-Werte und bucht nichts.
+    Erkennen sucht nach Rhythmus. Ändert <b>keine</b> Soll-Werte und bucht nichts.
   </span>
   {% if request.query_params.get('neu') %}
   <span class="pill ok" style="margin-left:auto">{{ request.query_params.get('neu') }} neu erkannt</span>
   {% endif %}
 </form>
+
+<div id="nv-box" class="card" style="display:none;margin-bottom:14px">
+  <b>Neuen Vertrag / Budget-Topf anlegen</b>
+  <p class="sub" style="margin:.3rem 0 .6rem">Für regelmäßige Ausgaben ohne festen Vertrag (z. B.
+    Lebensmittel, Kosmetik): Topf wählen, Budget setzen — danach Umsätze reinziehen.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input id="nv-name" placeholder="Name (z. B. Lebensmittel)" style="flex:1;min-width:160px">
+    <select id="nv-ukat">
+      {% for kat in kats %}<optgroup label="{{ kat.name }}">
+        {% for u in kat.unterkategorien %}<option value="{{ u.id }}">{{ kat.name }} / {{ u.name }}</option>{% endfor %}
+      </optgroup>{% endfor %}
+    </select>
+    <input id="nv-betrag" placeholder="Budget €/Mon" style="width:120px">
+    <select id="nv-richtung">
+      <option value="ausgang">Ausgang</option>
+      <option value="eingang">Eingang</option>
+    </select>
+    <button type="button" onclick="neuerVertrag()">Anlegen</button>
+  </div>
+</div>
 
 {% if daten.offene_vorschlaege %}
 <p class="hinweis">
@@ -222,6 +243,7 @@
              border:1px solid var(--border); margin:.5rem 0 }
   .hinweis.warnung { background:var(--hi-soft) }
   [contenteditable]:focus { outline:2px solid var(--accent); border-radius:3px }
+  #nv-box.an { display:block !important }
 </style>
 
 <script>
@@ -232,6 +254,17 @@ async function post(url, body) {
   return true;
 }
 async function status(id, s)      { if (await post(`/api/vertrag/${id}/status`, {status:s})) location.reload(); }
+async function neuerVertrag() {
+  const name = document.getElementById('nv-name').value.trim();
+  if (!name) { alert('Name fehlt'); return; }
+  const body = {
+    name,
+    unterkategorie_id: parseInt(document.getElementById('nv-ukat').value),
+    monatsrate: document.getElementById('nv-betrag').value || '0',
+    richtung: document.getElementById('nv-richtung').value,
+  };
+  if (await post('/api/vertrag', body)) location.reload();
+}
 async function feld(id, f, wert)  { await post(`/api/vertrag/${id}/${f}`, {wert}); location.reload(); }
 async function umhaengen(id, uid) { if (await post(`/api/vertrag/${id}/unterkategorie`,
                                        {unterkategorie_id: parseInt(uid)})) location.reload(); }

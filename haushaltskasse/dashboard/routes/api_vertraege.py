@@ -25,6 +25,43 @@ class StatusWechsel(BaseModel):
     status: str
 
 
+class NeuerVertrag(BaseModel):
+    name: str
+    unterkategorie_id: int
+    monatsrate: str = "0"
+    richtung: str = "ausgang"
+
+
+@router.post("/api/vertrag")
+def api_neu(body: NeuerVertrag):
+    """Manuellen Vertrag/Budget-Topf anlegen (Jörg-Wunsch 2026-07-17).
+
+    Für den „regelmäßig ≠ Vertrag"-Fall: Jörg legt z. B. „Lebensmittel" oder „Kosmetik"
+    manuell an, setzt ein Budget und zieht die Buchungen rein. Direkt `bestaetigt`
+    (kein Vorschlag), `quelle='manuell'`.
+    """
+    name = body.name.strip()
+    if not name:
+        return JSONResponse({"ok": False, "fehler": "Name darf nicht leer sein"}, status_code=400)
+    if body.richtung not in ("ausgang", "eingang"):
+        return JSONResponse({"ok": False, "fehler": "unbekannte Richtung"}, status_code=400)
+    cent = parse_euro(body.monatsrate) or 0
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM unterkategorien WHERE id=%s", (body.unterkategorie_id,))
+        if not cur.fetchone():
+            return JSONResponse({"ok": False, "fehler": "Unterkategorie unbekannt"}, status_code=400)
+        cur.execute(
+            """INSERT INTO vertraege
+                 (name, unterkategorie_id, richtung, rhythmus, betrag_median_cent,
+                  monatsrate_cent, status, quelle)
+               VALUES (%s,%s,%s,'monatlich',%s,%s,'bestaetigt','manuell')
+               RETURNING id""",
+            (name[:60], body.unterkategorie_id, body.richtung, abs(cent), abs(cent)),
+        )
+        vid = cur.fetchone()[0]
+    return {"ok": True, "id": vid}
+
+
 @router.post("/api/vertrag/{vertrag_id}/status")
 def api_status(vertrag_id: int, body: StatusWechsel):
     if body.status not in ERLAUBTE_STATUS:
