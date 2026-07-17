@@ -1,9 +1,9 @@
 <title>Backlog — Haushaltskasse</title>
 <style>
   :root{
-    --bg-top:#FFFFFF; --bg-bottom:#DCEAFB;
-    --cover:#DCEAFB; --cover-ink:#123657;
-    --paper:#FFFFFF; --paper-2:#EAF3FC;
+    --bg-top:#FFFFFF; --bg-mid:#EEF5FD; --bg-bottom:#FBF6E6;
+    --cover:#EAF2FB; --cover-ink:#123657;
+    --paper:#FFFFFF; --paper-2:#F2F7FD;
     --ink:#1B2733; --ink-soft:#5B6B7C;
     --line:#D3E2F1;
     --accent:#2E6CA6; --accent-soft:rgba(46,108,166,.11); --accent-ring:rgba(46,108,166,.4); --on-accent:#FFFFFF;
@@ -16,21 +16,8 @@
     --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
     --font-mono:ui-monospace,'SFMono-Regular','Cascadia Mono',Consolas,monospace;
   }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg-top:#0B121A; --bg-bottom:#081018;
-      --cover:#0E2740; --cover-ink:#D6E6F7;
-      --paper:#10171F; --paper-2:#16202B;
-      --ink:#E4EBF3; --ink-soft:#93A2B4;
-      --line:#26313F;
-      --accent:#6FA8E0; --accent-soft:rgba(111,168,224,.16); --accent-ring:rgba(111,168,224,.5); --on-accent:#0B121A;
-      --bug:#E08B72; --bug-soft:rgba(224,139,114,.14);
-      --klaerung:#5FC2AE; --klaerung-soft:rgba(95,194,174,.14);
-      --prio:#C7A6E0; --prio-soft:rgba(199,166,224,.14);
-      --neutral:#93A0B0; --neutral-soft:rgba(147,160,176,.14);
-      --focus:#7FC3E8;
-    }
-  }
+  /* Kein automatischer Dark-Mode mehr — die helle Papier-Optik gilt immer (Jörg-Wunsch
+     2026-07-17, wie die App). Dark bleibt nur per expliziter Auswahl [data-theme="dark"]. */
   :root[data-theme="dark"]{
     --bg-top:#0B121A; --bg-bottom:#081018;
     --cover:#0E2740; --cover-ink:#D6E6F7;
@@ -45,9 +32,9 @@
     --focus:#7FC3E8;
   }
   :root[data-theme="light"]{
-    --bg-top:#FFFFFF; --bg-bottom:#DCEAFB;
-    --cover:#DCEAFB; --cover-ink:#123657;
-    --paper:#FFFFFF; --paper-2:#EAF3FC;
+    --bg-top:#FFFFFF; --bg-mid:#EEF5FD; --bg-bottom:#FBF6E6;
+    --cover:#EAF2FB; --cover-ink:#123657;
+    --paper:#FFFFFF; --paper-2:#F2F7FD;
     --ink:#1B2733; --ink-soft:#5B6B7C;
     --line:#D3E2F1;
     --accent:#2E6CA6; --accent-soft:rgba(46,108,166,.11); --accent-ring:rgba(46,108,166,.4); --on-accent:#FFFFFF;
@@ -60,9 +47,9 @@
 
   *{box-sizing:border-box;}
   body{margin:0;}
-  html{background:var(--bg-bottom);}
+  html{background:var(--bg-mid);}
   body{
-    background:linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%) fixed;
+    background:linear-gradient(165deg, var(--bg-top) 0%, var(--bg-mid) 58%, var(--bg-bottom) 100%) fixed;
     color:var(--ink); font-family:var(--font-body); min-height:100vh;
   }
   ::selection{background:var(--accent-soft);}
