@@ -133,18 +133,20 @@ egal). Fitnessstudios → **einzeln** (Natalie, Mainz und die Kinder sind versch
 Kinder: **Essensgeld** (Kita + Schule zusammen) getrennt von **Betreuung** (OGS-/Kita-Gebühr) —
 nicht alles pauschal auf „Kinderkosten".
 
-## ⚠️ Widerspruch zu klären: Sport/Fitness
+## ✅ Sport/Fitness: von Jörg entschieden (2026-07-17) — **einzeln**
 
-Die beiden Sessions sagen hier **das Gegenteil**, das muss Jörg entscheiden:
+*(Vorher hier fälschlich als „offener Widerspruch F6" geführt — der war keiner. Jörgs Original-Input
+vom 2026-07-17 enthält die Entscheidung wörtlich; sie kam nur über die Handy-Übergabe verstümmelt an.)*
 
-- **Diese Datei oben („Geklärt", 2026-07-15):** „fifi" & „Robbie" → **eine** Unterkategorie
-  *Fitnessstudio*; die alten kommen nicht mehr vor, nur die Historie ist betroffen.
-- **Handy-Session (2026-07-17):** Fitness **einzeln je Person/Standort** — *Fitness Natalie*,
-  *Fitness Mainz*, *Sport Kinder* — „dann sieht man es deutlicher"; nur *Sport sonstige*
-  (Schwimmbad-Eintritt o. Ä.) wird gebündelt.
+> „Ich will die Unterkategorien erweitern. Also wenn wir verschiedene Fitnessstudios haben oder
+> Sportclubs, kann ruhig **jeder Empfänger eine Unterkategorie** sein. Das find ich gar nicht
+> schlecht, **dann sieht man's deutlicher**." — Jörg, 2026-07-17
 
-Nach der Faustregel oben spräche **Person + eigener Vertrag → einzeln** für die Handy-Variante.
-Betrifft #50 (bereits live) → wäre eine Nachjustierung der Unterkategorien, nicht ein Neubau.
+**Das überschreibt** den älteren Stand „Geklärt 2026-07-15" (fifi & Robbie → *eine* Unterkategorie
+*Fitnessstudio*). Keine Meinungsänderung im Konflikt, sondern eine **Präzisierung**: die alten
+Studios sind Historie, für die laufenden gilt **einzeln je Empfänger**.
+Umsetzung → [unterkategorien-empfaenger-arbeitsliste.md](unterkategorien-empfaenger-arbeitsliste.md),
+Abschnitt 1. Betrifft #50 (live) = Nachjustierung, kein Neubau.
 
 ## Offene Fragen (bitte direkt hier beantworten)
 
@@ -153,6 +155,11 @@ Betrifft #50 (bereits live) → wäre eine Nachjustierung der Unterkategorien, n
 | F1 | KFZ-Versicherung: unter **Auto** oder unter **Versicherungen**? | | offen — betrifft #69 |
 | F2 | Betreuung Kinder: **je Kind** getrennt oder ein gemeinsamer Topf? | | offen |
 | F3 | Welche **Versicherungs-Policen** existieren aktuell konkret? | | = #69, Ist-Stand aus der Live-DB ziehen |
-| F4 | Sollen **Lebensmittel/Drogerie** als laufende Bereiche geführt werden? | | **teils erledigt** — stehen oben schon als Unterkats unter *Haushaltskasse* |
+| F4 | Sollen **Lebensmittel/Drogerie** als laufende Bereiche geführt werden? | | **erledigt** — stehen oben schon als Unterkats unter *Haushaltskasse* |
 | F5 | Fehlt eine Kategorie, die du dir schon lange wünschst? | | offen |
-| F6 | **Sport: bündeln oder einzeln?** (s. Widerspruch oben) | | neu aus dem Abgleich |
+| F6 | ~~Sport: bündeln oder einzeln?~~ | **einzeln** | ✅ **entschieden 2026-07-17**, s. o. — war nie offen |
+
+> **Alle noch offenen Fragen stehen jetzt gebündelt in
+> [unterkategorien-empfaenger-arbeitsliste.md](unterkategorien-empfaenger-arbeitsliste.md)** —
+> dort mit den **echten Empfängern aus der DB** und Bemerkungsspalte zum Durcharbeiten.
+> Diese Datei hier ist der ältere Konzeptstand (#50, umgesetzt).
