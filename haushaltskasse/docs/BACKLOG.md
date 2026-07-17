@@ -1,6 +1,6 @@
 # Backlog — Haushaltskasse
 
-**Version 3.12 · Stand 2026-07-17**
+**Version 3.13 · Stand 2026-07-17**
 
 Kanonische Liste aller Änderungen & offenen TODOs (Kurzbeschreibung, Umsetzungsweise, **Reifegrad**).
 Live-Status + Deploy-Anleitung: [STAND-2026-07-13-live.md](STAND-2026-07-13-live.md).

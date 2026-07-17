@@ -30,43 +30,61 @@ Kurz: **Vertrag / Person / Verlauf → einzeln. Austauschbar / Alltag / Summe �
 Aktuell liegt alles in nur zwei Töpfen. Dein Wunsch („kann ruhig jeder Empfänger eine
 Unterkategorie sein, dann sieht man's deutlicher") ist hier direkt umsetzbar:
 
-| Empfänger (echt) | n | heute | **Vorschlag neu** | Modus | OK? | Bemerkung |
-|---|---|---|---|---|:--:|---|
-| 1. Godesberger Judo Club e.V. | 37 | Verein/Mitgliedschaft | **Judo (Kind)** | Einzeln | | |
-| Fitness-Trainer (Einzelperson, monatlich seit 03/2025) | 17 | Fitnessstudio | **Fitness Jörg** *(richtig?)* | Einzeln | | |
-| Natalie (Studio-Zahlung) | 5 | Fitnessstudio | **Fitness Natalie** | Einzeln | | |
-| Meckenheimer Sportverein e.V. | 3 | Verein/Mitgliedschaft | **Sportverein Meckenheim** | Einzeln | | |
-| Sportverein Wachtberg 1922 e.V. | 2 | Verein/Mitgliedschaft | **Sportverein Wachtberg** | Einzeln | | |
-| *(Schwimmbad, Eintritte, spontan)* | — | — | **Sport sonstige** | Bündeln | | |
+**Jörgs Zuordnung (2026-07-17), mit den Daten abgeglichen — passt lückenlos:**
 
-> ✅ **Geklärt (Jörg, 2026-07-17): „Studio Mainz gibt es nicht."** Das war ein Verhörer der
-> Spracheingabe — vermutlich „Natalie, **meins** oder von den Kindern". Passt zu den Daten:
-> es gibt genau **zwei** Studio-Zahlungen (eine monatliche + Natalie) plus die Kinder-Vereine.
-> ❓ **Bleibt offen:** Der monatliche Empfänger (n=17, Einzelperson) — ist das **dein** Trainer/Studio?
-> Dann heißt der Topf *Fitness Jörg*.
+| Empfänger (echt) | Betrag/Rhythmus lt. DB | **Unterkategorie neu** | für wen | OK? | Bemerkung |
+|---|---|---|---|:--:|---|
+| 1. Godesberger Judo Club e.V. | Beitrag regelmäßig + Extras (Prüfungen/Lehrgänge?) | **Judo** | Kinder | | |
+| Sportverein Wachtberg 1922 e.V. | 2× | **SV Wachtberg** | Kinder | | |
+| Meckenheimer Sportverein e.V. | seit 03/2026 | **Tanzverein** | Kind (mittleres) | | |
+| *(Kampfsportverein)* | monatlich, wechselnder Beitrag | **Kampfsport Natalie** | Natalie | | |
+| *(Fitnessstudio, Einzelperson als Empfänger)* | **monatlich durchgehend seit 03/2025** | **Fitnessstudio Jörg** | du | | |
+| *(Schwimmbad, Eintritte, spontan)* | — | **Sport sonstige** | alle | | |
+
+> ✅ **Geklärt (Jörg, 2026-07-17):** „Es gibt nicht *den* Fitnessempfänger, es gibt verschiedene
+> Sportvereine: Judoclub + SV Wachtberg für die Kinder · Tanzverein Meckenheim · Natalie
+> Kampfsport · ich im Fitnessstudio. **Die kannst du gerne einzeln als Unterkategorie haben.**"
+> → Alle fünf sind in den Daten eindeutig identifizierbar. **„Studio Mainz" war ein Verhörer**
+> der Spracheingabe (vermutlich „Natalie, **meins** oder von den Kindern").
+> ⚠️ Beim Judo-Club gibt es neben dem regelmäßigen Beitrag **viele unregelmäßige Einzelbeträge**
+> (Gürtelprüfungen? Lehrgänge? Turniere?) — für die Rückstellung zählt nur der **regelmäßige**
+> Teil, der Rest ist unplanbar. Genau das muss die Automatik unterscheiden können (s. Abschnitt 8).
 
 ---
 
-## 2. Kinder (Füchschen) — Essen vs. Betreuung trennen
+## 2. Kinder (Füchschen) — Essen vs. Betreuung: **geklärt** ✅
 
 Dein Wunsch: „nicht alles zusammen nur auf Kinderkosten, sondern da gebündelt die Essenskosten und
-die Betreuungskosten". Aktuell liegen **Gemeinde Wachtberg** und **Kath. Jugendagentur** zusammen in
-*Schule/Betreuung* — und *Taschengeld/Sparen* ist ein Sammelbecken, in dem auch Träger stecken.
+die Betreuungskosten". **Der Verwendungszweck löst das eindeutig auf** — deine Beträge haben
+gepasst, nur beim Träger hattest du dich vertan:
 
-| Empfänger (echt) | n | heute | **Vorschlag neu** | Modus | OK? | Bemerkung |
-|---|---|---|---|---|:--:|---|
-| Katholische Jugendagentur Bonn gGmbH (monatl., 19 Mon.) | 38 | Schule/Betreuung | **Betreuung (OGS)** | Einzeln | | |
-| Gemeinde Wachtberg (monatl., 19 Mon.) | 38 | Schule/Betreuung | **Essensgeld** *(oder Kita-Gebühr?)* | Bündeln | | |
-| KJF gGmbH (monatl., 19 Mon.) | 19 | Taschengeld/Sparen | **Betreuung (KJF)** *(?)* | Einzeln | | |
-| Rhein-Sieg-Kreis Kreiskasse | 8 | Taschengeld/Sparen | **Betreuung/Gebühr** *(?)* | Einzeln | | |
-| je Kind (3 Daueraufträge, monatl.) | 24–26 | Taschengeld/Sparen | **Taschengeld je Kind** | Einzeln | | |
-| Kindergeld (Zufluss) | 7 | Kindergeld | *bleibt* | — | | |
+| Empfänger (echt) | Zweck lt. DB | Rhythmus | **Unterkategorie neu** | OK? | Bemerkung |
+|---|---|---|---|:--:|---|
+| **Gemeinde Wachtberg** *(Kassenzeichen A)* | „ELTERNBEITRAEGE **OGS** BERKUM" | monatlich, 08/25 erhöht | **Betreuung OGS (Kind 1)** | | |
+| **Gemeinde Wachtberg** *(Kassenzeichen B)* | „ELTERNBEITRAEGE **OGS** BERKUM" | monatlich, 08/25 erhöht | **Betreuung OGS (Kind 2)** | | |
+| **Katholische Jugendagentur Bonn** | „OGS-…" | **2× im Monat** (2 Kinder) | **Essensgeld (Schule)** | | |
+| **KJF gGmbH** | „**Essensgeld** \<jüngstes Kind\>" | monatlich | **Essensgeld (Kita)** | | |
+| Rhein-Sieg-Kreis Kreiskasse | „Elternbeitrag KiGa…" | monatlich **bis 08/2025** | **Kita-Beitrag** *(ausgelaufen)* | | |
+| Kath. Jugendagentur / KJA Bonn | „…Oster-/Sommerferien" | 2–3× im Jahr | **Ferienbetreuung** | | |
+| Grundschule Berkum | „\<Kind\>, 4a" | einmalig | **Schule sonstiges** | | |
+| je Kind (3 Daueraufträge) | — | monatlich | **Taschengeld je Kind** | | |
+| Kindergeld (Zufluss) | — | monatlich | *bleibt* | | |
 
-> ❓ **Zentrale Frage:** Ist **Gemeinde Wachtberg** das **Essensgeld** oder die **Kita-/OGS-Gebühr**?
-> Und ist **KJF gGmbH** Betreuung oder Essen? Sobald du das sagst, ist die Trennung Essen/Betreuung
-> sauber — das war ja genau dein Punkt.
-> ❓ **Taschengeld je Kind einzeln** (3 Töpfe) oder **ein Topf „Taschengeld"**? Nach deiner Regel
-> (Person zuordenbar) wäre einzeln richtig — bestätigst du?
+> ✅ **Korrektur zu deiner Annahme:** Du sagtest *„Essensgeld ist bei der Gemeinde"* — **ist es
+> nicht.** Die Gemeinde macht die **OGS-Betreuung** (zwei Kassenzeichen = zwei Kinder, Beträge
+> exakt in deiner Größenordnung „200 oder 100 € plus, jeweils"). Das **Essensgeld** läuft über die
+> **Katholische Jugendagentur** (2× im Monat = deine „Zweitzahlung für die beiden Großen")
+> und die **KJF** (Zweck sagt wörtlich „Essensgeld" = dein „KJ irgendwas, 50–60 €").
+> Deine Beträge stimmten alle — nur der Träger war ein anderer.
+>
+> ⚠️ **Wichtig für die Automatik:** Bei **Gemeinde Wachtberg** hängen an EINEM Empfänger **vier
+> völlig verschiedene Zwecke**: OGS-Beiträge (Kinder) · **Grundsteuer/Straßenreinigung** ·
+> **Schmutz-/Niederschlagswassergebühr** (beide Nebenkosten, liegen dort auch richtig) · eine
+> Pachtzahlung. **Der Empfängername reicht als Anker nicht** — die Regel muss auf den
+> **Verwendungszweck** (bzw. das Kassenzeichen) gehen. Gleiches Muster wie bei PayPal.
+> ❓ **Taschengeld je Kind einzeln** (3 Töpfe) oder ein Topf? Nach deiner Regel (Person
+> zuordenbar) wäre einzeln richtig.
+> ❓ **Grundsteuer** liegt unter Nebenkosten → *Ver-/Entsorgung*. Eigener Topf „Grundsteuer"?
 
 ---
 
@@ -232,7 +250,87 @@ Werkzeug war.
 
 ---
 
+---
+
+# 8. Der eigentliche Punkt: Rückstellungen automatisch bilden
+
+> **Jörg, 2026-07-17 — bestätigt:** „**Insgesamt ist nicht das Ziel, alle Empfänger eine
+> Unterkategorie zu geben, sondern die sinnvoll zu bündeln.**"
+>
+> ✅ **Bestätigt.** Die Faustregel oben gilt, nicht „einzeln um jeden Preis". Sport wird einzeln,
+> **weil** es vier verschiedene Verpflichtungen für vier verschiedene Personen sind (Vertrag +
+> Person + Verlauf → einzeln). Lebensmittel bleiben **ein** Topf. Unterkategorien sind kein
+> Selbstzweck — sie müssen die Rückstellung tragen können.
+
+## Was du willst
+
+> „Wichtig wird es, wenn wir viele Unterkategorien haben, dass wir sauber die **Rückstellung
+> automatisiert** belegen. Die Idee ist, dass man für den Betrachtungszeitraum **regelmäßige
+> Buchungen — monatlich, quartalsweise, jährlich** — so viel Rückstellung bildet, dass sie dann
+> wieder **verzehrt** werden von den erwarteten Ausgaben."
+>
+> „Das hattest du mal gerechnet, indem du **die historischen Werte einfach aussortierst. Das finde
+> ich blödsinnig.** Das kann ich aber auch nicht alles manuell machen."
+
+**Die Kritik trifft zu.** Bisher steckte in den Vorschlägen zweimal Handarbeit drin, die nicht
+skaliert: die alten Studios wurden „aussortiert, kommen ja nicht mehr vor", und Wechselmonate mit
+Mini-Beträgen wurden als Ausreißer weggelassen. Bei 5 Töpfen geht das. Bei 40 nicht mehr.
+
+## Was stattdessen funktioniert: **Vertragserkennung statt Aussortieren**
+
+Nichts wird aussortiert — der **Rhythmus wird gemessen**. Aus Datum + Betrag je Empfänger/Zweck:
+
+| Schritt | Wie | Beleg (heute schon getestet) |
+|---|---|---|
+| **1. Rhythmus erkennen** | Abstände zwischen den Buchungen messen | funktioniert bereits: OGS-Beiträge → `MONATLICH`, Grundsteuer → `~alle 122 Tage` = **quartalsweise**, Versicherungen → `JÄHRLICH` |
+| **2. Betrag bestimmen** | **Median** der letzten Zahlungen, nicht Mittelwert | Median ist gegen Ausreißer immun → **Wechselmonate müssen nicht mehr aussortiert werden**, sie fallen von selbst raus |
+| **3. Läuft der Vertrag noch?** | letzte Buchung älter als **2 Rhythmen** → beendet | die alten Studios verschwinden **automatisch**, ohne dass jemand sie „aussortiert". Neue Verträge tauchen von selbst auf |
+| **4. Rückstellung** | `Monatsrate = Jahresbetrag ÷ 12` · `Ziel-Bestand = Rate × Monate bis zur nächsten Fälligkeit` | monatlich Gezahltes braucht fast keinen Topf, Jährliches muss angespart werden |
+| **5. Verzehr** | bei Fälligkeit wird der Topf durch die Ausgabe geleert | Mechanik existiert schon (Gegenbuchung/Spiegel) |
+| **6. Unregelmäßiges** | erkennt sich selbst: kein Rhythmus → **keine** Rückstellung | z. B. Judo-Extras, Arztrechnungen — die gehören in einen Puffer, nicht in einen Vertragstopf |
+
+**Der Kern:** Schritt 3 ersetzt das manuelle Aussortieren. Ein Vertrag ist „tot", wenn seit zwei
+Rhythmen nichts kam — das ist eine Regel, kein Handgriff. Und Schritt 2 (Median) erledigt die
+Ausreißer, ohne dass jemand entscheidet, was ein Ausreißer ist.
+
+## Was Finanzguru macht (angesehen, 2026-07-17)
+
+Finanzgurus Kernfeature ist genau **Schritt 1–3**: Die App durchsucht die Kontoumsätze, erkennt
+wiederkehrende Zahlungen automatisch als „Verträge" (Abos, Versicherungen, Mobilfunk, Fitness),
+zeigt je Vertrag den Betrag, **die nächste Abbuchung** und die Kündigungsfrist. Korrigiert man eine
+Kategorie, lernt sie dazu. In der Plus-Version (2,99 €/Monat) prognostiziert sie daraus den
+**Kontostand** der nächsten Wochen.
+
+**Was wir übernehmen sollten:** die Vertragserkennung als eigenes Objekt — nicht nur „Buchung hat
+Kategorie", sondern „**hinter diesen Buchungen steckt ein Vertrag mit Rhythmus X und Betrag Y, die
+nächste Fälligkeit ist am Z**". Genau das fehlt heute.
+
+**Wo dein Ansatz weiter geht:** Finanzguru **prognostiziert** nur den Kontostand — es **bildet keine
+Rückstellungen**. Deine Fuchsbaukasse legt das Geld je Topf tatsächlich zurück und verzehrt es bei
+Fälligkeit. Das ist der Schritt, den die App nicht macht. Die Erkennung klauen wir, die
+Topf-Mechanik hast du schon.
+
+| | OK? | Bemerkung |
+|---|:--:|---|
+| **Vertragserkennung so bauen** (Rhythmus messen, Median, „tot nach 2 Rhythmen") | | |
+| Erkannte Verträge zeigst du dir an und **bestätigst/korrigierst** sie einmal | | |
+| Daraus **automatisch** die Soll-Werte je Untertopf | | |
+
+> ❓ **Eine Rückfrage, damit ich dich nicht falsch verstehe:** Mit „die historischen Werte
+> aussortieren ist blödsinnig" meinst du — das **manuelle Wegwerfen alter/untypischer Zahlungen**
+> (alte Studios, Wechselmonate), weil das bei vielen Töpfen nicht mehr geht? Dann ist der Weg oben
+> die Antwort. **Oder** meinst du etwas anderes: dass alte Werte **mitzählen** sollen, statt
+> ignoriert zu werden?
+
+---
+
 ## Wenn du durch bist
 
 Sag einfach „fertig" — ich lese die Datei, baue die Mapping-Regeln und rechne vorher aus, wie viele
 Buchungen sich verschieben würden. **Nichts wird geschrieben, bevor du den Trockenlauf gesehen hast.**
+
+**Reihenfolge, die ich vorschlage:**
+1. **Regeln auf den Verwendungszweck** statt nur auf den Empfänger (PayPal, Gemeinde Wachtberg) —
+   ohne das greift bei den größten Brocken gar nichts.
+2. Die Unterkategorien aus dieser Liste anlegen + Historie nachziehen (Trockenlauf zuerst).
+3. **Dann** die Vertragserkennung (Abschnitt 8) — sie braucht die sauberen Unterkategorien als Basis.
