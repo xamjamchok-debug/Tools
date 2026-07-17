@@ -2,74 +2,61 @@
 {% block titel %} · Release Notes{% endblock %}
 {% block content %}
 <h1>Release Notes</h1>
-<p class="sub">Was in jeder Version dazukam — neueste zuerst.
+<p class="sub">Fortlaufendes Änderungsprotokoll — neueste Einträge oben.
   {% set v = app_version() %}
   Aktuell live: <b>{% if v.revision %}{{ v.revision.split('--')[-1] }}{% endif %}</b>
-  · {{ v.version }}{% if v.build %} · Deploy {{ v.build }}{% endif %}.</p>
+  · {{ v.version }}{% if v.build %} · {{ v.build }}{% endif %}.</p>
 
-<section class="rn">
-  <h2>Verträge & automatische Rückstellung <span class="tag neu">neu</span></h2>
-  <p class="sub">Die Fuchsbaukasse lernt, welche wiederkehrenden Zahlungen es gibt, und plant daraus die Rücklagen.</p>
-  <ol>
-    <li><b>Neuer Reiter „Verträge".</b> Jede regelmäßige Zahlung (Miete, Abo, Beitrag, Versorger,
-        Kredit, Kindergeld) wird als <em>Vertrag</em> erkannt und vorgeschlagen.</li>
-    <li><b>Automatische Erkennung aus den Umsätzen.</b> Rhythmus (monatlich/quartalsweise/jährlich)
-        und typischer Betrag werden aus der Zahlungshistorie gemessen — nichts muss von Hand
-        eingetragen werden. Alte Anbieter (z. B. nach einem Stromwechsel) fallen von selbst weg.</li>
-    <li><b>Nichts zählt ohne deine Bestätigung.</b> Alle Verträge sind erst <em>Vorschläge</em>.
-        Du bestätigst (✓) oder verwirfst (✕) jeden einzeln. Erst ein bestätigter Vertrag geht in
-        die Rückstellung ein.</li>
-    <li><b>Kindergeld als Eingang.</b> Ein Nebenbuch hat nicht nur Ausgänge: Das Kindergeld
-        (777 €/Monat) fließt als Eingang in „Füchschen". Die Übersicht rechnet jetzt netto —
-        Füchschen <em>wächst</em>, statt scheinbar zu schrumpfen.</li>
-    <li><b>Rückstellungsbetrag ist deiner.</b> Der erkannte Betrag ist nur ein Vorschlag; du kannst
-        ihn direkt in der Zelle überschreiben (z. B. ein Puffer für Sonderzahlungen). Dein Wert
-        bleibt dann stehen.</li>
-    <li><b>Mehrere Abbuchungen richtig gezählt.</b> Beispiel Judo-Club: drei Kinder à 22 € =
-        66 €/Monat (plus Sonderzahlungen), nicht 22 €. Der Betrag kommt aus dem tatsächlichen
-        Abfluss der letzten Monate.</li>
-    <li><b>Umsätze per Drag & Drop zuordnen.</b> Links die Umsatz-Spalte mit Suchfeld, rechts die
-        Verträge. Zieh einen Umsatz auf einen Vertrag — die Buchung gehört dann dazu. Mehrere
-        Empfänger auf denselben Vertrag ziehen = bündeln (z. B. Google + Claude + Adobe → ein Abo).</li>
-    <li><b>Steuerung bleibt bei dir (Deckelprüfung).</b> Je Nebenbuch: Config-Soll gegen die Summe
-        der Verträge. Fordern die Verträge mehr als vorgesehen → <em>harte Warnung</em>, es wird
-        nichts automatisch geändert.</li>
-    <li><b>Bewusste Schiefstellung erlaubt.</b> Wo ein Topf absichtlich abschmelzen darf (Füchschen
-        mit großem Bestand), zeigt die Seite die Reichweite in Monaten statt einer Fehlermeldung.</li>
-  </ol>
+{# Jeder Eintrag = ein Deploy/Änderungspaket. NEUE EINTRÄGE OBEN einfügen. #}
+
+<section class="rn-entry">
+  <div class="rn-datum">2026-07-17 · abends</div>
+  <ul>
+    <li><b>Rücklagen-Anzeige korrigiert:</b> „Allgemein" ist jetzt der Ausgleichstopf — die Summe
+      aller Unterkategorien ergibt exakt das Nebenbuch (vorher lagen Zuführungen unsichtbar „ohne
+      Unterkategorie"; Untertöpfe wirkten dadurch fälschlich negativ).</li>
+    <li><b>Alte S-Töpfe entfernt</b> (S-Tel, S-Sport …) — in „Allgemein" zusammengeführt, Saldo
+      unverändert.</li>
+    <li><b>Rücklagen-Töpfe auf der Übersicht</b> aufklappbar, Doppeltipp öffnet die Buchungen.</li>
+    <li><b>Farbige KPI-Kacheln</b> auf der Übersicht (Freier Haushalts-Saldo als Hauptkachel).</li>
+    <li>Release Notes jetzt als fortlaufende Liste; Versionsanzeige mit Zeitstempel.</li>
+  </ul>
 </section>
 
-<section class="rn">
-  <h2>Bedienung & Übersicht</h2>
-  <ol>
-    <li><b>Menü oben rechts</b> mit Backlog, Release Notes und Abmelden.</li>
-    <li><b>Versionsanzeige im Footer</b> zeigt jetzt Revision, Git-Stand und Deploy-Datum —
-        so ist immer klar, welcher Stand gerade läuft.</li>
-    <li><b>Kategorien & Unterkategorien anlegen</b> direkt in der Config (Freitext), inkl.
-        neuer Nebenbücher.</li>
-  </ol>
+<section class="rn-entry">
+  <div class="rn-datum">2026-07-17 · nachmittags</div>
+  <ul>
+    <li><b>Verträge-Reiter mit Umsatz-Zuordnung:</b> Umsatz antippen, dann Vertrag antippen (am PC
+      auch ziehen) — die Buchung gehört dann zum Vertrag und Untertopf. Mehrere Empfänger auf einen
+      Vertrag = bündeln.</li>
+    <li><b>Rückstellungsbetrag ist deiner:</b> Vorschlag aus der Historie, aber direkt in der Zelle
+      überschreibbar — dein Wert bleibt stehen.</li>
+    <li><b>Kindergeld als Eingang</b> in Füchschen (777/Monat) — der Topf wächst netto.</li>
+    <li>Deutlich mehr Verträge erkannt (Judo, quartalsweise Nebenkosten, Abos, Kredite als aktiv).</li>
+    <li><b>Menü</b> oben rechts (Backlog · Release Notes · Abmelden).</li>
+    <li><b>Kategorien/Nebenbücher per Freitext anlegen</b> in der Config; „Essensgeld" angelegt.</li>
+    <li><b>Hellere Optik</b> (Weiß-Blau-Gelb) — jetzt immer hell, auch auf dem Handy.</li>
+  </ul>
 </section>
 
-<section class="rn">
-  <h2>Fundament (früher gebaut)</h2>
-  <ol>
-    <li>App online von überall mit Login (Azure), Datenbank als Quelle der Wahrheit.</li>
-    <li>Import neuer Umsätze über die Weboberfläche (CSV), mit Dedupe und automatischer Kategorisierung.</li>
-    <li>Rücklagen je Unterkategorie (Topf-Modell), transparente Saldo-Herleitung auf der Übersicht.</li>
-    <li>Merkzettel/Vermögensposten (z. B. Bargeld) als eigene Box.</li>
-    <li>Nebenbuch-Ansicht mit laufendem Saldo, Bemerkungen je Buchung, Reports & CSV-Exporte.</li>
-  </ol>
+<section class="rn-entry">
+  <div class="rn-datum">Fundament (früher)</div>
+  <ul>
+    <li>App online mit Login (Azure); Datenbank als Quelle der Wahrheit.</li>
+    <li>Import neuer Umsätze über die Weboberfläche (CSV) mit Dedupe und Kategorisierung.</li>
+    <li>Rücklagen je Unterkategorie (Topf-Modell); transparente Saldo-Herleitung.</li>
+    <li>Merkzettel/Vermögensposten als eigene Box; Nebenbuch-Ansicht mit laufendem Saldo.</li>
+    <li>Bemerkungen je Buchung, Reports und CSV-Exporte.</li>
+  </ul>
 </section>
 
-<p class="sub">Die vollständige, technische Liste aller Punkte steht im
+<p class="sub">Die vollständige technische Liste steht im
   <a href="/backlog" target="_blank">Backlog-Board ↗</a>.</p>
 
 <style>
-  .rn{margin:0 0 1.8rem}
-  .rn h2{margin-bottom:.2rem}
-  .rn ol{margin:.5rem 0 0;padding-left:1.3rem}
-  .rn li{margin:.42rem 0;line-height:1.5}
-  .tag.neu{font-size:.7rem;vertical-align:middle;background:#e8f0fe;color:#1a56db;
-           padding:.1rem .5rem;border-radius:999px;margin-left:.4rem}
+  .rn-entry{border-left:3px solid var(--hi);padding:2px 0 2px 16px;margin:0 0 22px}
+  .rn-datum{font-weight:700;color:var(--accent);margin-bottom:6px;font-size:.95rem}
+  .rn-entry ul{margin:0;padding-left:1.2rem}
+  .rn-entry li{margin:.4rem 0;line-height:1.5}
 </style>
 {% endblock %}
