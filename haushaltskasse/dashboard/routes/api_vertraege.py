@@ -69,12 +69,28 @@ def api_rhythmus(vertrag_id: int, body: Feld):
 
 @router.post("/api/vertrag/{vertrag_id}/betrag")
 def api_betrag(vertrag_id: int, body: Feld):
-    """Gebühr je Fälligkeit (nicht je Monat) — die Monatsrate rechnet die Anzeige."""
+    """Gebühr je Fälligkeit (informativ) — die Rückstellung steuert monatsrate."""
     cent = parse_euro(body.wert)
     if cent is None:
         return JSONResponse({"ok": False, "fehler": "Betrag nicht lesbar"}, status_code=400)
     with db() as conn, conn.cursor() as cur:
         cur.execute("UPDATE vertraege SET betrag_median_cent=%s WHERE id=%s", (abs(cent), vertrag_id))
+    return {"ok": True, "cent": abs(cent)}
+
+
+@router.post("/api/vertrag/{vertrag_id}/monatsrate")
+def api_monatsrate(vertrag_id: int, body: Feld):
+    """Monatliche Rückstellung manuell setzen — Jörgs Sonderzahlungs-Puffer.
+
+    Beispiel Judo: erkannt 66 €/Monat (3 Kinder à 22), Jörg legt aber etwas mehr
+    zurück, weil der Verein Sonderzahlungen (Prüfungen, Lehrgänge) abruft.
+    Dieser Wert steuert die Deckelprüfung, nicht der erkannte Betrag.
+    """
+    cent = parse_euro(body.wert)
+    if cent is None:
+        return JSONResponse({"ok": False, "fehler": "Betrag nicht lesbar"}, status_code=400)
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE vertraege SET monatsrate_cent=%s WHERE id=%s", (abs(cent), vertrag_id))
     return {"ok": True, "cent": abs(cent)}
 
 
@@ -95,6 +111,46 @@ def api_unterkategorie(vertrag_id: int, body: Umhaengen):
             return JSONResponse({"ok": False, "fehler": "Unterkategorie unbekannt"}, status_code=400)
         cur.execute("UPDATE vertraege SET unterkategorie_id=%s WHERE id=%s",
                     (body.unterkategorie_id, vertrag_id))
+    return {"ok": True}
+
+
+@router.post("/api/vertrag/{vertrag_id}/buchung/{buchung_id}")
+def api_buchung_zuordnen(vertrag_id: int, buchung_id: int):
+    """Buchung auf einen Vertrag ziehen (Drag&Drop). Viele Buchungen -> ein Vertrag.
+
+    Jörgs „Clou": der Vertrag ist ein Behälter. Man zieht Google/Claude/Adobe auf
+    EINEN Abo-Vertrag. Die Buchung wandert zugleich in dessen Unterkategorie, damit
+    Zuordnung und Buchhaltung übereinstimmen.
+    """
+    with db() as conn, conn.cursor() as cur:
+        # Kategorie MIT holen: die Buchung muss in dieselbe Kategorie UND Unterkategorie
+        # wandern wie der Vertrag, sonst hängt sie in einer fremden Unterkategorie
+        # (verletzt die Invariante „Unterkat gehört zur Kat"). Beide Pins setzen, damit
+        # ein späterer Reapply die Zuordnung nicht wieder überschreibt.
+        cur.execute("""SELECT u.id, u.kategorie_id FROM vertraege v
+                       JOIN unterkategorien u ON u.id = v.unterkategorie_id
+                       WHERE v.id=%s""", (vertrag_id,))
+        row = cur.fetchone()
+        if not row:
+            return JSONResponse({"ok": False, "fehler": "Vertrag nicht gefunden"}, status_code=404)
+        ukat_id, kat_id = row
+        cur.execute(
+            """UPDATE buchungen
+                  SET vertrag_id=%s, unterkategorie_id=%s, kategorie_id=%s,
+                      kat_pinned=TRUE, unterkat_pinned=TRUE
+                WHERE id=%s""",
+            (vertrag_id, ukat_id, kat_id, buchung_id),
+        )
+        if cur.rowcount == 0:
+            return JSONResponse({"ok": False, "fehler": "Buchung nicht gefunden"}, status_code=404)
+    return {"ok": True}
+
+
+@router.post("/api/vertrag/buchung/{buchung_id}/loesen")
+def api_buchung_loesen(buchung_id: int):
+    """Buchung vom Vertrag lösen (zurück in die Umsatz-Spalte)."""
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE buchungen SET vertrag_id=NULL WHERE id=%s", (buchung_id,))
     return {"ok": True}
 
 

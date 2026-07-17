@@ -481,16 +481,6 @@ def kategorien_mit_unterkategorien(cur) -> list[dict]:
     return kats
 
 
-# Jahresbetrag ÷ 12 — dieselbe Rechnung wie in workflows/vertraege.monatsrate().
-_RATE_SQL = """
-    CASE v.rhythmus WHEN 'monatlich'     THEN v.betrag_median_cent
-                    WHEN 'quartalsweise' THEN ROUND(v.betrag_median_cent / 3.0)
-                    WHEN 'halbjaehrlich' THEN ROUND(v.betrag_median_cent / 6.0)
-                    WHEN 'jaehrlich'     THEN ROUND(v.betrag_median_cent / 12.0)
-                    ELSE 0 END
-"""
-
-
 def vertraege(cur, nur_aktive: bool = False) -> dict:
     """#75 — Verträge je Nebenbuch, mit Deckelprüfung gegen das Config-Soll.
 
@@ -505,12 +495,12 @@ def vertraege(cur, nur_aktive: bool = False) -> dict:
                v.letzte_zahlung, v.naechste_faellig, v.status, v.quelle, v.richtung,
                v.muster_empfaenger, v.muster_zweck,
                u.id, u.name, k.id, k.name, k.monatliche_ruecklage_cent,
-               k.schiefstellung_erlaubt, {_RATE_SQL} AS rate_cent
+               k.schiefstellung_erlaubt, v.monatsrate_cent AS rate_cent
         FROM vertraege v
         JOIN unterkategorien u ON u.id = v.unterkategorie_id
         JOIN kategorien k      ON k.id = u.kategorie_id
         {"WHERE v.status = 'bestaetigt'" if nur_aktive else ""}
-        ORDER BY k.name, u.name, v.richtung, rate_cent DESC
+        ORDER BY k.name, u.name, v.richtung, v.monatsrate_cent DESC
     """)
     je_kat: dict[int, dict] = {}
     for (vid, name, beschr, rhy, median, letzte, faellig, status, quelle, richtung,
@@ -559,6 +549,37 @@ def vertraege(cur, nur_aktive: bool = False) -> dict:
         kats.append(k)
     kats.sort(key=lambda x: x["kategorie"])
 
+    # Wie viele Buchungen hängen je Vertrag? (für die Anzeige am Behälter)
+    cur.execute("""SELECT vertrag_id, COUNT(*), COALESCE(SUM(betrag_cent),0)
+                   FROM buchungen WHERE vertrag_id IS NOT NULL GROUP BY vertrag_id""")
+    zug = {vid: (n, s) for vid, n, s in cur.fetchall()}
+    for k in kats:
+        for v in k["vertraege"]:
+            n, s = zug.get(v["id"], (0, 0))
+            v["buchungen_n"] = n
+            v["buchungen_summe_cent"] = s
+
     offen = sum(1 for k in kats for v in k["vertraege"] if v["status"] == "erkannt")
     return {"kategorien": kats, "offene_vorschlaege": offen,
             "warnungen": [k for k in kats if k["ampel"] == "warnung"]}
+
+
+def zuordenbare_buchungen(cur, limit: int = 400) -> list[dict]:
+    """Umsätze für die Drag&Drop-Spalte: echte Buchungen, die noch KEINEM Vertrag gehören.
+
+    Neueste zuerst. Enthält Empfänger + Zweck, damit Jörg im Suchfeld filtern und die
+    passende Buchung auf den Vertrag ziehen kann.
+    """
+    cur.execute("""
+        SELECT b.id, b.datum_wert, b.betrag_cent,
+               COALESCE(NULLIF(TRIM(b.empfaenger),''),'(ohne Empfänger)'),
+               LEFT(COALESCE(b.verwendungszweck,''), 80),
+               COALESCE(k.name,'—')
+        FROM buchungen b
+        LEFT JOIN kategorien k ON k.id = b.kategorie_id
+        WHERE b.buchungsart='real' AND b.spiegel_von_id IS NULL AND b.vertrag_id IS NULL
+        ORDER BY b.datum_wert DESC
+        LIMIT %s
+    """, (limit,))
+    return [{"id": i, "datum": d, "betrag_cent": b, "empfaenger": e,
+             "zweck": z, "kategorie": k} for i, d, b, e, z, k in cur.fetchall()]

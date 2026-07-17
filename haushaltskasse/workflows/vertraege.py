@@ -216,6 +216,8 @@ def erkenne(cur, stichtag: date | None = None) -> list[dict]:
         beendet = tage_her > (med_tage or 30) * BEENDET_NACH_RHYTHMEN
         naechste = letzte + timedelta(days=med_tage or 30)
 
+        rate = _monatsrate(zahlungen, letzte, rhythmus, median_cent)
+
         kandidaten.append(
             {
                 "name": empf[:40],
@@ -236,7 +238,7 @@ def erkenne(cur, stichtag: date | None = None) -> list[dict]:
                 "kern_zahlungen": len(kern_zahlungen),
                 "monate": len(monate),
                 "med_tage": med_tage or 30,
-                "monatsrate_cent": monatsrate(median_cent, rhythmus),
+                "monatsrate_cent": rate,
             }
         )
     kandidaten = _fuehre_fortsetzungen_zusammen(kandidaten, stichtag)
@@ -284,6 +286,7 @@ def _fuehre_fortsetzungen_zusammen(kandidaten: list[dict], stichtag: date) -> li
         ziel["letzte_zahlung"] = k["letzte_zahlung"]
         ziel["naechste_faellig"] = k["naechste_faellig"]
         ziel["muster_zweck"] = k["muster_zweck"]   # der aktuelle Zweck-Text
+        ziel["monatsrate_cent"] = k["monatsrate_cent"]   # Rate aus dem jüngeren Fenster
         tage_her = (stichtag - ziel["letzte_zahlung"]).days
         ziel["status"] = "beendet" if tage_her > ziel["med_tage"] * BEENDET_NACH_RHYTHMEN else "erkannt"
     return ergebnis
@@ -304,12 +307,31 @@ def _mache_namen_eindeutig(kandidaten: list[dict]) -> None:
             k["name"] = f"{k['name'][:30]} ({k['betrag_median_cent'] / 100:.2f} €)"
 
 
-def monatsrate(median_cent: int, rhythmus: str) -> int:
-    """Jahresbetrag / 12 — die Rate, die je Monat zurückgelegt werden muss."""
-    monate = MONATE_JE_RHYTHMUS.get(rhythmus)
-    if not monate:
+def _monatsrate(zahlungen: list[tuple], letzte: date, rhythmus: str, median_cent: int) -> int:
+    """Monatliche Rückstellung — je nach Rhythmus verschieden hergeleitet.
+
+    **monatlich:** Gesamtabfluss der letzten ~6 Monate ÷ Anzahl dieser Monate. Über ALLE
+    Zahlungen (inkl. Sonderzahlungen), nicht nur den Kern — Jörg will die tatsächliche
+    Belastung zurücklegen. Judo hat seit 02/2026 drei Kinder à 22 = 66/Monat plus
+    Sonderzahlungen -> ~74. Das aktuelle Fenster ignoriert die alte Ein-Kind-Zeit.
+
+    **quartalsweise/halb-/jährlich:** ein sauberer Einzelbetrag je Fälligkeit ÷ Perioden-
+    monate (Grundsteuer 234 € pro Quartal -> 78 €/Monat). Hier führt „Summe ÷ Monate zu
+    einem Fensterfehler, weil der Zufall entscheidet, wie viele Fälligkeiten ins Fenster
+    fallen — deshalb rhythmusbasiert.
+    """
+    monate_je = MONATE_JE_RHYTHMUS.get(rhythmus)
+    if not monate_je:
         return 0
-    return round(median_cent * (12 / monate) / 12)
+    if monate_je > 1:                        # quartalsweise und seltener
+        return round(median_cent / monate_je)
+    grenze = letzte - timedelta(days=185)    # monatlich: echtes 6-Monats-Fenster
+    fenster = [z for z in zahlungen if z[0] > grenze]
+    if not fenster:
+        return median_cent
+    summe = sum(z[1] for z in fenster)
+    monate = len({(z[0].year, z[0].month) for z in fenster})
+    return round(summe / max(monate, 1))
 
 
 def speichere(cur, kandidaten: list[dict]) -> int:
@@ -331,27 +353,28 @@ def speichere(cur, kandidaten: list[dict]) -> int:
         )
         treffer = cur.fetchone()
         if treffer:
-            # Vom User bestätigte/ignorierte Verträge bleiben unangetastet;
-            # nur die gemessenen Werte werden aktualisiert.
+            # Vom User bestätigte/ignorierte Verträge bleiben unangetastet; die Rate wird
+            # nur bei 'erkannt' überschrieben (bestätigte behalten Jörgs manuellen Wert).
             cur.execute(
                 """UPDATE vertraege
                       SET betrag_median_cent = %s, rhythmus = %s, letzte_zahlung = %s,
                           naechste_faellig = %s,
+                          monatsrate_cent = CASE WHEN status = 'erkannt' THEN %s ELSE monatsrate_cent END,
                           status = CASE WHEN status = 'erkannt' THEN %s ELSE status END
                     WHERE id = %s""",
                 (k["betrag_median_cent"], k["rhythmus"], k["letzte_zahlung"],
-                 k["naechste_faellig"], k["status"], treffer[0]),
+                 k["naechste_faellig"], k["monatsrate_cent"], k["status"], treffer[0]),
             )
             continue
         cur.execute(
             """INSERT INTO vertraege
                  (name, beschreibung, unterkategorie_id, muster_empfaenger, muster_zweck,
-                  richtung, rhythmus, betrag_median_cent, letzte_zahlung, naechste_faellig,
-                  status, quelle)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'auto')""",
+                  richtung, rhythmus, betrag_median_cent, monatsrate_cent, letzte_zahlung,
+                  naechste_faellig, status, quelle)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'auto')""",
             (k["name"], k["beschreibung"], k["unterkategorie_id"], k["muster_empfaenger"],
              k["muster_zweck"], k["richtung"], k["rhythmus"], k["betrag_median_cent"],
-             k["letzte_zahlung"], k["naechste_faellig"], k["status"]),
+             k["monatsrate_cent"], k["letzte_zahlung"], k["naechste_faellig"], k["status"]),
         )
         neu += 1
     return neu

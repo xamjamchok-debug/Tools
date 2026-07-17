@@ -182,9 +182,11 @@ def view_vertraege(request: Request):
     with db() as conn, conn.cursor() as cur:
         daten = q.vertraege(cur)
         kats = q.kategorien_mit_unterkategorien(cur)
+        umsaetze = q.zuordenbare_buchungen(cur)
     return TEMPLATES.TemplateResponse(
         request, "vertraege.html",
-        {"request": request, "tab": "vertraege", "daten": daten, "kats": kats})
+        {"request": request, "tab": "vertraege", "daten": daten, "kats": kats,
+         "umsaetze": umsaetze})
 
 
 @router.post("/vertraege/erkennen", response_class=HTMLResponse)

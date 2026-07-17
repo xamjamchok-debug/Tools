@@ -241,6 +241,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_vertraege_identitaet
 ALTER TABLE vertraege ADD COLUMN IF NOT EXISTS richtung TEXT NOT NULL DEFAULT 'ausgang'
     CHECK (richtung IN ('ausgang','eingang'));
 
+-- Die monatliche Rückstellung wird GESPEICHERT (nicht aus Betrag×Rhythmus gerechnet),
+-- damit Jörg sie manuell überschreiben kann (Sonderzahlungs-Puffer). Der Vorschlag der
+-- Erkennung = tatsächlicher Gesamtabfluss der letzten Monate ÷ Monate — fängt mehrere
+-- Abbuchungen (Judo 3×22 = 66) UND den Rhythmus (quartalsweise ÷ 3) in einer Zahl.
+ALTER TABLE vertraege ADD COLUMN IF NOT EXISTS monatsrate_cent BIGINT NOT NULL DEFAULT 0;
+
+-- Eine Buchung kann zu einem Vertrag gehören (Jörgs „der Clou", 2026-07-17): der Vertrag
+-- ist ein Behälter, auf den man verschiedenartige Buchungen zieht (Google + Claude + Adobe
+-- -> ein Abo-Vertrag). Viele Buchungen -> ein Vertrag. Per Drag&Drop im Dashboard gesetzt.
+-- ON DELETE SET NULL: löscht man den Vertrag, bleiben die Buchungen erhalten.
+ALTER TABLE buchungen ADD COLUMN IF NOT EXISTS vertrag_id INTEGER REFERENCES vertraege(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_buchungen_vertrag ON buchungen(vertrag_id);
+
 -- #75: Schiefstellung je Nebenbuch bewusst erlauben (User 2026-07-17).
 -- FALSE (Default): fordern die Verträge mehr als das Config-Soll -> harte Warnung,
 --   der Rückstellungslauf schreibt NICHTS.
