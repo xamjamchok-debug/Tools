@@ -169,3 +169,32 @@ async def do_import(request: Request, datei: UploadFile = File(...)):
                    "geparst": 0, "eingefuegt": 0, "uebersprungen": 0}
     return TEMPLATES.TemplateResponse(request, "import.html",
                                       {"request": request, "tab": "import", "bericht": bericht})
+
+
+@router.get("/vertraege", response_class=HTMLResponse)
+def view_vertraege(request: Request):
+    """#75 — Verträge je Nebenbuch: Gebühr, Rhythmus, Beschreibung, Zuordnung.
+
+    Zeigt zusätzlich die Deckelprüfung: fordern die bestätigten Verträge mehr als das
+    Config-Soll des Nebenbuchs, ist das entweder eine harte Warnung oder — wenn für das
+    Nebenbuch erlaubt — eine bewusste Schiefstellung mit Reichweiten-Angabe.
+    """
+    with db() as conn, conn.cursor() as cur:
+        daten = q.vertraege(cur)
+        kats = q.kategorien_mit_unterkategorien(cur)
+    return TEMPLATES.TemplateResponse(
+        request, "vertraege.html",
+        {"request": request, "tab": "vertraege", "daten": daten, "kats": kats})
+
+
+@router.post("/vertraege/erkennen", response_class=HTMLResponse)
+def do_vertraege_erkennen(request: Request):
+    """On-Demand-Erkennung (User-Entscheid F: Komfort, kein Pflichtweg).
+
+    Legt nur Vorschläge an (`erkannt`) und aktualisiert die gemessenen Werte.
+    Bestätigte/ignorierte Verträge bleiben unangetastet, Soll-Werte werden NICHT verändert.
+    """
+    from ...workflows.vertraege import erkenne, speichere
+    with db() as conn, conn.cursor() as cur:
+        neu = speichere(cur, erkenne(cur))
+    return RedirectResponse(f"/vertraege?neu={neu}", status_code=303)

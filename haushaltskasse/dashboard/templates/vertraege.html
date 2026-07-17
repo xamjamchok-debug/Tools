@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block titel %} · Verträge{% endblock %}
+{% block content %}
+<h1>Verträge</h1>
+<p class="sub">
+  Erkannte wiederkehrende Zahlungen je Nebenbuch — Grundlage der automatischen Rückstellung.
+  <b>Ein Vertrag zählt erst, wenn du ihn bestätigst.</b>
+</p>
+
+<form class="toolbar" method="post" action="/vertraege/erkennen">
+  <button type="submit">Verträge jetzt neu erkennen</button>
+  <span class="sub" style="margin-left:.8rem">
+    Sucht nach Rhythmus in den Buchungen. Ändert <b>keine</b> Soll-Werte und bucht nichts.
+  </span>
+  {% if request.query_params.get('neu') %}
+  <span class="pill ok" style="margin-left:auto">{{ request.query_params.get('neu') }} neu erkannt</span>
+  {% endif %}
+</form>
+
+{% if daten.offene_vorschlaege %}
+<p class="hinweis">
+  <b>{{ daten.offene_vorschlaege }} Vorschläge warten auf dich.</b>
+  Bestätigen → der Vertrag geht in die Rückstellung ein. Ignorieren → er wird nie wieder vorgeschlagen.
+</p>
+{% endif %}
+
+{% if daten.warnungen %}
+<p class="hinweis warnung">
+  🛑 <b>{{ daten.warnungen|length }} Nebenbuch/Nebenbücher über dem Config-Soll.</b>
+  Der Rückstellungslauf würde hier <b>nichts buchen</b>. Entweder das Soll in der
+  <a href="/config">Config</a> erhöhen — oder Schiefstellung bewusst erlauben (Schalter unten).
+</p>
+{% endif %}
+
+{% for k in daten.kategorien %}
+<section class="box">
+  <h2 style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+    {{ k.kategorie }}
+    {% if k.ampel == 'ok' %}
+      <span class="pill ok">passt</span>
+    {% elif k.ampel == 'schief' %}
+      <span class="pill schief">Schiefstellung erlaubt</span>
+    {% else %}
+      <span class="pill warn">🛑 über dem Soll</span>
+    {% endif %}
+  </h2>
+
+  <table class="deckel">
+    <tr>
+      <td>Config-Soll (deine Steuerung)</td>
+      <td class="num">{{ k.soll_cent|euro }}</td>
+    </tr>
+    <tr>
+      <td>bestätigte Verträge fordern</td>
+      <td class="num">{{ k.summe_rate_cent|euro }}</td>
+    </tr>
+    <tr class="{{ 'minus' if k.rest_cent < 0 else '' }}">
+      <td><b>{{ 'Unterdeckung' if k.rest_cent < 0 else 'Rest → Allgemein' }}</b></td>
+      <td class="num"><b>{{ k.rest_cent|euro }}</b></td>
+    </tr>
+    {% if k.reichweite_monate is not none %}
+    <tr>
+      <td>Bestand {{ k.bestand_cent|euro }} — <b>reicht noch</b></td>
+      <td class="num"><b>~{{ k.reichweite_monate }} Monate</b></td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <label class="schalter">
+    <input type="checkbox" {{ 'checked' if k.schiefstellung_erlaubt }}
+           onchange="schiefstellung({{ k.kategorie_id }}, this.checked)">
+    Schiefstellung erlauben — der Topf <b>darf abschmelzen</b> (Bestand deckt die Unterdeckung)
+  </label>
+
+  <table>
+    <thead><tr>
+      <th>Vertrag</th><th>Beschreibung</th><th>Rhythmus</th>
+      <th class="num">Gebühr</th><th class="num">je Monat</th>
+      <th>Nebenbuch / Untertopf</th><th>zuletzt</th><th>nächste</th><th>Status</th><th></th>
+    </tr></thead>
+    <tbody>
+    {% for v in k.vertraege %}
+      <tr class="status-{{ v.status }}">
+        <td contenteditable data-feld="name" data-id="{{ v.id }}">{{ v.name }}</td>
+        <td contenteditable data-feld="beschreibung" data-id="{{ v.id }}"
+            class="sub">{{ v.beschreibung or '' }}</td>
+        <td>
+          <select onchange="feld({{ v.id }}, 'rhythmus', this.value)">
+            {% for r in ['monatlich','quartalsweise','halbjaehrlich','jaehrlich','unregelmaessig'] %}
+            <option value="{{ r }}" {{ 'selected' if v.rhythmus==r }}>{{ r }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td class="num" contenteditable data-feld="betrag" data-id="{{ v.id }}">{{ v.betrag_cent|euro }}</td>
+        <td class="num">{{ v.rate_cent|euro }}</td>
+        <td>
+          <select onchange="umhaengen({{ v.id }}, this.value)" title="Auf eine andere Unterkategorie umhängen = bündeln">
+            {% for kat in kats %}
+            <optgroup label="{{ kat.name }}">
+              {% for u in kat.unterkategorien %}
+              <option value="{{ u.id }}" {{ 'selected' if v.unterkategorie_id==u.id }}>{{ u.name }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endfor %}
+          </select>
+        </td>
+        <td class="sub">{{ v.letzte_zahlung or '—' }}</td>
+        <td class="sub">{{ v.naechste_faellig or '—' }}</td>
+        <td>
+          {% if v.status == 'erkannt' %}<span class="pill neu">Vorschlag</span>
+          {% elif v.status == 'bestaetigt' %}<span class="pill ok">bestätigt</span>
+          {% elif v.status == 'beendet' %}<span class="pill beendet">beendet</span>
+          {% else %}<span class="pill ignoriert">ignoriert</span>{% endif %}
+        </td>
+        <td class="aktionen">
+          {% if v.status != 'bestaetigt' %}
+          <button onclick="status({{ v.id }}, 'bestaetigt')" title="Zählt dann für die Rückstellung">✓</button>
+          {% endif %}
+          {% if v.status != 'ignoriert' %}
+          <button onclick="status({{ v.id }}, 'ignoriert')" title="Kein Vertrag — nie wieder vorschlagen">✕</button>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+<p class="hinweis">Noch keine Verträge erkannt — auf „Verträge jetzt neu erkennen" klicken.</p>
+{% endfor %}
+
+<style>
+  .box { margin-bottom:1.6rem }
+  .deckel { width:auto; margin-bottom:.6rem }
+  .deckel td { padding:.15rem .8rem .15rem 0; border:none }
+  .deckel .num { text-align:right; font-variant-numeric:tabular-nums }
+  .deckel tr.minus td { color:#b3261e }
+  .pill { font-size:.75rem; padding:.1rem .5rem; border-radius:999px; white-space:nowrap }
+  .pill.ok { background:#e6f4ea; color:#137333 }
+  .pill.neu { background:#e8f0fe; color:#1a56db }
+  .pill.warn { background:#fce8e6; color:#b3261e }
+  .pill.schief { background:#fef7e0; color:#8a6d00 }
+  .pill.beendet, .pill.ignoriert { background:#f1f3f4; color:#5f6368 }
+  tr.status-beendet td, tr.status-ignoriert td { opacity:.5 }
+  .schalter { display:block; margin:.4rem 0 .9rem; font-size:.85rem; color:var(--muted) }
+  .aktionen button { padding:.1rem .45rem; margin-right:.2rem }
+  .hinweis { padding:.6rem .9rem; border-radius:6px; background:#e8f0fe }
+  .hinweis.warnung { background:#fce8e6 }
+  [contenteditable]:focus { outline:2px solid #1a56db; border-radius:3px }
+</style>
+
+<script>
+async function post(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
+                             body: JSON.stringify(body)});
+  if (!r.ok) { const t = await r.json().catch(()=>({})); alert(t.fehler || 'Fehler'); return false; }
+  return true;
+}
+async function status(id, s)      { if (await post(`/api/vertrag/${id}/status`, {status:s})) location.reload(); }
+async function feld(id, f, wert)  { await post(`/api/vertrag/${id}/${f}`, {wert}); location.reload(); }
+async function umhaengen(id, uid) { if (await post(`/api/vertrag/${id}/unterkategorie`,
+                                       {unterkategorie_id: parseInt(uid)})) location.reload(); }
+async function schiefstellung(kid, an) {
+  if (await post(`/api/nebenbuch/${kid}/schiefstellung`, {erlaubt: an})) location.reload();
+}
+// Freitextfelder: Enter speichert, Escape verwirft.
+document.querySelectorAll('[contenteditable]').forEach(el => {
+  const alt = el.textContent;
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.textContent = alt; el.blur(); }
+  });
+  el.addEventListener('blur', () => {
+    if (el.textContent.trim() === alt.trim()) return;
+    feld(el.dataset.id, el.dataset.feld, el.textContent.trim());
+  });
+});
+</script>
+{% endblock %}

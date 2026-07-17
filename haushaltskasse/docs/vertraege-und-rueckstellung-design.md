@@ -291,10 +291,10 @@ der Topf nur nach unten läuft.
 | **A** | Vertrag → eigene Unterkategorie (Name = Vertragsname), **bündelbar per Config**? | ✅ **ja** (2026-07-17) |
 | **B** | ~~Verträge ohne eigene Unterkategorie?~~ | ❌ verworfen |
 | **C** | Warnung bei Überschreitung **hart** (nichts wird geschrieben)? | ✅ **hart** (2026-07-17) |
-| **D** | Neue Verträge immer erst bestätigen — oder automatisch, wenn sie unter den Deckel passen? | |
+| **D** | Neue Verträge immer erst bestätigen? | ✅ **ja — „Vertrag erst nach Bestätigung"** (2026-07-17) |
 | **E** | **Position „Rücklage" als Topf** | ❌ **raus** — Rücklage ist ein Vorgang, kein Topf (2026-07-17) |
 | **F** | **Wann neu rechnen?** | ✅ **entschieden — „Erkennen ≠ Ändern", s. u.** (2026-07-17) |
-| **G** | Rücklagenlauf: fehlende Monate **nachholen**? | 🚫 **NEIN** — Jörg: *„nicht rückwirkend, auf keinen Fall"* (2026-07-17) |
+| **G** | Rücklagenlauf: fehlende Monate **nachholen**? | ✅ **JA, doch** — Jörg hat revidiert: *„Okay, dann machen wir es anders. Dann muss es rückwirkend gehen. Du hast recht."* (2026-07-17). Sonst fehlt die Rücklage dauerhaft. **Aber:** nur fehlende Monate, nie einen schon gestellten überschreiben (Idempotenz-Prüfung je Nebenbuch/Monat bleibt Pflicht) |
 
 ---
 
@@ -338,11 +338,63 @@ verursacht hat.
 **Zusätzlich:** ein **On-Demand-Knopf** „Verträge jetzt neu erkennen" — reiner Komfort, kein
 Pflichtweg, ändert ebenfalls keine Solls.
 
-### Konsequenz aus „nicht rückwirkend" (G)
+### G revidiert: **doch rückwirkend** — aber nie doppelt
 
-Vergisst Jörg den Lauf, **fehlt diese Rücklage dauerhaft** — der Topf bekommt den Monat nie, es wird
-nichts nachgeholt. **Gegenmaßnahme (keine Automatik!):** Die Seite zeigt dauerhaft an:
+> Jörg zuerst: *„Nein, nicht rückwirkend. Auf keinen Fall."* → nach dem Hinweis, dass die Rücklage
+> dann **dauerhaft fehlt**: *„Okay, dann machen wir es anders. **Dann muss es rückwirkend gehen.
+> Du hast recht.**"*
 
-> *„Letzter Lauf: September 2026 · **seitdem 2 Monate offen**"*
+**Der Lauf holt fehlende Monate nach.** Regeln dazu:
 
-Nur sichtbar machen, nie selbst buchen. Die Entscheidung bleibt bei Jörg.
+- Er bucht **je Nebenbuch/Monat genau einmal** — die Idempotenz-Prüfung bleibt Pflicht und schützt
+  auch Jörgs vorab gestellten August (`fb-kto`, 31.07.).
+- Er **überschreibt nie** einen bereits gestellten Monat, egal aus welcher Quelle.
+- Er zeigt vorher **welche Monate er nachholen würde** — Trockenlauf, dann Jörgs OK.
+- Anzeige bleibt: *„Letzter Lauf: September 2026 · seitdem 2 Monate offen"*
+
+---
+
+# 🔀 Schiefstellung: Fluss ≠ Bestand (Jörgs Ergänzung 2026-07-17)
+
+> *„Es gibt ja wirklich den Fall, dass wir auch **per Config schon Schiefstellung erlauben** wollen.
+> Heißt, wir sehen, wir haben laufende Posten, die ein **negatives Monats-Soll** erwirken, und
+> **akzeptieren das aber**. Das muss schon gehen. Füchschen sind das beste Beispiel: Da haben wir
+> über die Jahre virtuell **15.000 €** Rücklagen aufgebaut … **das kann gerne abgeknabbert werden**.
+> Bei TK sind es knapp 1.500 — da wäre es erlaubt, wenn wir auf Sicht ein negatives Saldo mit dem
+> Monat einfahren, weil es ja noch **Spielraum** gibt."*
+
+**Das deckt eine Lücke im Deckel-Konzept:** Der Deckel prüft den **Monatsfluss** (Σ Vertragsraten
+gegen Config-Soll). **Bestand** ist etwas anderes — und bei manchen Nebenbüchern ist die
+Unterdeckung **gewollt**:
+
+| Nebenbuch | Config-Soll | laufende Verträge | Bestand | gewollt? |
+|---|---|---|---|---|
+| **Füchschen** | **0** | OGS + Essensgeld ≈ **475/Monat** | **~15.000** | ✅ **ja — soll abschmelzen.** Kindergeld zahlt ein, die Posten zahlen aus |
+| **TK** | 125 | Beiträge + Apotheke | ~1.500 | ✅ ja — Spielraum vorhanden |
+| Auto, Vers, … | gesetzt | ≈ Soll | normal | ❌ hier wäre Unterdeckung ein Fehler |
+
+Ohne Schalter würde die harte Warnung bei Füchschen **jeden Monat blockieren**, obwohl alles
+richtig ist.
+
+### Lösung: ein Schalter je Nebenbuch
+
+```sql
+ALTER TABLE kategorien ADD COLUMN schiefstellung_erlaubt BOOLEAN NOT NULL DEFAULT FALSE;
+```
+
+| `schiefstellung_erlaubt` | Verhalten bei Σ(Raten) > Config-Soll |
+|---|---|
+| **FALSE** *(Default)* | 🛑 **harte Warnung, nichts wird gebucht** — Jörg entscheidet (wie vereinbart) |
+| **TRUE** *(Füchschen, TK)* | ✅ **Lauf bucht**, zeigt aber die **Unterdeckung + Reichweite** an |
+
+**Und die wirklich nützliche Zahl dabei — die Reichweite:**
+
+```
+Unterdeckung/Monat = Σ(Vertragsraten) − Config-Soll
+Reichweite         = Bestand ÷ Unterdeckung
+```
+
+> Beispiel Füchschen: *„Unterdeckung 475 €/Monat · Bestand 15.000 € · **reicht noch ~31 Monate**"*
+
+Damit ist die Schiefstellung **kein blinder Fleck, sondern eine gesteuerte Ansage** — Jörg sieht,
+wie lange der Puffer trägt, statt nur „passt/passt nicht". Genau die Steuerungssicht, die er will.

@@ -179,3 +179,64 @@ CREATE TABLE IF NOT EXISTS admin_laeufe (
     invarianten_ok     BOOLEAN,
     gestartet          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- #75: Verträge — die Erkennungs-/Planungsebene über den Unterkategorien.
+--
+-- Warum eine eigene Ebene? Der Anbieter ist KEIN stabiler Anker (Strom:
+-- MAINGAU -> Naturwerke -> Tibber). Ein Vertrag ist zeitlich begrenzt und
+-- liefert Rhythmus + Rate; die Unterkategorie darüber bleibt stabil und trägt
+-- den Rücklagen-Topf. N Verträge -> 1 Unterkategorie ("Strom").
+--
+-- Damit entfällt das manuelle Aussortieren alter Werte (User 2026-07-17:
+-- "die historischen Werte einfach aussortieren finde ich blödsinnig"):
+-- Ein Vertrag ist 'beendet', wenn seit > 2 Rhythmen keine Zahlung kam — eine
+-- Regel statt Handarbeit. Die Historie bleibt sichtbar.
+--
+-- An `buchungen` ändert sich nichts; der Vertrag ist Metadaten darüber.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS vertraege (
+    id                  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name                TEXT NOT NULL,                      -- "Tibber", "OGS Kind 1"
+    beschreibung        TEXT,                               -- Freitext (User-Wunsch: Reiter-Spalte)
+    -- N:1 -> hier liegt der Rücklagen-Topf. Mehrere Verträge dürfen auf dieselbe
+    -- Unterkategorie zeigen (= "bündeln", User-Entscheid A 2026-07-17).
+    unterkategorie_id   INTEGER NOT NULL REFERENCES unterkategorien(id) ON DELETE CASCADE,
+    -- Erkennungsmuster: Empfänger reicht NICHT (an "Gemeinde Wachtberg" hängen
+    -- vier Zwecke in drei Nebenbüchern; hinter "PayPal" stecken 66 Händler).
+    muster_empfaenger   TEXT,
+    muster_zweck        TEXT,
+    rhythmus            TEXT NOT NULL DEFAULT 'unregelmaessig'
+                        CHECK (rhythmus IN ('monatlich','quartalsweise','halbjaehrlich','jaehrlich','unregelmaessig')),
+    betrag_median_cent  BIGINT NOT NULL DEFAULT 0,          -- Median, nicht Mittelwert (Ausreißer!)
+    letzte_zahlung      DATE,
+    naechste_faellig    DATE,
+    -- erkannt -> vom User bestätigt (Entscheid D: "Vertrag erst nach Bestätigung")
+    -- beendet -> letzte Zahlung > 2 Rhythmen her; zählt NICHT mehr fürs Soll
+    -- ignoriert -> Fehlerkennung, nie wieder vorschlagen
+    status              TEXT NOT NULL DEFAULT 'erkannt'
+                        CHECK (status IN ('erkannt','bestaetigt','beendet','ignoriert')),
+    quelle              TEXT NOT NULL DEFAULT 'auto' CHECK (quelle IN ('auto','manuell')),
+    erstellt_am         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_vertraege_ukat   ON vertraege(unterkategorie_id);
+CREATE INDEX IF NOT EXISTS idx_vertraege_status ON vertraege(status);
+
+-- Identität eines Vertrags ist sein ERKENNUNGSMUSTER, nicht sein Name: Die beiden
+-- OGS-Beiträge heißen beide "Gemeinde Wachtberg" und liegen im selben Untertopf —
+-- unterschieden werden sie allein durch das Kassenzeichen im Zweck (= zwei Kinder).
+-- Mit UNIQUE(name, unterkategorie_id) überschrieb das zweite Kind das erste.
+-- COALESCE, weil UNIQUE sonst mehrere NULL-Zwecke nebeneinander zuließe.
+DROP INDEX IF EXISTS idx_vertraege_identitaet;
+ALTER TABLE vertraege DROP CONSTRAINT IF EXISTS vertraege_name_unterkategorie_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vertraege_identitaet
+    ON vertraege (muster_empfaenger, COALESCE(muster_zweck, ''), unterkategorie_id);
+
+-- #75: Schiefstellung je Nebenbuch bewusst erlauben (User 2026-07-17).
+-- FALSE (Default): fordern die Verträge mehr als das Config-Soll -> harte Warnung,
+--   der Rückstellungslauf schreibt NICHTS.
+-- TRUE: Unterdeckung ist gewollt, der Topf soll abschmelzen -> Lauf bucht und
+--   weist Unterdeckung + Reichweite (Bestand / Unterdeckung) aus.
+-- Beispiel Füchschen: Soll 0, Verträge ~475/Monat, Bestand ~15.000 (Kindergeld
+-- zahlt ein, die Posten zahlen aus) -> "kann gerne abgeknabbert werden".
+ALTER TABLE kategorien ADD COLUMN IF NOT EXISTS schiefstellung_erlaubt BOOLEAN NOT NULL DEFAULT FALSE;

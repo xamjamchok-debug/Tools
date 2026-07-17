@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from starlette.testclient import TestClient
 
-SEITEN = ["/health", "/", "/ruecklagen", "/buchungen", "/reports", "/config", "/import",
-          "/login", "/export/uebersicht.csv", "/export/ruecklagen.csv",
+SEITEN = ["/health", "/", "/ruecklagen", "/vertraege", "/buchungen", "/reports", "/config",
+          "/import", "/login", "/export/uebersicht.csv", "/export/ruecklagen.csv",
           "/export/reports.csv", "/export/buchungen.csv"]
 
 

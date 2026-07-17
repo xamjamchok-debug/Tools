@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import auth
-from .routes import api_buchungen, api_posten, api_stammdaten, exports, views
+from .routes import api_buchungen, api_posten, api_stammdaten, api_vertraege, exports, views
 
 auth.erzwinge_produktions_config()   # #63: in Produktion ohne Auth-Config -> Start verweigern
 
@@ -30,6 +30,7 @@ app.include_router(views.router)
 app.include_router(api_buchungen.router)
 app.include_router(api_stammdaten.router)
 app.include_router(api_posten.router)
+app.include_router(api_vertraege.router)
 app.include_router(exports.router)
 
 

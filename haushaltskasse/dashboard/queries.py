@@ -479,3 +479,78 @@ def kategorien_mit_unterkategorien(cur) -> list[dict]:
         if kid in by_id:
             by_id[kid]["unterkategorien"].append({"id": i, "name": n})
     return kats
+
+
+# Jahresbetrag ÷ 12 — dieselbe Rechnung wie in workflows/vertraege.monatsrate().
+_RATE_SQL = """
+    CASE v.rhythmus WHEN 'monatlich'     THEN v.betrag_median_cent
+                    WHEN 'quartalsweise' THEN ROUND(v.betrag_median_cent / 3.0)
+                    WHEN 'halbjaehrlich' THEN ROUND(v.betrag_median_cent / 6.0)
+                    WHEN 'jaehrlich'     THEN ROUND(v.betrag_median_cent / 12.0)
+                    ELSE 0 END
+"""
+
+
+def vertraege(cur, nur_aktive: bool = False) -> dict:
+    """#75 — Verträge je Nebenbuch, mit Deckelprüfung gegen das Config-Soll.
+
+    Der Deckel ist Jörgs Steuerung: Fordern die bestätigten Verträge zusammen mehr als
+    das Config-Soll des Nebenbuchs, ist das eine Schiefstellung. Sie ist entweder ein
+    Fehler (-> harte Warnung) oder bewusst erlaubt (`schiefstellung_erlaubt`, z. B.
+    Füchschen: Topf soll abschmelzen). Nur `bestaetigt` zählt — Vorschläge und beendete
+    Verträge nicht.
+    """
+    cur.execute(f"""
+        SELECT v.id, v.name, v.beschreibung, v.rhythmus, v.betrag_median_cent,
+               v.letzte_zahlung, v.naechste_faellig, v.status, v.quelle,
+               v.muster_empfaenger, v.muster_zweck,
+               u.id, u.name, k.id, k.name, k.monatliche_ruecklage_cent,
+               k.schiefstellung_erlaubt, {_RATE_SQL} AS rate_cent
+        FROM vertraege v
+        JOIN unterkategorien u ON u.id = v.unterkategorie_id
+        JOIN kategorien k      ON k.id = u.kategorie_id
+        {"WHERE v.status = 'bestaetigt'" if nur_aktive else ""}
+        ORDER BY k.name, u.name, rate_cent DESC
+    """)
+    je_kat: dict[int, dict] = {}
+    for (vid, name, beschr, rhy, median, letzte, faellig, status, quelle,
+         m_empf, m_zweck, uid, uname, kid, kname, kat_soll, schief, rate) in cur.fetchall():
+        kat = je_kat.setdefault(kid, {
+            "kategorie_id": kid, "kategorie": kname, "soll_cent": kat_soll,
+            "schiefstellung_erlaubt": schief, "vertraege": [], "summe_rate_cent": 0,
+        })
+        kat["vertraege"].append({
+            "id": vid, "name": name, "beschreibung": beschr, "rhythmus": rhy,
+            "betrag_cent": median, "rate_cent": rate, "letzte_zahlung": letzte,
+            "naechste_faellig": faellig, "status": status, "quelle": quelle,
+            "muster_empfaenger": m_empf, "muster_zweck": m_zweck,
+            "unterkategorie_id": uid, "unterkategorie": uname,
+        })
+        if status == "bestaetigt":
+            kat["summe_rate_cent"] += rate
+
+    # Ist-Bestand je Topf -> für die Reichweite bei erlaubter Schiefstellung.
+    cur.execute("""
+        SELECT kategorie_id, COALESCE(SUM(betrag_cent), 0)
+        FROM buchungen WHERE buchungsart = 'ruecklage' GROUP BY kategorie_id
+    """)
+    bestand = dict(cur.fetchall())
+
+    kats = []
+    for k in je_kat.values():
+        k["bestand_cent"] = bestand.get(k["kategorie_id"], 0)
+        k["rest_cent"] = k["soll_cent"] - k["summe_rate_cent"]   # < 0 -> Unterdeckung
+        k["reichweite_monate"] = None
+        if k["rest_cent"] < 0 and k["bestand_cent"] > 0:
+            k["reichweite_monate"] = int(k["bestand_cent"] / abs(k["rest_cent"]))
+        # Ampel: ok -> passt · schief -> Unterdeckung, aber erlaubt · warnung -> hart
+        if k["rest_cent"] >= 0:
+            k["ampel"] = "ok"
+        else:
+            k["ampel"] = "schief" if k["schiefstellung_erlaubt"] else "warnung"
+        kats.append(k)
+    kats.sort(key=lambda x: x["kategorie"])
+
+    offen = sum(1 for k in kats for v in k["vertraege"] if v["status"] == "erkannt")
+    return {"kategorien": kats, "offene_vorschlaege": offen,
+            "warnungen": [k for k in kats if k["ampel"] == "warnung"]}
