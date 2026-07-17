@@ -172,11 +172,88 @@ die Erkennungs-/Planungsebene darüber. (Optional später `buchungen.vertrag_id`
 
 ---
 
+---
+
+# 🛑 Der fehlende Kern: **der monatliche Rücklagenlauf**
+
+> **Jörg, 2026-07-17:** „Im Excel gab es doch eine Funktion, die Rücklage heißt. Die hat auf die
+> Nebenbücher jeden Monat die per Config geplanten Rücklagen eingezahlt. **Das hast du noch gar
+> nicht.** … Diese virtuellen Buchungen will ich **einmal im Monat anstoßen** und sagen: okay,
+> jetzt bilde die Rücklagen für den nächsten Monat."
+
+## ⚠️ Befund (geprüft 2026-07-17): **Er hat recht — und es ist dringend**
+
+Es gibt **keinen** Rückstellungs-/Einzahl-Workflow. In `workflows/` existiert nichts dergleichen.
+Die Zahlen bestätigen es:
+
+| Quelle der `ruecklage`-Buchungen | + (Einzahlung) | − (Verzehr) | Zeitraum |
+|---|---|---|---|
+| **`fb-kto`** (= **Excel-Beladung**) | **328** | 1281 | 2025-01-02 … **2026-07-31** |
+| `spiegel` (automatischer Verzehr beim Import) | 4 | 58 | ab 2026-07-04 |
+| `manuell` | 67 | 25 | 2026-07 |
+| `startsaldo` | 12 | 0 | 2024-12-31 |
+
+**Alle Einzahlungen kommen aus der Excel-Beladung** — und die reicht bis **31.07.2026**.
+Der **Verzehr läuft dagegen automatisch weiter** (Spiegel bei jedem Import).
+
+> ### 🛑 **Ab August 2026 wird nur noch entnommen und nie mehr eingezahlt.**
+> Die Töpfe leeren sich, der Haushaltssaldo driftet — **nicht** wegen eines Rechenfehlers, sondern
+> weil die zentrale Funktion der alten Excel-Kasse in der App fehlt. **Das ist der wichtigste
+> offene Punkt — vor Verträgen, vor Kategorien.**
+
+## Die „Position Rücklage" — **brauchen wir nicht** (Jörgs eigene Erkenntnis)
+
+> Jörg: *„Auf der Position Rücklage, das ist im Prinzip — **oder nehmen wir die raus, die Position
+> Rücklage?** Die wirkt pro Untertopf, und wenn es nicht auf einen Untertopf verteilbar ist, dann
+> geht es in die Position Allgemein."*
+
+**Genau. Kein eigener Topf „Rücklage".** Die Rücklage ist **kein Topf, sondern ein Vorgang**:
+ein monatlicher Lauf, der Geld **auf die Untertöpfe** legt. Ein Zwischentopf „Rücklage" würde
+dasselbe Geld nur doppelt darstellen.
+
+## Wie der Lauf rechnet
+
+Einmal im Monat, **von Jörg angestoßen** (nicht automatisch), je Nebenbuch:
+
+```
+1. Je bestätigtem Vertrag:   Untertopf += Vertragsrate        (virtuelle + Buchung)
+2. Rest nach Allgemein:      Allgemein += Config-Soll(NB) − Σ(Vertragsraten)
+3. 🛑 Deckelprüfung:         Σ(Vertragsraten) > Config-Soll(NB)?
+                             -> WARNUNG, NICHTS wird gebucht, Jörg entscheidet
+```
+
+**Schritt 2 ist exakt die bereits geltende Regel** `Rest-Soll(Default) = Nebenbuch-Soll −
+Σ(Unterkat-Soll)` — nur wird sie jetzt gebucht statt nur gerechnet. Und **Allgemein ist zugleich
+der Ausgang** für alles Unkategorisierte („es gibt keinen Vertrag von der Einmalzahlung").
+
+**Wirkung auf die Verträge:** Der zurückgelegte Saldo je Vertrag steigt monatlich um die Rate —
+„jetzt gibt es wieder eine Zahlung für das Google-Abo" ist damit gedeckt. Kommt die echte Zahlung,
+verzehrt der Spiegel den Topf wieder. **Beides zusammen ergibt eine ruhige Nulllinie**, statt dass
+der Topf nur nach unten läuft.
+
+| Eigenschaft | Wert |
+|---|---|
+| Buchungsart | `ruecklage`, **virtuell** (kein reales Geld — Jörg: „nicht im Sinne von realem Geld") |
+| `quelle_import` | **neu: `rueckstellung`** — trennscharf von `fb-kto`/`spiegel`/`manuell` |
+| Auslöser | **manuell, 1×/Monat** („bilde die Rücklagen für den nächsten Monat") |
+| Idempotenz | **Pflicht** — zweimal im selben Monat drücken darf **nicht** doppelt buchen |
+| Trockenlauf | Default, wie bei allen Workflows |
+| Nachvollzieh­barkeit | Lauf wird in `admin_laeufe` protokolliert (#61) |
+
+> ⚠️ **Achtung Historie:** Bis einschließlich 07/2026 kommen die Einzahlungen aus `fb-kto`.
+> Der erste echte Lauf darf also **frühestens 08/2026** buchen, sonst wird der Juli doppelt
+> befüllt. Der Lauf muss prüfen, ob für den Monat schon Einzahlungen existieren.
+
+---
+
 ## Was ich von dir bräuchte
 
 | Frage | | Antwort |
 |---|---|---|
-| **A** | Vertrag → eigene Unterkategorie (Name = Vertragsname), **bündelbar per Config**? *(meine Empfehlung)* | |
-| **B** | Oder Verträge ohne eigene Unterkategorie, direkt in bestehende einsortiert? | |
-| **C** | Warnung bei Überschreitung: **hart** (Automatik schreibt nichts, du musst entscheiden) — oder **weich** (schreibt, warnt nur)? *(Empfehlung: hart)* | |
-| **D** | Neue Verträge: **immer erst bestätigen** — oder automatisch übernehmen, wenn sie unter den Deckel passen? | |
+| **A** | Vertrag → eigene Unterkategorie (Name = Vertragsname), **bündelbar per Config**? | ✅ **ja** (2026-07-17) |
+| **B** | ~~Verträge ohne eigene Unterkategorie?~~ | ❌ verworfen |
+| **C** | Warnung bei Überschreitung **hart** (nichts wird geschrieben)? | ✅ **hart** (2026-07-17) |
+| **D** | Neue Verträge immer erst bestätigen — oder automatisch, wenn sie unter den Deckel passen? | |
+| **E** | **Position „Rücklage" als Topf** | ❌ **raus** — Rücklage ist ein Vorgang, kein Topf (2026-07-17) |
+| **F** | **Wann neu rechnen?** Erkennung **nach jedem Import** (nur Vorschläge) · Soll-Änderung + Rücklagenlauf **nur auf Knopfdruck** *(mein Vorschlag)* | |
+| **G** | Rücklagenlauf: soll er **fehlende Monate nachholen** dürfen (z. B. du drückst erst im Oktober → Aug/Sep/Okt)? | |
