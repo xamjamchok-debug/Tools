@@ -293,5 +293,56 @@ der Topf nur nach unten läuft.
 | **C** | Warnung bei Überschreitung **hart** (nichts wird geschrieben)? | ✅ **hart** (2026-07-17) |
 | **D** | Neue Verträge immer erst bestätigen — oder automatisch, wenn sie unter den Deckel passen? | |
 | **E** | **Position „Rücklage" als Topf** | ❌ **raus** — Rücklage ist ein Vorgang, kein Topf (2026-07-17) |
-| **F** | **Wann neu rechnen?** Erkennung **nach jedem Import** (nur Vorschläge) · Soll-Änderung + Rücklagenlauf **nur auf Knopfdruck** *(mein Vorschlag)* | |
-| **G** | Rücklagenlauf: soll er **fehlende Monate nachholen** dürfen (z. B. du drückst erst im Oktober → Aug/Sep/Okt)? | |
+| **F** | **Wann neu rechnen?** | ✅ **entschieden — „Erkennen ≠ Ändern", s. u.** (2026-07-17) |
+| **G** | Rücklagenlauf: fehlende Monate **nachholen**? | 🚫 **NEIN** — Jörg: *„nicht rückwirkend, auf keinen Fall"* (2026-07-17) |
+
+---
+
+# Frage F entschieden: **Erkennen ≠ Ändern**
+
+> Jörgs Frage: *„Wann soll diese Seite aufgebaut werden mit Verträgen, aus denen dann die
+> Config-Werte bespeist werden, aus denen dann die Rückstellungen gebucht werden?
+> On Demand bei jedem Import · zum Monats-Rolleinsatz · zum Rücklagenlauf?"*
+
+Die Kette ist **Verträge → Config-Werte (Unterkat-Solls) → gebuchte Rückstellung**. Diese drei
+Vorgänge laufen **unterschiedlich schnell** und dürfen deshalb nicht zusammenfallen:
+
+| Vorgang | Wann | Schreibt |
+|---|---|---|
+| **1. Vertragserkennung** (Rhythmus/Betrag/beendet?) | **bei jedem Import**, automatisch mit | **nichts** — nur Vorschläge, Status `erkannt` |
+| **2. Soll-Übernahme** (Vertragsraten → Unterkat-Soll) | **nur beim Rücklagenlauf**, Schritt 1, **mit Bestätigung** | Unterkat-Solls |
+| **3. Rücklagenlauf** (Solls → virtuelle Buchungen) | **1×/Monat, Jörg drückt**, Schritt 2 | `ruecklage`-Buchungen |
+
+### Warum die Solls **nicht** beim Import angefasst werden dürfen
+
+Ein Import kommt **mitten im Monat und oft mehrmals**. Würden die Solls dabei springen, hätte der
+laufende Monat plötzlich eine andere Basis als beim Rücklagenlauf — **die Zahlen würden unter Jörg
+wackeln**. Genau das wäre der Verlust der Steuerungssicht, den er verhindern will.
+
+> **Regel: Solls sind zwischen zwei Rücklagenläufen stabil.** Nur der Lauf ändert sie, und nur nach
+> Bestätigung. **Der Import darf informieren, nicht verändern.**
+
+### Der Rücklagenlauf = der monatliche Moment der Wahrheit
+
+```
+Schritt 1:  "Diese Verträge sind neu / geändert / beendet.  Soll übernehmen?"  -> Jörg entscheidet
+Schritt 2:  Deckelprüfung gegen das Config-Nebenbuch-Soll
+            -> passt?          dann buchen                                      -> Jörg drückt
+            -> Überschreitung? 🛑 WARNUNG, es wird nichts gebucht
+```
+
+**„Monats-Rolleinsatz" und „Rücklagenlauf" sind dasselbe Ereignis** — nicht trennen. Sonst passieren
+zwei Dinge im selben Zeitraum, und bei einer Abweichung ist nicht mehr erkennbar, welches sie
+verursacht hat.
+
+**Zusätzlich:** ein **On-Demand-Knopf** „Verträge jetzt neu erkennen" — reiner Komfort, kein
+Pflichtweg, ändert ebenfalls keine Solls.
+
+### Konsequenz aus „nicht rückwirkend" (G)
+
+Vergisst Jörg den Lauf, **fehlt diese Rücklage dauerhaft** — der Topf bekommt den Monat nie, es wird
+nichts nachgeholt. **Gegenmaßnahme (keine Automatik!):** Die Seite zeigt dauerhaft an:
+
+> *„Letzter Lauf: September 2026 · **seitdem 2 Monate offen**"*
+
+Nur sichtbar machen, nie selbst buchen. Die Entscheidung bleibt bei Jörg.
