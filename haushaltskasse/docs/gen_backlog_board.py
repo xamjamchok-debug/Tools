@@ -21,7 +21,8 @@ BACKLOG = DOCS / "BACKLOG.md"
 BOARD = DOCS / "backlog-board.html"
 
 STAGE_BY_ICON = [("👁", 4), ("🚀", 3), ("🔨", 2), ("📐", 1), ("💡", 0)]
-FLAGS = [("⭐", "prio"), ("🐞", "bug"), ("❓", "klaerung"), ("🎨", "design"), ("🔄", "umbau")]
+FLAGS = [("⭐", "prio"), ("🐞", "bug"), ("❓", "klaerung"), ("🎨", "design"),
+         ("🔄", "umbau"), ("✅", "erledigt")]
 
 
 def stage_und_flags(reifegrad: str):
@@ -31,6 +32,8 @@ def stage_und_flags(reifegrad: str):
             stage = s
             break
     flags = [name for icon, name in FLAGS if icon in reifegrad]
+    if "erledigt" in flags:            # ✅ erledigt/obsolet/geschlossen = voll abgeschlossen,
+        stage = 4                      # sonst stünde es als stufenloses „Idee" (0 Pips) da (#48)
     return stage, flags
 
 
