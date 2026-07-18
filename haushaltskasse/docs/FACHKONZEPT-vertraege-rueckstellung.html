@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fachkonzept — Verträge, Töpfe & Rücklagen</title>
+<style>
+  :root{
+    --accent:#2e6ca6; --accent-soft:#e8f0f8;
+    --hi:#d8a21a; --hi-soft:#fbf3dc;
+    --ok:#2f7d34; --ok-soft:#e3f4e3;
+    --warn:#b23b3b; --warn-soft:#f7e3e3;
+    --ink:#243040; --muted:#5c6b7a;
+    --line:#d7dee6; --card:#ffffff;
+    --paper:#f6f9fc;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,#ffffff 0%,#eef4fa 40%,#fbf6e6 100%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:860px; margin:0 auto; padding:28px 20px 80px}
+  header.top{
+    background:linear-gradient(120deg,var(--accent) 0%,#3f82c2 60%,var(--hi) 140%);
+    color:#fff; border-radius:18px; padding:26px 24px; box-shadow:0 6px 24px rgba(46,108,166,.22);
+  }
+  header.top h1{margin:0 0 6px; font-size:26px; letter-spacing:.2px}
+  header.top p{margin:0; opacity:.94; font-size:15px}
+  .stamp{margin-top:14px; font-size:12.5px; opacity:.85}
+  h2{
+    margin:38px 0 12px; font-size:21px; color:var(--accent);
+    border-bottom:2px solid var(--line); padding-bottom:7px;
+  }
+  h2 .n{display:inline-block; min-width:1.7em; color:var(--hi); font-weight:800}
+  h3{margin:24px 0 8px; font-size:17px; color:var(--ink)}
+  p{margin:10px 0}
+  .lead{font-size:17px; color:#33414f}
+  ul,ol{margin:10px 0 10px 4px; padding-left:22px}
+  li{margin:5px 0}
+  strong{color:#1f2b38}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:14px 0; box-shadow:0 1px 3px rgba(20,40,70,.05)}
+  .prinzip{border-left:5px solid var(--hi); background:var(--hi-soft)}
+  .merk{border-left:5px solid var(--accent); background:var(--accent-soft)}
+  .warnbox{border-left:5px solid var(--warn); background:var(--warn-soft)}
+  .okbox{border-left:5px solid var(--ok); background:var(--ok-soft)}
+  .tag{display:inline-block; font-size:12px; font-weight:700; padding:2px 9px; border-radius:20px; vertical-align:middle}
+  .tag.built{background:var(--ok-soft); color:var(--ok)}
+  .tag.open{background:var(--hi-soft); color:#9a7410}
+  .tag.miss{background:var(--warn-soft); color:var(--warn)}
+  .flow{display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; margin:16px 0}
+  .flow .step{flex:1 1 150px; background:#fff; border:1px solid var(--line); border-top:4px solid var(--accent); border-radius:12px; padding:12px 14px}
+  .flow .step b{display:block; color:var(--accent); font-size:14px; margin-bottom:3px}
+  .flow .step span{font-size:13.5px; color:var(--muted)}
+  .mock{
+    font:13px/1.5 "SF Mono",SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+    background:#fbfdff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:12px 0;
+    overflow-x:auto; white-space:pre; color:#33414f;
+  }
+  .pill{display:inline-block; font-size:12.5px; font-weight:700; padding:2px 10px; border-radius:20px; white-space:nowrap}
+  .pill.schief{background:var(--hi-soft); color:#9a7410}
+  .pill.warn{background:var(--warn-soft); color:var(--warn)}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:14.5px}
+  th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:var(--accent-soft); color:var(--accent); font-size:13px; text-transform:uppercase; letter-spacing:.4px}
+  .small{font-size:13.5px; color:var(--muted)}
+  .toc{background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 18px; margin:20px 0}
+  .toc b{color:var(--accent)}
+  .toc ol{margin:8px 0 0; columns:2; column-gap:26px}
+  .toc a{color:var(--ink); text-decoration:none}
+  .toc a:hover{color:var(--accent); text-decoration:underline}
+  .footnote{margin-top:40px; padding-top:16px; border-top:1px dashed var(--line); color:var(--muted); font-size:13.5px}
+  @media (max-width:620px){
+    .toc ol{columns:1}
+    .wrap{padding:18px 14px 60px}
+    header.top h1{font-size:22px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>Verträge, Töpfe &amp; Rücklagen — wie das Ganze funktioniert</h1>
+  <p>Ein zusammenfassendes Fachkonzept: der Geld-Kreislauf der Haushaltskasse, die Regeln dahinter,
+     die geltenden Annahmen und der geplante Abgleich-Bildschirm — in Klartext.</p>
+  <div class="stamp">Stand 2026-07-18 · Zusammenfassung aus dem Gerüst-Design und den beiden Fable-Analysen.
+     Beispielzahlen sind illustrativ, nicht deine echten Salden.</div>
+</header>
+
+<div class="toc">
+  <b>Inhalt</b>
+  <ol>
+    <li><a href="#idee">Der Grundgedanke</a></li>
+    <li><a href="#prinzipien">Die drei Grundregeln</a></li>
+    <li><a href="#toepfe">Nebenbücher &amp; Untertöpfe</a></li>
+    <li><a href="#vertraege">Verträge als Behälter</a></li>
+    <li><a href="#config">Config: Deckel &amp; Schiefstellung</a></li>
+    <li><a href="#lauf">Rückstellungslauf &amp; Verzehr</a></li>
+    <li><a href="#annahmen">Die geltenden Annahmen</a></li>
+    <li><a href="#abgleich">Der Abgleich-Bildschirm</a></li>
+    <li><a href="#status">Was steht, was fehlt</a></li>
+  </ol>
+</div>
+
+<!-- 1 -->
+<h2 id="idee"><span class="n">1</span> Der Grundgedanke</h2>
+<p class="lead">Die App bildet nach, was früher die Excel-Kasse gemacht hat: einen <strong>Kreislauf aus
+Zurücklegen und Verzehren</strong>.</p>
+<p>Jeden Monat wird Geld nach Plan <strong>zurückgelegt</strong> (eingezahlt auf die Töpfe). Wenn dann
+eine echte Zahlung kommt — die Stromrechnung, der Vereinsbeitrag —, wird der passende Topf wieder
+<strong>verzehrt</strong> (die Ausgabe zehrt die Rücklage auf). Die Differenz je Bereich ist der
+<strong>Rücklagensaldo</strong>. Er soll ruhig um eine Nulllinie schwingen — nicht nach unten weglaufen.</p>
+
+<div class="flow">
+  <div class="step"><b>1 · Zurücklegen</b><span>Monatlich Geld nach Plan auf die Töpfe einzahlen (der Rückstellungslauf).</span></div>
+  <div class="step"><b>2 · Verzehren</b><span>Echte Zahlung kommt → der Topf wird automatisch aufgezehrt (Gegenbuchung).</span></div>
+  <div class="step"><b>3 · Saldo</b><span>Was übrig bleibt, ist die Rücklage. Sie soll um Null pendeln, nicht abrutschen.</span></div>
+</div>
+
+<div class="card merk">
+  <p style="margin:0"><strong>Wichtig zum Verständnis:</strong> Rücklagen sind <strong>kein echtes,
+  separates Geld</strong>. Es ist eine <strong>Planungsschicht</strong> über den realen Konten — eine
+  gedankliche Reservierung. Der Rückstellungslauf bucht deshalb <em>virtuelle</em> Zeilen, keine echten
+  Kontobewegungen.</p>
+</div>
+
+<!-- 2 -->
+<h2 id="prinzipien"><span class="n">2</span> Die drei Grundregeln</h2>
+<p>Diese drei Regeln stehen über allem. Alles andere ordnet sich ihnen unter.</p>
+
+<div class="card prinzip">
+  <h3 style="margin-top:0">① Der Rücklagensaldo bleibt, wie er ist</h3>
+  <p style="margin:0">Er ändert sich <strong>nur</strong> durch zwei Dinge: entweder du selbst von Hand,
+  oder der monatliche Rückstellungslauf. <strong>Sonst nichts</strong> — kein Import, keine
+  Vertragserkennung, keine Zuordnung fasst den Saldo an.</p>
+</div>
+
+<div class="card prinzip">
+  <h3 style="margin-top:0">② Nicht verteiltes Geld liegt auf „Allgemein“</h3>
+  <p style="margin:0">Jeder Bereich hat einen Auffang-Topf „Allgemein“. Was nicht einem bestimmten
+  Untertopf zugeordnet ist, liegt dort — als bewusster Puffer für Unregelmäßiges, <strong>kein Fehler</strong>.</p>
+</div>
+
+<div class="card prinzip">
+  <h3 style="margin-top:0">③ Abweichungen werden sichtbar gemacht, nie still ausgeglichen</h3>
+  <p style="margin:0">Wenn die Rechnung irgendwo nicht aufgeht, erzeugt das eine <strong>Wahrnehmung</strong>
+  (eine Anzeige), die <strong>du</strong> bewusst löst: entweder die Überbuchung akzeptieren <em>oder</em> die
+  Rücklage erhöhen. Die App gleicht <strong>niemals</strong> heimlich im Hintergrund aus.</p>
+</div>
+
+<!-- 3 -->
+<h2 id="toepfe"><span class="n">3</span> Nebenbücher &amp; Untertöpfe</h2>
+<p>Das Geld ist in einer <strong>zweistufigen Struktur</strong> organisiert:</p>
+<ul>
+  <li><strong>Nebenbuch</strong> = ein großer Bereich mit eigenem Rücklagentopf (z. B. <em>Auto</em>,
+      <em>Versicherungen</em>, <em>Urlaub</em>, <em>Füchschen</em> für die Kinder).</li>
+  <li><strong>Untertopf</strong> = eine feinere Unterteilung innerhalb eines Nebenbuchs (z. B. unter
+      <em>Auto</em>: KFZ-Versicherung, Sprit, Werkstatt).</li>
+  <li><strong>„Allgemein“</strong> = der Auffang-Untertopf jedes Nebenbuchs (Grundregel ②).</li>
+</ul>
+<div class="card merk">
+  <p style="margin:0"><strong>Die eiserne Rechenregel:</strong> Alle Untertöpfe eines Nebenbuchs zusammen
+  ergeben immer <strong>genau</strong> den Nebenbuch-Saldo. „Allgemein“ ist dabei der Ausgleich:
+  <code>Allgemein = Nebenbuch − alle anderen Töpfe</code>. So kann die Summe nie auseinanderlaufen.</p>
+</div>
+
+<!-- 4 -->
+<h2 id="vertraege"><span class="n">4</span> Verträge als Behälter</h2>
+<p>Ein <strong>Vertrag</strong> ist das Werkzeug, mit dem die App entscheidet, <em>wie viel</em> monatlich
+in welchen Untertopf zurückgelegt wird. Ein Vertrag ist ein <strong>Behälter</strong> — er sitzt an einem
+Untertopf und hat eine monatliche Rate.</p>
+
+<h3>Zwei Arten von Behältern</h3>
+<table>
+  <tr><th>Art</th><th>Wofür</th><th>Beispiel</th></tr>
+  <tr><td><strong>Erkannter Vertrag</strong></td><td>Echte wiederkehrende Zahlung mit festem Rhythmus und Betrag.</td><td>Stromabschlag, Vereinsbeitrag, Versicherung</td></tr>
+  <tr><td><strong>Manueller Budget-Topf</strong></td><td>Regelmäßige Ausgabe <em>ohne</em> festen Rhythmus — kein echter Vertrag, aber ein Budget.</td><td>Lebensmittel, Drogerie, Kosmetik</td></tr>
+</table>
+<p class="small">Genau darum ging es bei „regelmäßig ≠ Vertrag“: ALDI/dm sind regelmäßig, aber kein Abo.
+Sie bekommen einen manuellen Budget-Topf, in den du Umsätze reinziehst.</p>
+
+<h3>Wie Verträge erkannt werden</h3>
+<p>Die App schaut in die Zahlungshistorie und schlägt Verträge <strong>vor</strong> (sie bucht nichts
+von allein):</p>
+<ul>
+  <li><strong>Rhythmus</strong> = Abstand der Zahlungen (monatlich, quartalsweise, jährlich).</li>
+  <li><strong>Betrag</strong> = der typische (mittlere) Betrag; Ausreißer werden ignoriert.</li>
+  <li><strong>Beendet</strong> = kam lange keine Zahlung mehr, gilt der Vertrag als beendet und fällt
+      automatisch raus (löst das „alte Werte aussortieren“).</li>
+</ul>
+<div class="card merk">
+  <p style="margin:0"><strong>Warum das den Anbieterwechsel löst:</strong> Strom von Anbieter A → B → C
+  sind drei Verträge, aber <strong>ein</strong> stabiler Untertopf „Strom“. Der Anbietername wechselt
+  ständig und taugt nicht als Anker — der <strong>Untertopf</strong> trägt den Topf, nicht der Name.</p>
+</div>
+
+<h3>Zuordnung — Buchungen in den richtigen Behälter</h3>
+<p>Auf dem Verträge-Reiter ziehst (oder tippst) du Buchungen in einen Vertrag. Die Buchung wandert damit
+in dessen Nebenbuch + Untertopf. Viele Buchungen in einen Vertrag = <strong>bündeln</strong>.</p>
+<div class="card okbox">
+  <p style="margin:0"><strong>Regel:</strong> Zuordnen ändert die <em>Kategorie</em> einer Buchung — aber
+  <strong>nie den Rücklagensaldo</strong> (Grundregel ①). Das Verschieben sortiert nur ein, es bewegt kein Geld.</p>
+</div>
+
+<!-- 5 -->
+<h2 id="config"><span class="n">5</span> Config: Deckel &amp; Schiefstellung</h2>
+<p>Die <strong>Config</strong> ist deine Steuerung. Hier legst du je Nebenbuch fest, wie viel Volumen es
+im Monat bekommt — das ist der <strong>Deckel</strong>.</p>
+
+<h3>Der Deckel</h3>
+<ul>
+  <li>Das Nebenbuch-Soll ist die Obergrenze. Die Summe der Vertragsraten darin darf ihn nicht sprengen.</li>
+  <li>Was von diesem Volumen nicht durch konkrete Verträge belegt ist, geht automatisch auf „Allgemein“:
+      <code>Allgemein-Soll = Nebenbuch-Soll − Summe der Vertragsraten</code>.</li>
+  <li>Wird dieser Rest <strong>negativ</strong>, fordern die Verträge mehr als das Volumen → <strong>Warnsignal</strong>.</li>
+</ul>
+<div class="card prinzip">
+  <p style="margin:0"><strong>Die Steuerungs-Regel (deine Hauptsorge):</strong> Die Automatik
+  <strong>rechnet und schlägt vor</strong>, aber sie <strong>ändert niemals selbst</strong> dein
+  Nebenbuch-Soll. Überschreitung → Warnung, kein stilles Schreiben. Du behältst die Kontrolle.</p>
+</div>
+
+<h3>Schiefstellung — bewusste Unterdeckung</h3>
+<p>Manchmal soll ein Topf <strong>bewusst abschmelzen</strong>. Beispiel Kinder-Bereich: es liegt viel im
+Topf, monatlich geht mehr raus als rein — das ist gewollt, der Bestand soll langsam aufgebraucht werden.
+Dafür gibt es je Nebenbuch einen <strong>Schalter „Schiefstellung erlaubt“</strong>.</p>
+<ul>
+  <li><strong>Schalter aus</strong> + Unterdeckung → <span class="pill warn">rot · handeln 🛑</span> harte Warnung.</li>
+  <li><strong>Schalter an</strong> + Unterdeckung → <span class="pill schief">gold · gesteuert</span> ruhig, mit
+      <strong>Reichweite</strong> („reicht noch ~N Monate“).</li>
+</ul>
+
+<!-- 6 -->
+<h2 id="lauf"><span class="n">6</span> Rückstellungslauf &amp; Verzehr</h2>
+<p>Das sind die zwei Bewegungen, die den Saldo überhaupt verändern dürfen (Grundregel ①).</p>
+
+<h3>Der Verzehr (läuft schon)</h3>
+<p><span class="tag built">gebaut &amp; live</span> Kommt eine echte topf-relevante Ausgabe, erzeugt die App
+automatisch eine <strong>Spiegel-/Gegenbuchung</strong>, die den Topf aufzehrt. Das passiert bei jedem Import.</p>
+
+<h3>Der Rückstellungslauf (fehlt noch)</h3>
+<p><span class="tag miss">noch nicht gebaut</span> Das monatliche <strong>Einzahlen</strong> gibt es noch nicht.
+Bisher kamen alle Einzahlungen aus der alten Excel-Beladung — die reicht bis Ende Juli, der August ist von
+dir vorab gestellt. <strong>Ab September fehlt das Einzahlen</strong>, dann würde nur noch verzehrt und die
+Töpfe leerten sich. Das ist der dringendste Baupunkt.</p>
+<p>So soll der Lauf arbeiten — einmal im Monat, von dir angestoßen, je Nebenbuch:</p>
+<div class="mock">1.  Schon eingezahlt für diesen Monat?           → ja: überspringen (nichts doppelt buchen)
+2.  Je bestätigtem Vertrag:  Untertopf  += Rate
+3.  Rest nach Allgemein:     Allgemein  += Nebenbuch-Soll − Summe der Raten
+4.  Deckel prüfen:  Raten > Soll?
+        Schiefstellung AUS → STOPP, nichts buchen (Warnung)
+        Schiefstellung AN  → buchen + Reichweite zeigen
+5.  Fehlende Monate rückwirkend nachholen (jeden Monat genau 1×)
+6.  Alles protokollieren; erster echter Lauf frühestens 09/2026</div>
+<div class="card warnbox">
+  <p style="margin:0"><strong>Fables wichtigster Fund dazu:</strong> Die naive Regel „schon eingezahlt?“
+  aus Schritt 1 funktioniert an den echten Daten <strong>nicht</strong> sauber — fast jeder Monat hat schon
+  kleine Plus-Zeilen (Erstattungen), die fälschlich als „schon gestellt“ zählen würden. Deshalb soll der
+  Lauf einen <strong>eindeutigen Stempel je Bereich+Monat</strong> setzen und einen festen Startpunkt
+  <strong>September 2026</strong> haben — so bleibt dein vorab gestellter August garantiert unangetastet.</p>
+</div>
+
+<!-- 7 -->
+<h2 id="annahmen"><span class="n">7</span> Die geltenden Annahmen</h2>
+<p>Diese Annahmen sind bewusst getroffen und tragen das ganze Konzept:</p>
+<table>
+  <tr><th>Annahme</th><th>Bedeutung</th></tr>
+  <tr><td>Rücklage = Vorgang, kein Topf</td><td>Es gibt keine Position „Rücklage“. Rücklegen ist eine <em>Handlung</em> (der Lauf), kein eigener Behälter.</td></tr>
+  <tr><td>Eigener Untertopf je Vertrag</td><td>Standard ist: jeder Vertrag hat seinen eigenen Topf. Bündeln ist die Ausnahme (nur bei Anbieterwechsel).</td></tr>
+  <tr><td>Erkennen ≠ Ändern</td><td>Die Erkennung schreibt nur Vorschläge. Solls ändern sich <strong>nur</strong> beim Lauf und nur nach deiner Bestätigung. Ein Import <em>informiert</em>, er <em>verändert</em> nicht.</td></tr>
+  <tr><td>Warnung ist hart</td><td>Bei Überschreitung ohne erlaubte Schiefstellung wird <strong>nicht</strong> gebucht.</td></tr>
+  <tr><td>Verträge erst bestätigen</td><td>Ein erkannter Vertrag zählt erst, wenn du ihn bestätigst. Bis dahin ist er nur ein Vorschlag.</td></tr>
+  <tr><td>Rückwirkend, aber nie doppelt</td><td>Fehlende Monate werden nachgeholt, ein bereits gestellter Monat aber nie überschrieben.</td></tr>
+  <tr><td>Eingänge (z. B. Kindergeld) nie aktiv einzahlen</td><td>Sie kommen automatisch als Zuführung — der Lauf würde sie sonst doppelt buchen.</td></tr>
+  <tr><td>Zuordnung/Import fasst den Saldo nicht an</td><td>Nur Handbuchung oder Lauf bewegen Rücklagen (Grundregel ①).</td></tr>
+</table>
+
+<!-- 8 -->
+<h2 id="abgleich"><span class="n">8</span> Der Abgleich-Bildschirm</h2>
+<p><span class="tag open">entworfen, noch nicht gebaut</span> Bevor der Lauf sauber läuft, musst du einmal
+konzentriert <strong>Nebenbuch für Nebenbuch</strong> durchgehen und jede Abweichung bewusst lösen
+(Grundregel ③). Genau dafür ist der Abgleich-Bildschirm da — von Fable entworfen.</p>
+
+<h3>Zwei Ebenen</h3>
+<p><strong>Ebene 1 — der Laufzettel:</strong> eine Liste aller Bereiche mit Ampel und Zähler. Rot zuerst,
+dann gelb, dann grün — du arbeitest automatisch von oben nach unten.</p>
+<div class="mock">Nebenbuch         Soll/Mon   Raten    Ist-Verzehr   offen
+──────────────────────────────────────────────────────────
+🛑 Haushaltskasse   300,00    40,00    Ø  650/Mon      3  ▸
+🛑 Auto             240,00   241,43    Ø  310/Mon      2  ▸
+⚠️ Versicherungen   400,00   100,00    Ø  380/Mon      2  ▸
+✅ Kredit         2.150,00 2.146,00    Ø 2.146/Mon     –  ▸
+✅ Kinder (schief)    0,00  −298,50    Ø  170/Mon      –  ▸</div>
+<p class="small">Die Spalte <strong>„Ist-Verzehr“</strong> (was real rausgeht) ist Fables Ergänzung: erst
+dadurch wird z. B. die Haushaltskasse überhaupt rot — nur an den Raten gemessen sähe sie fälschlich grün aus.</p>
+
+<p><strong>Ebene 2 — der Karten-Stapel:</strong> pro Bereich ein Stapel Karten, jede Karte ist
+<strong>eine Abweichung</strong> mit einem Satz Befund und zwei bis drei großen Knöpfen. Eine Entscheidung
+= ein Tipp = sofort gespeichert (mit „rückgängig“). Handy-tauglich, kein Formular-Dschungel.</p>
+<div class="mock">┌────────────────────────────────────────────────┐
+│ 🛑 Topf leert sich                             │
+│ Es geht Ø 650/Mon raus, aber nur 300 sind      │
+│ eingeplant. Bestand reicht ~0 Monate.          │
+│                                                │
+│ [ Soll anheben auf … (Vorschlag 650) ]         │
+│ [ Schiefstellung erlauben (darf abschmelzen) ] │
+│ [ später entscheiden ]                         │
+└────────────────────────────────────────────────┘</div>
+<p>Es gibt vier Kartentypen: <strong>A</strong> Deckel/Verzehr-Abweichung (das Kernstück),
+<strong>B</strong> fehlende Vertragsraten nachtragen, <strong>C</strong> Aufräum-Fälle (Geld ohne Topf,
+fehlender Auffang-Topf, große Einzelzahlung ohne Vertrag), <strong>D</strong> einmalige Startbefüllung der
+Jahres-/Quartalsverträge.</p>
+
+<div class="card merk">
+  <p style="margin:0"><strong>Cleverer Kern:</strong> Wahrnehmungen werden nicht gespeichert, sondern
+  <strong>jedes Mal frisch berechnet</strong>. Gelöst = die Bedingung ist weg. Deshalb ist der Bildschirm
+  nach jedem Import automatisch aktuell und kann nie mit der Realität auseinanderlaufen.</p>
+</div>
+
+<h3>Die Reichweiten-Anzeige</h3>
+<p>Die kleine Kennzahl „reicht noch ~N Monate“ erscheint <strong>nur bei echter Unterdeckung</strong> —
+sonst nichts (damit die Oberfläche nicht überfrachtet). Dieselbe Zahl an drei Orten, im selben Format:</p>
+<p style="margin:14px 0">
+  <span class="pill schief">−171 €/Mon · reicht ~85 Mon</span>&nbsp;&nbsp; gewollt, ruhig (gold)
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <span class="pill warn">−1.629 €/Mon · reicht ~0 Mon 🛑</span>&nbsp;&nbsp; ungewollt, laut (rot)
+</p>
+<p class="small"><strong>Die Überfrachtungs-Grenze:</strong> Rot eskaliert bis zur Übersicht (du sollst es
+sofort sehen). Gold bleibt lokal in Rücklagen/Verträgen/Abgleich — es ist gesteuert und braucht keine
+tägliche Aufmerksamkeit.</p>
+
+<!-- 9 -->
+<h2 id="status"><span class="n">9</span> Was steht, was fehlt</h2>
+<table>
+  <tr><th>Baustein</th><th>Stand</th></tr>
+  <tr><td>Vertragserkennung (Vorschläge aus der Historie)</td><td><span class="tag built">live</span></td></tr>
+  <tr><td>Verträge-Reiter: Zuordnung, Bündeln, „Neuer Vertrag“</td><td><span class="tag built">live</span></td></tr>
+  <tr><td>Verzehr / Gegenbuchung</td><td><span class="tag built">live</span></td></tr>
+  <tr><td>Deckel &amp; Schiefstellung — die <em>Anzeige</em></td><td><span class="tag built">live</span></td></tr>
+  <tr><td>Deckel-Durchsetzung + Soll-Übernahme als Vorgang</td><td><span class="tag open">designt</span></td></tr>
+  <tr><td>Abgleich-Bildschirm</td><td><span class="tag open">designt</span></td></tr>
+  <tr><td><strong>Rückstellungslauf (das monatliche Einzahlen)</strong></td><td><span class="tag miss">fehlt — dringend</span></td></tr>
+</table>
+
+<div class="card warnbox">
+  <p style="margin:0 0 6px"><strong>Der eine Haken, den du kennen solltest:</strong> Alle bereits
+  bestätigten Verträge haben derzeit <strong>Rate 0</strong> gespeichert (sie wurden bestätigt, bevor es
+  das Ratenfeld gab). Die Steuerungs-Ampel steht dadurch gerade auf <em>lauter Nullen</em> — überall grün,
+  aber nur, weil nichts eingetragen ist. Diese Raten nachzutragen ist der <strong>erste Schritt</strong>
+  jedes Abgleichs, bevor irgendein Lauf startet.</p>
+</div>
+
+<p class="lead" style="margin-top:26px">Kurzfassung in einem Satz: <strong>Verträge sagen, wie viel monatlich
+in welchen Topf zurückgelegt wird; die Config setzt den Deckel; der Rückstellungslauf zahlt ein; der Verzehr
+zehrt auf; und alles, was nicht aufgeht, wird dir als bewusst zu lösende Wahrnehmung angezeigt — nie still
+ausgeglichen.</strong></p>
+
+<div class="footnote">
+  Dieses Dokument ist eine verständliche Zusammenfassung zum Nachlesen. Die vollständigen technischen
+  Analysen stehen in <code>FABLE-REVIEW-geruest-logik.md</code> (Logik &amp; Daten) und
+  <code>FABLE-REVIEW-geruest-appdesign.md</code> (Bildschirm-Entwurf); das Ausgangs-Design in
+  <code>vertraege-und-rueckstellung-design.md</code> und <code>AUFTRAG-FABLE-geruest-vertraege-rueckstellung.md</code>.
+  Bei Detailfragen einfach nachhaken.
+</div>
+
+</div>
+</body>
+</html>
