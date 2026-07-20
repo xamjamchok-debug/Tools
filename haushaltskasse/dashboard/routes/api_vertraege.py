@@ -191,6 +191,59 @@ def api_buchung_loesen(buchung_id: int):
     return {"ok": True}
 
 
+@router.post("/api/unterkategorie/{ukat_id}/buchung/{buchung_id}")
+def api_ukat_buchung_zuordnen(ukat_id: int, buchung_id: int):
+    """Buchung direkt einem Untertopf zuordnen — auch OHNE Vertrag (#84 Drop-Ziel).
+
+    Für Sammeltöpfe (Lebensmittel, Kosmetik): die Buchung wandert in Kat+Unterkat des
+    Topfes, `vertrag_id` bleibt NULL. Beide Pins, damit ein Reapply sie nicht überschreibt.
+    """
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("SELECT kategorie_id FROM unterkategorien WHERE id=%s", (ukat_id,))
+        row = cur.fetchone()
+        if not row:
+            return JSONResponse({"ok": False, "fehler": "Untertopf unbekannt"}, status_code=400)
+        cur.execute(
+            """UPDATE buchungen SET vertrag_id=NULL, unterkategorie_id=%s, kategorie_id=%s,
+                      kat_pinned=TRUE, unterkat_pinned=TRUE WHERE id=%s""",
+            (ukat_id, row[0], buchung_id))
+        if cur.rowcount == 0:
+            return JSONResponse({"ok": False, "fehler": "Buchung nicht gefunden"}, status_code=404)
+    return {"ok": True}
+
+
+class Lernregel(BaseModel):
+    buchung_id: int
+    unterkategorie_id: int
+
+
+@router.post("/api/lernregel")
+def api_lernregel(body: Lernregel):
+    """Aus einer Zuordnung eine Dauerregel machen (Finanzguru-Art): Empfänger → Untertopf.
+
+    Künftige Importe mit diesem Empfänger landen automatisch im gewählten Topf. Der volle
+    Empfänger dient als (case-insensitiver) Teilstring — konservativ, kein Over-Matching.
+    """
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("SELECT empfaenger FROM buchungen WHERE id=%s", (body.buchung_id,))
+        row = cur.fetchone()
+        if not row or not (row[0] or "").strip():
+            return JSONResponse({"ok": False, "fehler": "Buchung ohne Empfänger"}, status_code=400)
+        cur.execute("SELECT kategorie_id FROM unterkategorien WHERE id=%s", (body.unterkategorie_id,))
+        krow = cur.fetchone()
+        if not krow:
+            return JSONResponse({"ok": False, "fehler": "Untertopf unbekannt"}, status_code=400)
+        muster = row[0].strip()[:60].lower()
+        cur.execute(
+            """INSERT INTO mapping_regeln (pattern_typ, pattern, kategorie_id, unterkategorie_id, quelle, status)
+               VALUES ('empfaenger', %s, %s, %s, 'manuell', 'aktiv')
+               ON CONFLICT (pattern_typ, pattern)
+               DO UPDATE SET kategorie_id=EXCLUDED.kategorie_id,
+                             unterkategorie_id=EXCLUDED.unterkategorie_id, status='aktiv'""",
+            (muster, krow[0], body.unterkategorie_id))
+    return {"ok": True, "pattern": muster}
+
+
 class Schalter(BaseModel):
     erlaubt: bool
 

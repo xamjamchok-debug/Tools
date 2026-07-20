@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 {% block titel %} · Verträge{% endblock %}
 {% block content %}
-<h1>Verträge</h1>
+<h1>Verträge &amp; Töpfe</h1>
 <p class="sub">
-  Erkannte wiederkehrende Zahlungen je Nebenbuch — Grundlage der automatischen Rückstellung.
-  <b>Ein Vertrag zählt erst, wenn du ihn bestätigst.</b>
+  Struktur je Nebenbuch: <b>Untertopf</b> (Soll vs. Ist) → <b>Vertrag</b>. Ein Untertopf kann ein
+  Vertrag sein, mehrere bündeln, oder ein Sammeltopf ohne Vertrag (nur Buchungen).
 </p>
 
 <form class="toolbar" method="post" action="/vertraege/erkennen">
-  <button type="submit">Verträge jetzt neu erkennen</button>
-  <button type="button" onclick="document.getElementById('nv-box').classList.toggle('an')">+ Neuer Vertrag</button>
-  <span class="sub" style="margin-left:.8rem">
-    Erkennen sucht nach Rhythmus. Ändert <b>keine</b> Soll-Werte und bucht nichts.
-  </span>
+  <button type="submit">Verträge neu erkennen</button>
+  <button type="button" onclick="box('nv-box')">+ Neuer Vertrag</button>
+  <button type="button" onclick="box('nu-box')">+ Neue Unterkategorie</button>
   {% if request.query_params.get('neu') %}
   <span class="pill ok" style="margin-left:auto">{{ request.query_params.get('neu') }} neu erkannt</span>
   {% endif %}
@@ -20,47 +18,41 @@
 
 <div id="nv-box" class="card" style="display:none;margin-bottom:14px">
   <b>Neuen Vertrag / Budget-Topf anlegen</b>
-  <p class="sub" style="margin:.3rem 0 .6rem">Für regelmäßige Ausgaben ohne festen Vertrag (z. B.
-    Lebensmittel, Kosmetik): Topf wählen, Budget setzen — danach Umsätze reinziehen.</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-    <input id="nv-name" placeholder="Name (z. B. Lebensmittel)" style="flex:1;min-width:160px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:.5rem">
+    <input id="nv-name" placeholder="Name (z. B. Netflix)" style="flex:1;min-width:150px">
     <select id="nv-ukat">
       {% for kat in kats %}<optgroup label="{{ kat.name }}">
         {% for u in kat.unterkategorien %}<option value="{{ u.id }}">{{ kat.name }} / {{ u.name }}</option>{% endfor %}
       </optgroup>{% endfor %}
     </select>
-    <input id="nv-betrag" placeholder="Budget €/Mon" style="width:120px">
-    <select id="nv-richtung">
-      <option value="ausgang">Ausgang</option>
-      <option value="eingang">Eingang</option>
-    </select>
+    <input id="nv-betrag" placeholder="Budget €/Mon" style="width:110px">
+    <select id="nv-richtung"><option value="ausgang">Ausgang</option><option value="eingang">Eingang</option></select>
     <button type="button" onclick="neuerVertrag()">Anlegen</button>
   </div>
 </div>
 
-{% if daten.offene_vorschlaege %}
-<p class="hinweis">
-  <b>{{ daten.offene_vorschlaege }} Vorschläge warten auf dich.</b>
-  Bestätigen → der Vertrag geht in die Rückstellung ein. Ignorieren → er wird nie wieder vorgeschlagen.
-</p>
-{% endif %}
-
-<p class="hinweis">
-  💡 <b>Umsätze zuordnen:</b> Links einen Umsatz <b>antippen</b>, dann rechts den Vertrag antippen —
-  fertig. (Am PC geht auch Ziehen.) Mehrere Empfänger auf denselben Vertrag = bündeln.
-</p>
-<div id="zuordnung-banner">
-  Umsatz gewählt: <b id="banner-text"></b> — jetzt einen <b>Vertrag antippen</b>.
-  <a href="#" onclick="abwaehlen();return false" style="margin-left:.5rem">abbrechen</a>
+<div id="nu-box" class="card" style="display:none;margin-bottom:14px">
+  <b>Neue Unterkategorie (Topf) anlegen</b>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:.5rem">
+    <select id="nu-kat">
+      {% for kat in kats %}<option value="{{ kat.id }}">{{ kat.name }}</option>{% endfor %}
+    </select>
+    <input id="nu-name" placeholder="Name des Topfs (z. B. Kosmetik)" style="flex:1;min-width:180px">
+    <button type="button" onclick="neueUnterkategorie()">Anlegen</button>
+  </div>
 </div>
 
-{% if daten.warnungen %}
-<p class="hinweis warnung">
-  🛑 <b>{{ daten.warnungen|length }} Nebenbuch/Nebenbücher über dem Config-Soll.</b>
-  Der Rückstellungslauf würde hier <b>nichts buchen</b>. Entweder das Soll in der
-  <a href="/config">Config</a> erhöhen — oder Schiefstellung bewusst erlauben (Schalter unten).
-</p>
+{% if daten.offene_vorschlaege %}
+<p class="hinweis"><b>{{ daten.offene_vorschlaege }} Vorschläge warten.</b>
+  Bestätigen → zählt für die Rückstellung. Ignorieren → nie wieder vorgeschlagen.</p>
 {% endif %}
+<p class="hinweis">💡 <b>Umsatz zuordnen:</b> links einen Umsatz <b>antippen</b>, dann rechts einen
+  <b>Topf oder Vertrag antippen</b>. Danach kannst du die Zuordnung als <b>Dauerregel</b> merken.</p>
+
+<div id="zuordnung-banner">
+  Umsatz gewählt: <b id="banner-text"></b> — jetzt <b>Topf oder Vertrag antippen</b>.
+  <a href="#" onclick="abwaehlen();return false" style="margin-left:.5rem">abbrechen</a>
+</div>
 
 <div class="spalten">
 <aside class="umsaetze">
@@ -70,7 +62,7 @@
   </div>
   <div class="umsatzliste" id="umsatzliste">
     {% for b in umsaetze %}
-    <div class="umsatz" draggable="true" data-id="{{ b.id }}"
+    <div class="umsatz" draggable="true" data-id="{{ b.id }}" data-empf="{{ b.empfaenger }}"
          data-text="{{ (b.empfaenger ~ ' ' ~ b.zweck ~ ' ' ~ b.kategorie)|lower }}">
       <div class="u-kopf">
         <span class="u-empf">{{ b.empfaenger }}</span>
@@ -82,258 +74,202 @@
   </div>
 </aside>
 
-<div class="vertraege-spalte">
-{% for k in daten.kategorien %}
+<div class="toepfe-spalte">
+{% for nb in toepfe %}
+{% set verteilt = nb.toepfe|sum(attribute='soll_cent') %}
+{% set rest = nb.soll_cent - verteilt %}
 <section class="box">
-  <h2 style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
-    {{ k.kategorie }}
-    {% if k.ampel == 'ok' %}
-      <span class="pill ok">passt</span>
-    {% elif k.ampel == 'schief' %}
-      <span class="pill schief">Schiefstellung erlaubt</span>
-    {% else %}
-      <span class="pill warn">🛑 über dem Soll</span>
-    {% endif %}
+  <h2 onclick="toggleNb({{ nb.kategorie_id }})">
+    <span class="chev" id="chev-{{ nb.kategorie_id }}">▾</span> {{ nb.kategorie }}
+    <span class="nb-info">Soll {{ nb.soll_cent|euro }} · verteilt {{ verteilt|euro }} ·
+      <b class="{{ 'neg' if rest < 0 else '' }}">Rest {{ rest|euro }}</b> · Bestand {{ nb.ist_cent|euro }}</span>
   </h2>
-
-  <table class="deckel">
-    <tr>
-      <td>Config-Soll (deine Steuerung)</td>
-      <td class="num">{{ k.soll_cent|euro }}</td>
-    </tr>
-    {% if k.summe_eingang_cent %}
-    <tr>
-      <td>＋ Eingänge (z. B. Kindergeld)</td>
-      <td class="num">{{ k.summe_eingang_cent|euro }}</td>
-    </tr>
-    {% endif %}
-    <tr>
-      <td>－ Ausgänge (bestätigte Verträge)</td>
-      <td class="num">{{ k.summe_ausgang_cent|euro }}</td>
-    </tr>
-    <tr class="{{ 'minus' if k.rest_cent < 0 else '' }}">
-      <td><b>{% if k.rest_cent < 0 %}Unterdeckung/Monat{% elif k.summe_eingang_cent %}Überschuss/Monat → Topf wächst{% else %}Rest → Allgemein{% endif %}</b></td>
-      <td class="num"><b>{{ k.rest_cent|euro }}</b></td>
-    </tr>
-    {% if k.reichweite_monate is not none %}
-    <tr>
-      <td>Bestand {{ k.bestand_cent|euro }} — <b>reicht noch</b></td>
-      <td class="num"><b>~{{ k.reichweite_monate }} Monate</b></td>
-    </tr>
-    {% endif %}
-  </table>
-
-  <label class="schalter">
-    <input type="checkbox" {{ 'checked' if k.schiefstellung_erlaubt }}
-           onchange="schiefstellung({{ k.kategorie_id }}, this.checked)">
-    Schiefstellung erlauben — der Topf <b>darf abschmelzen</b> (Bestand deckt die Unterdeckung)
-  </label>
-
-  <table>
+  <div class="nb-body" id="nb-{{ nb.kategorie_id }}">
+  <table class="toepfe-tab">
     <thead><tr>
-      <th>Vertrag</th><th>Beschreibung</th><th>Rhythmus</th>
-      <th class="num">Gebühr</th><th class="num">Rückstellung/Mon</th>
-      <th>Nebenbuch / Untertopf</th><th>zuletzt</th><th>nächste</th><th>Status</th><th></th>
+      <th>Untertopf</th><th class="num">Soll/Mon</th><th class="num">Ist-Bestand</th>
+      <th class="num">Buch.</th><th>Verträge</th>
     </tr></thead>
     <tbody>
-    {% for v in k.vertraege %}
-      <tr class="status-{{ v.status }} richtung-{{ v.richtung }} ablage" data-vertrag="{{ v.id }}"
+    {% for t in nb.toepfe %}
+      <tr class="topf ablage" data-topf="{{ t.id }}"
           ondragover="event.preventDefault(); this.classList.add('drueber')"
-          ondragleave="this.classList.remove('drueber')"
-          ondrop="dropUmsatz(event, {{ v.id }})">
-        <td contenteditable data-feld="name" data-id="{{ v.id }}">
-          {% if v.richtung == 'eingang' %}<span class="ein" title="Eingang">＋</span> {% endif %}{{ v.name }}
-          {% if v.buchungen_n %}<span class="zug" title="{{ v.buchungen_n }} zugeordnete Buchungen">📎{{ v.buchungen_n }}</span>{% endif %}</td>
-        <td contenteditable data-feld="beschreibung" data-id="{{ v.id }}"
-            class="sub">{{ v.beschreibung or '' }}</td>
-        <td>
-          <select onchange="feld({{ v.id }}, 'rhythmus', this.value)">
-            {% for r in ['monatlich','quartalsweise','halbjaehrlich','jaehrlich','unregelmaessig'] %}
-            <option value="{{ r }}" {{ 'selected' if v.rhythmus==r }}>{{ r }}</option>
-            {% endfor %}
-          </select>
+          ondragleave="this.classList.remove('drueber')" ondrop="dropAuf(event,'topf',{{ t.id }})">
+        <td class="t-name">
+          {{ t.name }}{% if t.is_default %} <span class="sub">(Allgemein)</span>{% endif %}
+          {% if t.buchungen_n %}<span class="zug" title="{{ t.buchungen_n }} Buchungen">📎{{ t.buchungen_n }}</span>{% endif %}
         </td>
-        <td class="num" contenteditable data-feld="betrag" data-id="{{ v.id }}">{{ v.betrag_cent|euro }}</td>
-        <td class="num rate" contenteditable data-feld="monatsrate" data-id="{{ v.id }}"
-            title="Monatliche Rückstellung — manuell änderbar (z. B. Puffer für Sonderzahlungen)">{{ v.rate_cent|euro }}</td>
-        <td>
-          <select onchange="umhaengen({{ v.id }}, this.value)" title="Auf eine andere Unterkategorie umhängen = bündeln">
-            {% for kat in kats %}
-            <optgroup label="{{ kat.name }}">
-              {% for u in kat.unterkategorien %}
-              <option value="{{ u.id }}" {{ 'selected' if v.unterkategorie_id==u.id }}>{{ u.name }}</option>
-              {% endfor %}
-            </optgroup>
-            {% endfor %}
-          </select>
-        </td>
-        <td class="sub">{{ v.letzte_zahlung or '—' }}</td>
-        <td class="sub">{{ v.naechste_faellig or '—' }}</td>
-        <td>
-          {% if v.status == 'erkannt' %}<span class="pill neu">Vorschlag</span>
-          {% elif v.status == 'bestaetigt' %}<span class="pill ok">bestätigt</span>
-          {% elif v.status == 'beendet' %}<span class="pill beendet">beendet</span>
-          {% else %}<span class="pill ignoriert">ignoriert</span>{% endif %}
-        </td>
-        <td class="aktionen">
-          {% if v.status != 'bestaetigt' %}
-          <button onclick="status({{ v.id }}, 'bestaetigt')" title="Zählt dann für die Rückstellung">✓</button>
-          {% endif %}
-          {% if v.status != 'ignoriert' %}
-          <button onclick="status({{ v.id }}, 'ignoriert')" title="Kein Vertrag — nie wieder vorschlagen">✕</button>
-          {% endif %}
+        <td class="num"><span contenteditable class="soll-edit" data-id="{{ t.id }}">{{ t.soll_cent|euro }}</span></td>
+        <td class="num {{ 'neg' if t.ist_cent < 0 else '' }}">{{ t.ist_cent|euro }}</td>
+        <td class="num sub">{{ t.buchungen_n or '' }}</td>
+        <td class="t-vertr">
+          {% for v in t.vertraege %}
+          <span class="vchip status-{{ v.status }} ablage" data-vertrag="{{ v.id }}" data-ukat="{{ t.id }}"
+                ondragover="event.preventDefault(); this.classList.add('drueber')"
+                ondragleave="this.classList.remove('drueber')" ondrop="dropAuf(event,'vertrag',{{ v.id }},{{ t.id }})"
+                title="{{ v.rhythmus }} · Rate {{ v.rate_cent|euro }}">
+            {% if v.richtung == 'eingang' %}＋{% endif %}{{ v.name[:26] }}
+            <b>{{ v.rate_cent|euro }}</b>
+            {% if v.status == 'erkannt' %}<a class="va" title="bestätigen" onclick="vstatus({{ v.id }},'bestaetigt')">✓</a>{% endif %}
+            <a class="va" title="ignorieren" onclick="vstatus({{ v.id }},'ignoriert')">✕</a>
+          </span>
+          {% endfor %}
         </td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
-{% else %}
-<p class="hinweis">Noch keine Verträge erkannt — auf „Verträge jetzt neu erkennen" klicken.</p>
 {% endfor %}
-</div><!-- vertraege-spalte -->
+</div><!-- toepfe-spalte -->
 </div><!-- spalten -->
 
 <style>
-  .spalten { display:flex; gap:16px; align-items:flex-start }
-  .vertraege-spalte { flex:1; min-width:0 }
-  .umsaetze { width:300px; flex:none; position:sticky; top:64px; max-height:calc(100vh - 80px);
-              display:flex; flex-direction:column; border:1px solid var(--border);
-              border-radius:12px; background:var(--card) }
-  .umsaetze-kopf { padding:10px; border-bottom:1px solid var(--border) }
-  .umsaetze-kopf input { width:100%; margin-top:6px; padding:6px 9px; box-sizing:border-box;
-                         border:1px solid var(--border); border-radius:6px;
-                         background:var(--card); color:var(--text) }
-  .umsatzliste { overflow-y:auto; padding:7px }
-  .umsatz { border:1px solid var(--border); border-radius:8px; padding:7px 9px; margin-bottom:6px;
-            cursor:pointer; background:var(--card-2); font-size:.82rem }
-  .umsatz:hover { border-color:var(--accent) }
-  .umsatz.zieht { opacity:.4 }
-  .umsatz.gewaehlt { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) }
-  .u-kopf { display:flex; justify-content:space-between; gap:6px }
-  .u-empf { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-  .u-betrag { font-variant-numeric:tabular-nums; white-space:nowrap }
-  .u-betrag.plus { color:var(--pos) }
-  .u-sub { color:var(--muted); font-size:.75rem; margin-top:2px }
-  tr.ablage.drueber td, tr.ablage.zielaktiv td { background:var(--accent-soft) !important;
-            box-shadow:inset 0 0 0 2px var(--accent) }
-  .zug { font-size:.72rem; color:var(--accent); margin-left:.3rem }
-  #zuordnung-banner { position:sticky; top:52px; z-index:9; display:none; margin:0 0 10px;
-            padding:.55rem .9rem; border-radius:8px; background:var(--accent-soft);
-            border:1px solid var(--accent); font-size:.9rem }
-  #zuordnung-banner.an { display:block }
-  @media (max-width:820px){ .spalten{flex-direction:column} .umsaetze{width:100%;position:static;max-height:none} }
-  .box { margin-bottom:1.6rem }
-  .deckel { width:auto; margin-bottom:.6rem }
-  .deckel td { padding:.15rem .8rem .15rem 0; border:none }
-  .deckel .num { text-align:right; font-variant-numeric:tabular-nums }
-  .deckel tr.minus td { color:var(--neg) }
-  .pill { font-size:.75rem; padding:.1rem .5rem; border-radius:999px; white-space:nowrap;
-          background:var(--card-2); color:var(--muted) }
-  .pill.ok { background:var(--accent-soft); color:var(--pos) }
-  .pill.neu { background:var(--accent-soft); color:var(--accent) }
-  .pill.warn { background:var(--hi-soft); color:var(--neg) }
-  .pill.schief { background:var(--hi-soft); color:var(--hi) }
-  tr.status-beendet td, tr.status-ignoriert td { opacity:.5 }
-  tr.richtung-eingang { background:var(--accent-soft) }
-  .ein { color:var(--pos); font-weight:700 }
-  .schalter { display:block; margin:.4rem 0 .9rem; font-size:.85rem; color:var(--muted) }
-  .aktionen button { padding:.1rem .45rem; margin-right:.2rem }
-  .hinweis { padding:.6rem .9rem; border-radius:8px; background:var(--accent-soft);
-             border:1px solid var(--border); margin:.5rem 0 }
-  .hinweis.warnung { background:var(--hi-soft) }
-  [contenteditable]:focus { outline:2px solid var(--accent); border-radius:3px }
-  #nv-box.an { display:block !important }
+  .spalten{display:flex;gap:16px;align-items:flex-start}
+  .toepfe-spalte{flex:1;min-width:0}
+  .umsaetze{width:300px;flex:none;position:sticky;top:64px;max-height:calc(100vh - 80px);
+    display:flex;flex-direction:column;border:1px solid var(--border);border-radius:12px;background:var(--card)}
+  .umsaetze-kopf{padding:10px;border-bottom:1px solid var(--border)}
+  .umsaetze-kopf input{width:100%;margin-top:6px;padding:6px 9px;box-sizing:border-box;
+    border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text)}
+  .umsatzliste{overflow-y:auto;padding:7px}
+  .umsatz{border:1px solid var(--border);border-radius:8px;padding:7px 9px;margin-bottom:6px;
+    cursor:pointer;background:var(--card-2);font-size:.82rem}
+  .umsatz:hover{border-color:var(--accent)}
+  .umsatz.zieht{opacity:.4}
+  .umsatz.gewaehlt{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+  .u-kopf{display:flex;justify-content:space-between;gap:6px}
+  .u-empf{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .u-betrag{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .u-betrag.plus{color:var(--pos)}
+  .u-sub{color:var(--muted);font-size:.75rem;margin-top:2px}
+  .box{margin-bottom:1.2rem}
+  .box h2{cursor:pointer;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:1.1rem}
+  .chev{color:var(--accent);width:1rem;display:inline-block}
+  .nb-info{font-size:.8rem;font-weight:400;color:var(--muted);margin-left:.3rem}
+  .toepfe-tab{width:100%;border-collapse:collapse;font-size:.85rem}
+  .toepfe-tab th{background:var(--accent-soft);color:var(--accent);font-size:.68rem;text-transform:uppercase;
+    letter-spacing:.03em;text-align:left;padding:5px 8px}
+  .toepfe-tab td{padding:5px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+  .toepfe-tab .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .t-name{font-weight:600;min-width:9rem}
+  .soll-edit{cursor:text;padding:1px 4px;border-radius:4px;border:1px dashed transparent}
+  .soll-edit:hover{border-color:var(--border)}
+  .soll-edit:focus{outline:2px solid var(--accent);border-style:solid}
+  .neg{color:var(--neg)}
+  .t-vertr{display:flex;flex-wrap:wrap;gap:4px}
+  .vchip{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;padding:2px 7px;border-radius:999px;
+    background:var(--card-2);border:1px solid var(--border);white-space:nowrap}
+  .vchip.status-erkannt{border-color:var(--accent);background:var(--accent-soft)}
+  .vchip.status-beendet,.vchip.status-ignoriert{opacity:.5}
+  .vchip .va{cursor:pointer;color:var(--muted);text-decoration:none;font-weight:700}
+  .vchip .va:hover{color:var(--accent)}
+  tr.ablage.drueber td,tr.ablage.zielaktiv td{background:var(--accent-soft)!important;box-shadow:inset 0 0 0 2px var(--accent)}
+  .vchip.ablage.drueber,.vchip.ablage.zielaktiv{box-shadow:0 0 0 2px var(--accent)}
+  .zug{font-size:.72rem;color:var(--accent);margin-left:.3rem}
+  #zuordnung-banner{position:sticky;top:52px;z-index:9;display:none;margin:0 0 10px;padding:.55rem .9rem;
+    border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent);font-size:.9rem}
+  #zuordnung-banner.an{display:block}
+  .hinweis{padding:.6rem .9rem;border-radius:8px;background:var(--accent-soft);border:1px solid var(--border);margin:.5rem 0}
+  .pill{font-size:.75rem;padding:.1rem .5rem;border-radius:999px;background:var(--card-2);color:var(--muted)}
+  .pill.ok{background:var(--accent-soft);color:var(--pos)}
+  #nv-box.an,#nu-box.an{display:block!important}
+  @media (max-width:820px){.spalten{flex-direction:column}.umsaetze{width:100%;position:static;max-height:none}}
 </style>
 
 <script>
-async function post(url, body) {
-  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
-                             body: JSON.stringify(body)});
-  if (!r.ok) { const t = await r.json().catch(()=>({})); alert(t.fehler || 'Fehler'); return false; }
-  return true;
+async function post(url, body){
+  const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  if(!r.ok){const t=await r.json().catch(()=>({}));alert(t.fehler||'Fehler');return null;}
+  return await r.json().catch(()=>({}));
 }
-async function status(id, s)      { if (await post(`/api/vertrag/${id}/status`, {status:s})) location.reload(); }
-async function neuerVertrag() {
-  const name = document.getElementById('nv-name').value.trim();
-  if (!name) { alert('Name fehlt'); return; }
-  const body = {
-    name,
-    unterkategorie_id: parseInt(document.getElementById('nv-ukat').value),
-    monatsrate: document.getElementById('nv-betrag').value || '0',
-    richtung: document.getElementById('nv-richtung').value,
-  };
-  if (await post('/api/vertrag', body)) location.reload();
+function box(id){document.getElementById(id).classList.toggle('an');}
+
+// Nebenbücher auf/zu, Zustand merken
+function _offen(){try{return new Set(JSON.parse(sessionStorage.getItem('vOffen')||'null')||[]);}catch(e){return null;}}
+function setNb(kid,offen){
+  const b=document.getElementById('nb-'+kid); if(!b)return;
+  b.style.display=offen?'':'none';
+  const c=document.getElementById('chev-'+kid); if(c)c.textContent=offen?'▾':'▸';
+  let s=_offen()||new Set(); offen?s.add(String(kid)):s.delete(String(kid));
+  sessionStorage.setItem('vOffen',JSON.stringify([...s]));
 }
-async function feld(id, f, wert)  { await post(`/api/vertrag/${id}/${f}`, {wert}); location.reload(); }
-async function umhaengen(id, uid) { if (await post(`/api/vertrag/${id}/unterkategorie`,
-                                       {unterkategorie_id: parseInt(uid)})) location.reload(); }
-async function schiefstellung(kid, an) {
-  if (await post(`/api/nebenbuch/${kid}/schiefstellung`, {erlaubt: an})) location.reload();
+function toggleNb(kid){const b=document.getElementById('nb-'+kid);setNb(kid,b.style.display==='none');}
+document.addEventListener('DOMContentLoaded',()=>{const s=_offen();if(s!==null){
+  document.querySelectorAll('.nb-body').forEach(b=>{const kid=b.id.slice(3);setNb(kid,s.has(kid));});}});
+
+async function vstatus(id,s){if(await post(`/api/vertrag/${id}/status`,{status:s}))location.reload();}
+async function neuerVertrag(){
+  const name=document.getElementById('nv-name').value.trim(); if(!name){alert('Name fehlt');return;}
+  const ok=await post('/api/vertrag',{name,unterkategorie_id:parseInt(document.getElementById('nv-ukat').value),
+    monatsrate:document.getElementById('nv-betrag').value||'0',richtung:document.getElementById('nv-richtung').value});
+  if(ok)location.reload();
 }
-// Freitextfelder: Enter speichert, Escape verwirft.
-document.querySelectorAll('[contenteditable]').forEach(el => {
-  const alt = el.textContent;
-  el.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
-    if (e.key === 'Escape') { el.textContent = alt; el.blur(); }
-  });
-  el.addEventListener('blur', () => {
-    if (el.textContent.trim() === alt.trim()) return;
-    feld(el.dataset.id, el.dataset.feld, el.textContent.trim());
-  });
+async function neueUnterkategorie(){
+  const name=document.getElementById('nu-name').value.trim(); if(!name){alert('Name fehlt');return;}
+  const ok=await post('/api/unterkategorie',{kategorie_id:parseInt(document.getElementById('nu-kat').value),name});
+  if(ok)location.reload();
+}
+// Topf-Soll editierbar (kein Neuladen — Wert bleibt im Feld)
+document.querySelectorAll('.soll-edit').forEach(el=>{
+  const alt=el.textContent;
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}if(e.key==='Escape'){el.textContent=alt;el.blur();}});
+  el.addEventListener('blur',async()=>{if(el.textContent.trim()===alt.trim())return;
+    await post(`/api/unterkategorie/${el.dataset.id}/ruecklage`,{betrag:el.textContent.trim()});});
 });
 
-// --- Umsatz -> Vertrag: Antippen (Touch+PC) ODER Ziehen (PC) ---------------------
-let gewaehlt = null;           // per Tipp gewählter Umsatz (id)
-let gezogen = null;            // per Drag gezogener Umsatz (id)
-
-function waehle(el) {
-  if (gewaehlt === el.dataset.id) { abwaehlen(); return; }
-  document.querySelectorAll('.umsatz.gewaehlt').forEach(x => x.classList.remove('gewaehlt'));
-  gewaehlt = el.dataset.id;
-  el.classList.add('gewaehlt');
-  document.getElementById('banner-text').textContent = el.querySelector('.u-empf').textContent;
+// --- Umsatz -> Topf/Vertrag: Antippen ODER Ziehen ---
+let gewaehlt=null,gewaehltEmpf='',gezogen=null,gezogenEmpf='';
+function waehle(el){
+  if(gewaehlt===el.dataset.id){abwaehlen();return;}
+  document.querySelectorAll('.umsatz.gewaehlt').forEach(x=>x.classList.remove('gewaehlt'));
+  gewaehlt=el.dataset.id; gewaehltEmpf=el.dataset.empf||''; el.classList.add('gewaehlt');
+  document.getElementById('banner-text').textContent=el.querySelector('.u-empf').textContent;
   document.getElementById('zuordnung-banner').classList.add('an');
-  document.querySelectorAll('tr.ablage').forEach(r => r.classList.add('zielaktiv'));
+  document.querySelectorAll('.ablage').forEach(r=>r.classList.add('zielaktiv'));
 }
-function abwaehlen() {
-  gewaehlt = null;
-  document.querySelectorAll('.umsatz.gewaehlt').forEach(x => x.classList.remove('gewaehlt'));
-  document.querySelectorAll('tr.ablage.zielaktiv').forEach(r => r.classList.remove('zielaktiv'));
+function abwaehlen(){
+  gewaehlt=null;
+  document.querySelectorAll('.umsatz.gewaehlt').forEach(x=>x.classList.remove('gewaehlt'));
+  document.querySelectorAll('.ablage.zielaktiv').forEach(r=>r.classList.remove('zielaktiv'));
   document.getElementById('zuordnung-banner').classList.remove('an');
 }
-async function zuordnen(vertragId, buchungId) {
-  if (await post(`/api/vertrag/${vertragId}/buchung/${buchungId}`, {})) location.reload();
+async function zuordnen(ziel,zielId,ukatId,buchungId,empf){
+  const url = ziel==='topf' ? `/api/unterkategorie/${zielId}/buchung/${buchungId}`
+                            : `/api/vertrag/${zielId}/buchung/${buchungId}`;
+  if(!await post(url,{}))return;
+  const uk = ziel==='topf' ? zielId : ukatId;
+  if(empf && uk && confirm(`Künftige Buchungen von „${empf}“ automatisch hierhin zuordnen?`)){
+    await post('/api/lernregel',{buchung_id:parseInt(buchungId),unterkategorie_id:parseInt(uk)});
+  }
+  location.reload();
 }
-document.querySelectorAll('.umsatz').forEach(el => {
-  el.addEventListener('click', () => waehle(el));
-  el.addEventListener('dragstart', e => {
-    gezogen = el.dataset.id; el.classList.add('zieht');
-    e.dataTransfer.setData('text/plain', el.dataset.id);
-  });
-  el.addEventListener('dragend', () => el.classList.remove('zieht'));
+document.querySelectorAll('.umsatz').forEach(el=>{
+  el.addEventListener('click',()=>waehle(el));
+  el.addEventListener('dragstart',e=>{gezogen=el.dataset.id;gezogenEmpf=el.dataset.empf||'';el.classList.add('zieht');
+    e.dataTransfer.setData('text/plain',el.dataset.id);});
+  el.addEventListener('dragend',()=>el.classList.remove('zieht'));
 });
-// Klick auf eine Vertragszeile: wenn ein Umsatz gewählt ist, zuordnen.
-document.querySelectorAll('tr.ablage').forEach(row => {
-  row.addEventListener('click', e => {
-    if (!gewaehlt) return;
-    if (e.target.isContentEditable || ['SELECT','BUTTON','OPTION','INPUT','A'].includes(e.target.tagName)) return;
-    zuordnen(row.dataset.vertrag, gewaehlt);
+// Klick auf Topf/Vertrag: wenn ein Umsatz gewählt ist -> zuordnen
+document.querySelectorAll('tr.topf').forEach(row=>{
+  row.addEventListener('click',e=>{
+    if(!gewaehlt)return;
+    if(e.target.isContentEditable||['A','INPUT','SELECT','BUTTON'].includes(e.target.tagName))return;
+    const chip=e.target.closest('.vchip');
+    if(chip) zuordnen('vertrag',chip.dataset.vertrag,chip.dataset.ukat,gewaehlt,gewaehltEmpf);
+    else zuordnen('topf',row.dataset.topf,null,gewaehlt,gewaehltEmpf);
   });
 });
-async function dropUmsatz(e, vertragId) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drueber');
-  const buchungId = gezogen || e.dataTransfer.getData('text/plain');
-  if (buchungId) zuordnen(vertragId, buchungId);
+function dropAuf(e,ziel,zielId,ukatId){
+  e.preventDefault(); e.currentTarget.classList.remove('drueber');
+  const bId=gezogen||e.dataTransfer.getData('text/plain');
+  if(bId) zuordnen(ziel,zielId,ukatId,bId,gezogenEmpf);
 }
-// Suchfeld filtert die Umsatzliste live.
-function filterUmsaetze() {
-  const q = document.getElementById('umsatzFilter').value.trim().toLowerCase();
-  document.querySelectorAll('#umsatzliste .umsatz').forEach(el => {
-    el.style.display = (!q || el.dataset.text.includes(q)) ? '' : 'none';
-  });
+function filterUmsaetze(){
+  const q=document.getElementById('umsatzFilter').value.trim().toLowerCase();
+  document.querySelectorAll('#umsatzliste .umsatz').forEach(el=>{
+    el.style.display=(!q||el.dataset.text.includes(q))?'':'none';});
 }
 </script>
 {% endblock %}

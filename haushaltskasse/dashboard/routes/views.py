@@ -200,10 +200,11 @@ def view_vertraege(request: Request):
         daten = q.vertraege(cur)
         kats = q.kategorien_mit_unterkategorien(cur)
         umsaetze = q.zuordenbare_buchungen(cur)
+        toepfe = q.topf_uebersicht(cur)
     return TEMPLATES.TemplateResponse(
         request, "vertraege.html",
         {"request": request, "tab": "vertraege", "daten": daten, "kats": kats,
-         "umsaetze": umsaetze})
+         "umsaetze": umsaetze, "toepfe": toepfe})
 
 
 @router.post("/vertraege/erkennen", response_class=HTMLResponse)

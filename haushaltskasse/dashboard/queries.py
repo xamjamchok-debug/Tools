@@ -605,3 +605,54 @@ def zuordenbare_buchungen(cur, limit: int = 400) -> list[dict]:
     """, (limit,))
     return [{"id": i, "datum": d, "betrag_cent": b, "empfaenger": e,
              "zweck": z, "kategorie": k} for i, d, b, e, z, k in cur.fetchall()]
+
+
+def topf_uebersicht(cur) -> list[dict]:
+    """Alle Rücklage-Nebenbücher MIT ihren Untertöpfen (auch ohne Vertrag, #84).
+
+    Je Untertopf: Soll (Config) vs. Ist-Bestand (Σ ruecklage-Buchungen) → Über-/Unterschuss,
+    plus die Verträge im Topf und die Zahl zugeordneter Realbuchungen. Grundlage des
+    ausgebauten Verträge-Reiters (Soll-vs-Ist-Sicht + Zuordnungsziele).
+    """
+    cur.execute("""SELECT unterkategorie_id, COALESCE(SUM(betrag_cent),0)
+                   FROM buchungen WHERE buchungsart='ruecklage' AND unterkategorie_id IS NOT NULL
+                   GROUP BY unterkategorie_id""")
+    ist = dict(cur.fetchall())
+    cur.execute("""SELECT unterkategorie_id, COUNT(*), COALESCE(SUM(betrag_cent),0)
+                   FROM buchungen WHERE buchungsart='real' AND spiegel_von_id IS NULL
+                     AND unterkategorie_id IS NOT NULL
+                   GROUP BY unterkategorie_id""")
+    real_je = {uk: (n, s) for uk, n, s in cur.fetchall()}
+    cur.execute("""SELECT unterkategorie_id, id, name, status, richtung, monatsrate_cent,
+                          rhythmus, betrag_median_cent
+                   FROM vertraege WHERE status IN ('erkannt','bestaetigt')
+                   ORDER BY richtung, monatsrate_cent DESC""")
+    vertr: dict[int, list] = {}
+    for uk, vid, name, status, richtung, rate, rhy, betrag in cur.fetchall():
+        vertr.setdefault(uk, []).append({
+            "id": vid, "name": name, "status": status, "richtung": richtung,
+            "rate_cent": rate or 0, "rhythmus": rhy, "betrag_cent": betrag or 0})
+    cur.execute("""SELECT k.id, k.name, COALESCE(k.monatliche_ruecklage_cent,0),
+                          u.id, u.name, COALESCE(u.monatliche_ruecklage_cent,0),
+                          (k.default_unterkategorie_id = u.id)
+                   FROM kategorien k
+                   LEFT JOIN unterkategorien u ON u.kategorie_id = k.id
+                   WHERE k.zaehlt_als='ruecklage' AND k.aktiv
+                   ORDER BY k.name, (k.default_unterkategorie_id = u.id) DESC, u.name""")
+    nb: dict[int, dict] = {}
+    for kid, kname, ksoll, uid, uname, usoll, is_def in cur.fetchall():
+        b = nb.setdefault(kid, {"kategorie_id": kid, "kategorie": kname,
+                                "soll_cent": ksoll, "ist_cent": 0, "toepfe": []})
+        if uid is None:
+            continue
+        vs = vertr.get(uid, [])
+        rn, rs = real_je.get(uid, (0, 0))
+        summe_raten = sum(v["rate_cent"] for v in vs if v["richtung"] == "ausgang"
+                          and v["status"] == "bestaetigt")
+        b["toepfe"].append({
+            "id": uid, "name": uname, "soll_cent": usoll, "ist_cent": ist.get(uid, 0),
+            "is_default": bool(is_def), "buchungen_n": rn, "buchungen_summe_cent": rs,
+            "summe_raten_cent": summe_raten, "vertraege": vs})
+    for b in nb.values():
+        b["ist_cent"] = sum(t["ist_cent"] for t in b["toepfe"])
+    return sorted(nb.values(), key=lambda x: x["kategorie"])
