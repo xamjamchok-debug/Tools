@@ -117,12 +117,19 @@
 {% endblock %}
 
 {% block script %}
+// Aufgeklappten Zustand über ein Neuladen hinweg merken (behebt „alles klappt zu, Fokus weg").
+function _offeneKats(){ try{return new Set(JSON.parse(sessionStorage.getItem('cfgOffen')||'[]'));}catch(e){return new Set();} }
+function setKatOffen(kid, offen){
+  document.querySelectorAll('tr.det-'+kid).forEach(r=> r.style.display = offen ? '' : 'none');
+  const c=document.getElementById('c-'+kid); if(c) c.textContent = offen ? '▾' : '▸';
+  const s=_offeneKats(); offen ? s.add(String(kid)) : s.delete(String(kid));
+  sessionStorage.setItem('cfgOffen', JSON.stringify([...s]));
+}
 function toggleKat(kid){
   const rows=document.querySelectorAll('tr.det-'+kid);
-  const offen = rows.length && rows[0].style.display==='none';
-  rows.forEach(r=> r.style.display = offen ? '' : 'none');
-  const c=document.getElementById('c-'+kid); if(c) c.textContent = offen ? '▾' : '▸';
+  setKatOffen(kid, rows.length && rows[0].style.display==='none');
 }
+document.addEventListener('DOMContentLoaded', ()=> _offeneKats().forEach(kid=> setKatOffen(kid, true)));
 async function saveRolle(katId, sel){
   await postJSON('/api/kategorie/'+katId+'/rolle', {zaehlt_als: sel.value});
   flash('Rolle gespeichert'); setTimeout(()=>location.reload(), 400);
@@ -132,8 +139,9 @@ async function saveDefaultUkat(katId, sel){
   flash('Default gespeichert');
 }
 async function saveSoll(ebene, id, inp){
+  // Kein Neuladen mehr: der Wert steht schon im Feld, der aufgeklappte Block bleibt offen, Fokus bleibt.
   await postJSON('/api/'+ebene+'/'+id+'/ruecklage', {betrag: inp.value});
-  flash('gespeichert'); setTimeout(()=>location.reload(), 400);
+  flash('gespeichert');
 }
 async function saveStichtag(inp){
   await postJSON('/api/einstellung/stichtag', {wert: inp.value});
