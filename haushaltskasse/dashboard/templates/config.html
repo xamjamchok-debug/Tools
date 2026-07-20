@@ -139,9 +139,10 @@ async function saveDefaultUkat(katId, sel){
   flash('Default gespeichert');
 }
 async function saveSoll(ebene, id, inp){
-  // Kein Neuladen mehr: der Wert steht schon im Feld, der aufgeklappte Block bleibt offen, Fokus bleibt.
+  // Neuladen NÖTIG, damit die abgeleiteten Summen (Forderungen, Ausgaben, Monats-Saldo) stimmen.
+  // Der aufgeklappte Block bleibt offen (Zustand in sessionStorage), es klappt also nichts mehr zu.
   await postJSON('/api/'+ebene+'/'+id+'/ruecklage', {betrag: inp.value});
-  flash('gespeichert');
+  flash('gespeichert'); setTimeout(()=>location.reload(), 350);
 }
 async function saveStichtag(inp){
   await postJSON('/api/einstellung/stichtag', {wert: inp.value});
